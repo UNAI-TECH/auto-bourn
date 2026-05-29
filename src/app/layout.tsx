@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import ClientProviders from "@/components/ClientProviders";
+import ConditionalLayout from "@/components/ConditionalLayout";
 
 export const metadata: Metadata = {
   title: "AUTO BOURN | Luxury Pre-Owned Vehicles",
@@ -18,13 +16,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <ClientProviders>
-          <Navbar />
-          <main style={{ minHeight: '100vh', paddingTop: '80px' }}>
-            {children}
-          </main>
-          <Footer />
-        </ClientProviders>
+        <ConditionalLayout>
+          {children}
+        </ConditionalLayout>
       </body>
     </html>
   );
