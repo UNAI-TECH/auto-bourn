@@ -9,7 +9,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { Employee } from '@/types/database';
 import {
   LayoutDashboard, Users, Car, ClipboardList, Activity,
-  LogOut, Menu, X, ChevronRight, Moon, Sun, Bell, Search
+  LogOut, Menu, X, ChevronRight, Moon, Sun, Bell, Search,
+  Users2, CalendarClock, BarChart3, PhoneCall
 } from 'lucide-react';
 
 interface DashboardContextType {
@@ -33,6 +34,13 @@ const navItems = [
   { href: '/dashboard/logs', label: 'Activity Logs', icon: Activity },
 ];
 
+const crmNavItems = [
+  { href: '/dashboard/crm', label: 'CRM Overview', icon: Users2 },
+  { href: '/dashboard/crm/leads', label: 'Leads', icon: PhoneCall },
+  { href: '/dashboard/crm/follow-ups', label: 'Follow-ups', icon: CalendarClock },
+  { href: '/dashboard/crm/analytics', label: 'CRM Analytics', icon: BarChart3 },
+];
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [darkMode, setDarkMode] = useState(false);
@@ -40,6 +48,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [unreadReports, setUnreadReports] = useState(0);
+
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
@@ -55,15 +64,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.push('/admin'); return; }
+      if (!user) { router.replace('/console'); return; }
       const { data } = await supabase.from('employees').select('*').eq('auth_user_id', user.id).single();
-      if (!data || data.role !== 'admin') { router.push('/admin'); return; }
+      if (!data || data.role !== 'admin') { router.replace('/console'); return; }
       setEmployee(data);
       setLoading(false);
       fetchUnreadReports();
     };
     getUser();
-    // Poll for new reports every 60 seconds
     const interval = setInterval(fetchUnreadReports, 60000);
     return () => clearInterval(interval);
   }, []);
@@ -73,14 +81,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       await supabase.from('activity_logs').insert({ employee_id: employee.id, action: 'logout', details: 'Admin logged out' });
     }
     await supabase.auth.signOut();
-    router.push('/admin');
+    router.replace('/console');
   };
+
 
   if (loading) {
     return (
       <div className="db-loader"><motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} className="db-spinner" /></div>
     );
   }
+
+
 
   return (
     <DashboardContext.Provider value={{ employee, darkMode, toggleDarkMode: () => setDarkMode(!darkMode) }}>
@@ -107,6 +118,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       {unreadReports}
                     </span>
                   )}
+                </Link>
+              );
+            })}
+            {sidebarOpen && <div style={{ fontSize: '.625rem', fontWeight: 700, color: 'var(--db-tx3)', textTransform: 'uppercase', letterSpacing: '.1em', padding: '.75rem 1rem .25rem', marginTop: '.25rem', borderTop: '1px solid var(--db-bd)' }}>CRM</div>}
+            {!sidebarOpen && <div style={{ height: 1, background: 'var(--db-bd)', margin: '.5rem .75rem' }} />}
+            {crmNavItems.map(item => {
+              const active = pathname === item.href || (item.href !== '/dashboard/crm' && pathname?.startsWith(item.href));
+              return (
+                <Link key={item.href} href={item.href} className={`db-nav-item ${active ? 'active' : ''}`} onClick={() => setMobileOpen(false)}>
+                  <item.icon size={20} />{sidebarOpen && <span>{item.label}</span>}{active && sidebarOpen && <ChevronRight size={16} className="db-arrow" />}
                 </Link>
               );
             })}

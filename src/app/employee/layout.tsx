@@ -7,7 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Employee } from '@/types/database';
-import { LayoutDashboard, Car, Upload, LogOut, Menu, X, Moon, Sun, Bell, Settings, FileText, AlertCircle, Clock, CheckCircle } from 'lucide-react';
+import { LayoutDashboard, Car, Upload, LogOut, Menu, X, Bell, FileText, AlertCircle, Clock, CheckCircle, PhoneCall } from 'lucide-react';
 
 const EmpContext = createContext<{ employee: Employee | null; darkMode: boolean; onReportSubmitted: () => void }>({ employee: null, darkMode: false, onReportSubmitted: () => {} });
 export const useEmpContext = () => useContext(EmpContext);
@@ -16,6 +16,8 @@ const navItems = [
   { href: '/employee', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/employee/upload', label: 'Upload Car', icon: Upload },
   { href: '/employee/cars', label: 'My Cars', icon: Car },
+  { href: '/employee/customer-details', label: 'Customer Details', icon: FileText },
+  { href: '/employee/crm', label: 'My Leads (CRM)', icon: PhoneCall },
 ];
 
 export default function EmployeeLayout({ children }: { children: React.ReactNode }) {
@@ -136,18 +138,47 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
     const uploadsCount = todayCars?.length || 0;
     const soldCount = todayCars?.filter(c => c.status === 'sold').length || 0;
 
-    const { error } = await supabase.from('daily_reports').upsert({
-      employee_id: employee.id,
-      report_date: today,
-      summary: reportText.trim(),
-      uploads_count: uploadsCount,
-      sold_count: soldCount,
-      status: 'submitted',
-      submitted_at: new Date().toISOString(),
-    }, { onConflict: 'employee_id,report_date' });
+    // Check if report already exists for today
+    const { data: existing } = await supabase
+      .from('daily_reports')
+      .select('id')
+      .eq('employee_id', employee.id)
+      .eq('report_date', today)
+      .single();
+
+    let error = null;
+
+    if (existing) {
+      // Update existing report
+      const { error: updateError } = await supabase
+        .from('daily_reports')
+        .update({
+          summary: reportText.trim(),
+          uploads_count: uploadsCount,
+          sold_count: soldCount,
+          submitted_at: new Date().toISOString(),
+        })
+        .eq('id', existing.id);
+      error = updateError;
+    } else {
+      // Insert new report
+      const { error: insertError } = await supabase
+        .from('daily_reports')
+        .insert({
+          employee_id: employee.id,
+          report_date: today,
+          summary: reportText.trim(),
+          uploads_count: uploadsCount,
+          sold_count: soldCount,
+          status: 'submitted',
+          submitted_at: new Date().toISOString(),
+        });
+      error = insertError;
+    }
 
     if (error) {
-      setReportError('Failed to submit report. Please try again.');
+      console.error('Report submission error:', error);
+      setReportError(`Failed to submit report: ${error.message}`);
       setReportSubmitting(false);
       return;
     }
@@ -212,12 +243,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
             </nav>
 
             <div className="saas-topbar-actions">
-              <button className="saas-action-btn" onClick={() => setDarkMode(!darkMode)} title="Toggle theme">
-                {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-              </button>
-              <button className="saas-action-btn" title="Settings">
-                <Settings size={18} />
-              </button>
+
               <button className="saas-action-btn notif-wrap" title="Notifications" onClick={() => { setNotifOpen(!notifOpen); if (!notifOpen) markNotificationsRead(); }}>
                 <Bell size={18} />
                 {notifications.length > 0 && <span className="saas-dot notif-count">{notifications.length}</span>}

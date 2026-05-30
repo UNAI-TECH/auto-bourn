@@ -28,7 +28,7 @@ export default function CarsPage() {
 
   const fetchCars = useCallback(async () => {
     setLoading(true);
-    let query = supabase.from('cars').select('*, employee:employees(name, employee_id)', { count: 'exact' });
+    let query = supabase.from('cars').select('*, employee:employees!employee_id(name, employee_id)', { count: 'exact' });
     if (search) query = query.or(`brand.ilike.%${search}%,model.ilike.%${search}%`);
     if (statusFilter !== 'all') query = query.eq('status', statusFilter);
     if (brandFilter) query = query.eq('brand', brandFilter);
@@ -40,6 +40,9 @@ export default function CarsPage() {
   }, [search, statusFilter, brandFilter, page]);
 
   useEffect(() => { fetchCars(); }, [fetchCars]);
+
+  // Reset to page 0 whenever filters change
+  useEffect(() => { setPage(0); }, [search, statusFilter, brandFilter]);
 
   useEffect(() => {
     const fetchBrands = async () => {
@@ -90,15 +93,15 @@ export default function CarsPage() {
       </div>
 
       <div className="car-filters">
-        <div className="db-search-inline"><Search size={16} /><input placeholder="Search brand, model..." value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} /></div>
+        <div className="db-search-inline"><Search size={16} /><input placeholder="Search brand, model..." value={search} onChange={e => setSearch(e.target.value)} /></div>
         <div className="car-filter-group">
           <div className="car-select-wrap"><Filter size={14} />
-            <select value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(0); }}>
+            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
               <option value="all">All Status</option><option value="available">Available</option><option value="sold">Sold</option><option value="reserved">Reserved</option>
             </select>
           </div>
           <div className="car-select-wrap">
-            <select value={brandFilter} onChange={e => { setBrandFilter(e.target.value); setPage(0); }}>
+            <select value={brandFilter} onChange={e => setBrandFilter(e.target.value)}>
               <option value="">All Brands</option>{brands.map(b => <option key={b} value={b}>{b}</option>)}
             </select>
           </div>

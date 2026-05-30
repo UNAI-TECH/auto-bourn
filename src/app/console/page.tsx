@@ -117,14 +117,14 @@ export default function EmployeeConsolePage() {
             <Image src="/logo.jpg" alt="Auto Bourn Logo" width={56} height={56} style={{ objectFit: 'cover', borderRadius: '12px' }} />
           </div>
           <h2>AUTO BOURN</h2>
-          <p>Employee Management Console</p>
+          <p>Management Portal</p>
 
           <div className="console-features">
             {[
+              { icon: '🛡️', text: 'Admin: full dashboard access' },
               { icon: '🚗', text: 'Upload & manage car listings' },
               { icon: '✅', text: 'Mark cars as sold or available' },
-              { icon: '📊', text: 'Track your upload activity' },
-              { icon: '📸', text: 'Upload multiple car images' },
+              { icon: '📊', text: 'Track upload activity & reports' },
             ].map((f, i) => (
               <motion.div
                 key={i}
@@ -152,10 +152,10 @@ export default function EmployeeConsolePage() {
           <div className="console-header">
             <div className="console-badge">
               <BadgeCheck size={13} />
-              <span>EMPLOYEE CONSOLE</span>
+              <span>AUTO BOURN PORTAL</span>
             </div>
             <h1>Welcome Back</h1>
-            <p>Sign in with your Employee ID or email</p>
+            <p>Sign in with your ID or email address</p>
           </div>
 
           <form onSubmit={handleLogin}>

@@ -30,7 +30,7 @@ export default function UploadsPage() {
     const fetch = async () => {
       const { data: cars } = await supabase
         .from('cars')
-        .select('id, brand, model, variant, created_at, updated_at, sold_at, status, thumbnail, employee:employees(name, employee_id)')
+        .select('id, brand, model, variant, created_at, updated_at, sold_at, status, thumbnail, employee:employees!employee_id(name, employee_id)')
         .order('created_at', { ascending: false });
 
       if (cars) {

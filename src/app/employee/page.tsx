@@ -267,7 +267,12 @@ export default function EmployeeDashboard() {
           <div className="crextio-card shortcut-card">
             <h3>Quick Actions</h3>
             <div className="shortcut-buttons">
-              <Link href="/employee/upload" className="shortcut-btn primary">
+              <Link href="/employee/customer-details" className="shortcut-btn primary">
+                <FileText size={16} />
+                <span>Customer Details Form</span>
+                <ArrowRight size={14} className="arrow" />
+              </Link>
+              <Link href="/employee/upload" className="shortcut-btn secondary">
                 <Upload size={16} />
                 <span>Upload New Car</span>
                 <ArrowRight size={14} className="arrow" />

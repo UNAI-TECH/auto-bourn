@@ -31,17 +31,11 @@ export async function updateSession(request: NextRequest) {
 
   // ── 1. Unauthenticated user hitting protected routes ───────────────────────
   if (!user) {
-    if (isProtectedDashboard) {
-      const url = request.nextUrl.clone();
-      url.pathname = '/admin';
-      return NextResponse.redirect(url);
-    }
-    if (isProtectedEmployee) {
+    if (isProtectedDashboard || isProtectedEmployee) {
       const url = request.nextUrl.clone();
       url.pathname = '/console';
       return NextResponse.redirect(url);
     }
-    // /admin and /console are public login pages — let them render
     return supabaseResponse;
   }
 
@@ -56,14 +50,14 @@ export async function updateSession(request: NextRequest) {
   if (employee?.status === 'suspended' || employee?.status === 'inactive') {
     await supabase.auth.signOut();
     const url = request.nextUrl.clone();
-    url.pathname = employee?.role === 'admin' ? '/admin' : '/console';
+    url.pathname = '/console';
     return NextResponse.redirect(url);
   }
 
-  // ── 3. Logged-in admin visiting /admin or /console → go to dashboard ────────
-  if (pathname === '/admin' && employee?.role === 'admin') {
+  // ── 3. Any authenticated user visiting /admin → redirect to right place ─────
+  if (pathname === '/admin' || pathname === '/console') {
     const url = request.nextUrl.clone();
-    url.pathname = '/dashboard';
+    url.pathname = employee?.role === 'admin' ? '/dashboard' : '/employee';
     return NextResponse.redirect(url);
   }
 
