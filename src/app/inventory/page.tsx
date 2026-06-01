@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useMemo, Suspense } from 'react';
+import { useState, useMemo, Suspense, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { vehicles, brands } from '@/data/vehicles';
+import { Vehicle, brands } from '@/data/vehicles';
 import VehicleCard from '@/components/VehicleCard';
+import { fetchDbVehicles } from '@/lib/supabase/vehicles';
 
 const ITEMS_PER_PAGE = 6;
 
@@ -12,6 +13,8 @@ function InventoryContent() {
   const searchParams = useSearchParams();
   const initialBrand = searchParams.get('brand') || 'all';
 
+  const [vehiclesList, setVehiclesList] = useState<Vehicle[]>([]);
+  const [loading, setLoading] = useState(true);
   const [brandFilter, setBrandFilter] = useState(initialBrand);
   const [bodyFilter, setBodyFilter] = useState('all');
   const [fuelFilter, setFuelFilter] = useState('all');
@@ -19,8 +22,17 @@ function InventoryContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
+  useEffect(() => {
+    async function load() {
+      const data = await fetchDbVehicles();
+      setVehiclesList(data);
+      setLoading(false);
+    }
+    load();
+  }, []);
+
   const filtered = useMemo(() => {
-    let result = [...vehicles];
+    let result = [...vehiclesList];
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(v =>
@@ -41,7 +53,7 @@ function InventoryContent() {
       default: result.sort((a, b) => (b.recentlyAdded ? 1 : 0) - (a.recentlyAdded ? 1 : 0));
     }
     return result;
-  }, [brandFilter, bodyFilter, fuelFilter, sortBy, searchQuery]);
+  }, [brandFilter, bodyFilter, fuelFilter, sortBy, searchQuery, vehiclesList]);
 
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
   const paginatedVehicles = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
@@ -153,7 +165,13 @@ function InventoryContent() {
       <section className="section" style={{ background: '#FFFFFF', paddingTop: '2rem' }}>
         <div className="container">
           <AnimatePresence mode="wait">
-            {paginatedVehicles.length > 0 ? (
+            {loading ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'clamp(1.5rem, 2vw, 2rem)' }}>
+                {Array(6).fill(0).map((_, i) => (
+                  <div key={i} className="shimmer" style={{ height: '380px', borderRadius: '16px' }} />
+                ))}
+              </div>
+            ) : paginatedVehicles.length > 0 ? (
               <motion.div
                 key={`page-${currentPage}-${brandFilter}-${bodyFilter}-${fuelFilter}-${sortBy}-${searchQuery}`}
                 initial={{ opacity: 0, y: 20 }}

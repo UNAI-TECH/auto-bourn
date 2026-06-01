@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useEmpContext } from '../layout';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Edit, Trash2, Check, AlertCircle, X, Eye } from 'lucide-react';
+import { Search, Edit, Trash2, Check, AlertCircle, X, Eye, Upload, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { formatPrice, timeAgo } from '@/lib/utils';
 import type { Car } from '@/types/database';
+import ConfirmModal from '@/components/ConfirmModal';
 
 export default function MyCarsPage() {
   const { employee } = useEmpContext();
@@ -15,8 +16,38 @@ export default function MyCarsPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [editCar, setEditCar] = useState<Car | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+  
+  const [gallery, setGallery] = useState<{ id: string; image_url: string }[]>([]);
+  const [newThumbnail, setNewThumbnail] = useState<File | null>(null);
+  const [newThumbPreview, setNewThumbPreview] = useState('');
+  const [newGallery, setNewGallery] = useState<File[]>([]);
+  const [newGalleryPreviews, setNewGalleryPreviews] = useState<string[]>([]);
+  const [deletedImageIds, setDeletedImageIds] = useState<string[]>([]);
+  const [updatingImages, setUpdatingImages] = useState(false);
+
+  const thumbInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  
   const supabase = createClient();
+
+  useEffect(() => {
+    if (editCar) {
+      const fetchGallery = async () => {
+        const { data } = await supabase.from('car_images').select('id, image_url').eq('car_id', editCar.id).order('display_order', { ascending: true });
+        setGallery(data || []);
+      };
+      fetchGallery();
+      setNewThumbnail(null);
+      setNewThumbPreview('');
+      setNewGallery([]);
+      setNewGalleryPreviews([]);
+      setDeletedImageIds([]);
+    } else {
+      setGallery([]);
+    }
+  }, [editCar, supabase]);
 
   const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type }); setTimeout(() => setToast(null), 3000);
@@ -46,30 +77,95 @@ export default function MyCarsPage() {
     fetchCars();
   };
 
-  const deleteCar = async (id: string) => {
-    if (!confirm('Delete this car?')) return;
-    await supabase.from('cars').delete().eq('id', id);
+  const deleteCar = (id: string) => {
+    setDeleteTargetId(id);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTargetId) return;
+    await supabase.from('cars').delete().eq('id', deleteTargetId);
     if (employee) {
       await supabase.from('activity_logs').insert({
         employee_id: employee.id, action: 'delete', details: 'Deleted a car listing',
       });
     }
     showToast('Car deleted');
+    setDeleteTargetId(null);
     fetchCars();
+  };
+
+  const uploadFile = async (file: File, path: string) => {
+    const ext = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const fullPath = `${path}/${fileName}`;
+    const { error } = await supabase.storage.from('car-images').upload(fullPath, file);
+    if (error) throw error;
+    const { data } = supabase.storage.from('car-images').getPublicUrl(fullPath);
+    return data.publicUrl;
   };
 
   const saveEdit = async () => {
     if (!editCar || !employee) return;
-    const { id, employee: _, ...rest } = editCar;
-    void _;
-    await supabase.from('cars').update(rest).eq('id', id);
-    await supabase.from('activity_logs').insert({
-      employee_id: employee.id, action: 'edit',
-      details: `Edited ${editCar.brand} ${editCar.model}`,
-    });
-    showToast('Car updated');
-    setEditCar(null);
-    fetchCars();
+    setUpdatingImages(true);
+    try {
+      let finalThumbnail = editCar.thumbnail;
+
+      // 1. Upload new thumbnail if selected
+      if (newThumbnail) {
+        finalThumbnail = await uploadFile(newThumbnail, 'thumbnails');
+      }
+
+      // 2. Delete gallery images marked for deletion
+      if (deletedImageIds.length > 0) {
+        const { error: delError } = await supabase.from('car_images').delete().in('id', deletedImageIds);
+        if (delError) throw delError;
+      }
+
+      // 3. Upload new gallery images
+      if (newGallery.length > 0) {
+        const currentCount = gallery.length - deletedImageIds.length;
+        for (let i = 0; i < newGallery.length; i++) {
+          const url = await uploadFile(newGallery[i], `gallery/${editCar.id}`);
+          const { error: insError } = await supabase.from('car_images').insert({
+            car_id: editCar.id,
+            image_url: url,
+            display_order: currentCount + i
+          });
+          if (insError) throw insError;
+        }
+      }
+
+      // 4. Update the car document
+      const { id, created_at, sold_at, sold_by, featured, views, employee_id, ...rest } = editCar;
+      void created_at;
+      void sold_at;
+      void sold_by;
+      void featured;
+      void views;
+      void employee_id;
+
+      const { error: updateError } = await supabase.from('cars').update({
+        ...rest,
+        thumbnail: finalThumbnail
+      }).eq('id', id);
+      if (updateError) throw updateError;
+
+      // 5. Insert activity log
+      await supabase.from('activity_logs').insert({
+        employee_id: employee.id,
+        action: 'edit',
+        details: `Edited ${editCar.brand} ${editCar.model} details and images`,
+      });
+
+      showToast('Car updated successfully');
+      setEditCar(null);
+      fetchCars();
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to update car listing', 'error');
+    } finally {
+      setUpdatingImages(false);
+    }
   };
 
   const filtered = cars.filter(c => {
@@ -122,29 +218,140 @@ export default function MyCarsPage() {
       <AnimatePresence>
         {editCar && (
           <motion.div className="emp-modal-bg" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setEditCar(null)}>
-            <motion.div className="emp-modal car-edit-modal" initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} onClick={e => e.stopPropagation()}>
+            <motion.div className="emp-modal car-edit-modal" style={{ maxWidth: '800px' }} initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} onClick={e => e.stopPropagation()}>
               <div className="emp-modal-head"><h2>Edit Car</h2><button onClick={() => setEditCar(null)}><X size={20} /></button></div>
-              <div className="emp-form car-edit-form">
-                {[
-                  { k: 'brand', l: 'Brand' }, { k: 'model', l: 'Model' }, { k: 'variant', l: 'Variant' },
-                  { k: 'year', l: 'Year', t: 'number' }, { k: 'price', l: 'Price', t: 'number' },
-                  { k: 'fuel_type', l: 'Fuel Type' }, { k: 'transmission', l: 'Transmission' },
-                  { k: 'km_driven', l: 'KM Driven', t: 'number' }, { k: 'ownership', l: 'Ownership' },
-                  { k: 'color', l: 'Color' }, { k: 'location', l: 'Location' },
-                ].map(({ k, l, t }) => (
-                  <div className="emp-field" key={k}><label>{l}</label>
-                    <input type={t || 'text'} value={(editCar as unknown as Record<string, unknown>)[k] as string || ''} onChange={e => setEditCar({ ...editCar, [k]: t === 'number' ? +e.target.value : e.target.value })} />
+              <div className="emp-form car-edit-form" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', padding: '1.5rem' }}>
+                
+                {/* Left Column: Form Fields */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <h3 style={{ gridColumn: '1/-1', margin: '0 0 0.25rem 0', fontSize: '1rem', fontWeight: 700, color: 'var(--db-gold)' }}>Car Details</h3>
+                  {[
+                    { k: 'brand', l: 'Brand' }, { k: 'model', l: 'Model' }, { k: 'variant', l: 'Variant' },
+                    { k: 'year', l: 'Year', t: 'number' }, { k: 'price', l: 'Price', t: 'number' },
+                    { k: 'fuel_type', l: 'Fuel Type' }, { k: 'transmission', l: 'Transmission' },
+                    { k: 'km_driven', l: 'KM Driven', t: 'number' }, { k: 'ownership', l: 'Ownership' },
+                    { k: 'color', l: 'Color' }, { k: 'location', l: 'Location' },
+                  ].map(({ k, l, t }) => (
+                    <div className="emp-field" key={k}><label>{l}</label>
+                      <input type={t || 'text'} value={(editCar as unknown as Record<string, unknown>)[k] as string || ''} onChange={e => setEditCar({ ...editCar, [k]: t === 'number' ? +e.target.value : e.target.value })} />
+                    </div>
+                  ))}
+                  <div className="emp-field" style={{ gridColumn: '1/-1' }}><label>Description</label>
+                    <textarea value={editCar.description || ''} onChange={e => setEditCar({ ...editCar, description: e.target.value })} rows={3} />
                   </div>
-                ))}
-                <div className="emp-field" style={{ gridColumn: '1/-1' }}><label>Description</label>
-                  <textarea value={editCar.description || ''} onChange={e => setEditCar({ ...editCar, description: e.target.value })} rows={3} />
                 </div>
-                <button type="button" className="db-btn-gold emp-submit" style={{ gridColumn: '1/-1' }} onClick={saveEdit}>Save Changes</button>
+
+                {/* Right Column: Image Editing */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  <h3 style={{ margin: '0 0 0.25rem 0', fontSize: '1rem', fontWeight: 700, color: 'var(--db-gold)' }}>Images</h3>
+                  
+                  {/* Thumbnail */}
+                  <div className="emp-field">
+                    <label>Thumbnail Image</label>
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginTop: '0.25rem' }}>
+                      <div style={{ width: '100px', height: '100px', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--db-bd)', background: 'var(--db-sf2)', position: 'relative', flexShrink: 0 }}>
+                        {newThumbPreview ? (
+                          <img src={newThumbPreview} alt="Thumb Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : editCar.thumbnail ? (
+                          <img src={editCar.thumbnail} alt="Thumb" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: '0.75rem', color: 'var(--db-tx3)' }}>No Image</div>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <button type="button" className="db-btn-gold" style={{ padding: '0.5rem 1rem', fontSize: '0.75rem', borderRadius: '8px', width: 'fit-content' }} onClick={() => thumbInputRef.current?.click()}>
+                          <Upload size={14} /> Change Thumbnail
+                        </button>
+                        <input ref={thumbInputRef} type="file" accept="image/*" onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (file) { setNewThumbnail(file); setNewThumbPreview(URL.createObjectURL(file)); }
+                        }} hidden />
+                        {newThumbnail && <span style={{ fontSize: '0.7rem', color: 'var(--db-tx2)' }}>Selected: {newThumbnail.name}</span>}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Gallery */}
+                  <div className="emp-field" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <label>Gallery Images</label>
+                    
+                    {/* Grid for existing and new images */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(70px, 1fr))', gap: '0.5rem', minHeight: '60px', padding: '0.5rem', background: 'var(--db-sf2)', borderRadius: '12px', border: '1px solid var(--db-bd)' }}>
+                      {gallery.map(img => {
+                        const isDeleted = deletedImageIds.includes(img.id);
+                        if (isDeleted) return null;
+                        return (
+                          <div key={img.id} style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', aspectRatio: '1', border: '1px solid var(--db-bd)' }}>
+                            <img src={img.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <button
+                              type="button"
+                              onClick={() => setDeletedImageIds(prev => [...prev, img.id])}
+                              style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(239, 68, 68, 0.9)', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', padding: '4px', display: 'flex' }}
+                              title="Remove Image"
+                            >
+                              <X size={10} />
+                            </button>
+                          </div>
+                        );
+                      })}
+                      {newGalleryPreviews.map((p, i) => (
+                        <div key={i} style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', aspectRatio: '1', border: '1px solid var(--db-gold)' }}>
+                          <img src={p} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setNewGallery(prev => prev.filter((_, idx) => idx !== i));
+                              setNewGalleryPreviews(prev => prev.filter((_, idx) => idx !== i));
+                            }}
+                            style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(0, 0, 0, 0.7)', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', padding: '4px', display: 'flex' }}
+                          >
+                            <X size={10} />
+                          </button>
+                        </div>
+                      ))}
+                      {gallery.filter(g => !deletedImageIds.includes(g.id)).length === 0 && newGallery.length === 0 && (
+                        <div style={{ gridColumn: '1/-1', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '60px', fontSize: '0.75rem', color: 'var(--db-tx3)' }}>
+                          No gallery images.
+                        </div>
+                      )}
+                    </div>
+
+                    <button type="button" className="db-btn-gold" style={{ padding: '0.5rem 1rem', fontSize: '0.75rem', borderRadius: '8px', width: 'fit-content' }} onClick={() => galleryInputRef.current?.click()}>
+                      <ImageIcon size={14} /> Add Gallery Images
+                    </button>
+                    <input ref={galleryInputRef} type="file" accept="image/*" multiple onChange={e => {
+                      const files = Array.from(e.target.files || []);
+                      setNewGallery(prev => [...prev, ...files]);
+                      setNewGalleryPreviews(prev => [...prev, ...files.map(f => URL.createObjectURL(f))]);
+                    }} hidden />
+                  </div>
+                </div>
+
+                <button type="button" className="db-btn-gold emp-submit" style={{ gridColumn: '1/-1', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }} onClick={saveEdit} disabled={updatingImages}>
+                  {updatingImages ? (
+                    <>
+                      <Loader2 size={16} className="login-spinner" /> Saving Changes...
+                    </>
+                  ) : (
+                    'Save Changes'
+                  )}
+                </button>
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ConfirmModal
+        isOpen={!!deleteTargetId}
+        title="Delete Car"
+        message="Are you sure you want to delete this car listing permanently? This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setDeleteTargetId(null)}
+        isDanger={true}
+      />
 
       <AnimatePresence>{toast && <motion.div className={`db-toast ${toast.type}`} initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }}>{toast.type === 'success' ? <Check size={16} /> : <AlertCircle size={16} />}{toast.msg}</motion.div>}</AnimatePresence>
 

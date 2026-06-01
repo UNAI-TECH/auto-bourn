@@ -33,17 +33,42 @@ export default function AboutPage() {
       {/* Hero */}
       <section style={{ padding: 'clamp(3rem, 8vw, 6rem) 0', background: '#FFFFFF' }}>
         <div className="container">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}
-            style={{ maxWidth: '700px' }}>
-            <p className="text-overline" style={{ marginBottom: '0.75rem' }}>About Auto Bourn</p>
-            <h1 style={{ fontFamily: 'var(--font-primary)', fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: 800, color: '#2A2A2A', letterSpacing: '-0.04em', lineHeight: 1.05, marginBottom: '1.5rem' }}>
-              Redefining<br />Pre-Owned <span style={{ color: '#E10613' }}>Luxury</span>
-            </h1>
-            <p style={{ fontSize: 'clamp(1rem, 1.5vw, 1.125rem)', lineHeight: 1.8, color: '#4A4A4A' }}>
-              Auto Bourn was founded with a singular vision — to transform the pre-owned luxury car experience in India. 
-              We believe every premium vehicle deserves to be presented, sold, and owned with the same reverence as when it first left the showroom.
-            </p>
-          </motion.div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'clamp(2rem, 6vw, 4rem)', alignItems: 'center' }}>
+            {/* Text - Left */}
+            <motion.div initial={{ opacity: 0, x: -40 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+              style={{ maxWidth: '600px' }}>
+              <p className="text-overline" style={{ marginBottom: '0.75rem' }}>About Auto Bourn</p>
+              <h1 style={{ fontFamily: 'var(--font-primary)', fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: 800, color: '#2A2A2A', letterSpacing: '-0.04em', lineHeight: 1.05, marginBottom: '1.5rem' }}>
+                Redefining<br />Pre-Owned <span style={{ color: '#E10613' }}>Luxury</span>
+              </h1>
+              <p style={{ fontSize: 'clamp(1rem, 1.5vw, 1.125rem)', lineHeight: 1.8, color: '#4A4A4A' }}>
+                Auto Bourn was founded with a singular vision — to transform the pre-owned luxury car experience in India. 
+                We believe every premium vehicle deserves to be presented, sold, and owned with the same reverence as when it first left the showroom.
+              </p>
+            </motion.div>
+            {/* Car Image - Right */}
+            <motion.div
+              initial={{ opacity: 0, x: 40 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.9, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <div style={{
+                position: 'relative', width: '100%', aspectRatio: '4/3',
+                borderRadius: '24px', overflow: 'hidden',
+                boxShadow: '0 20px 50px rgba(0,0,0,0.10)',
+                border: '1px solid #ECECEC',
+              }}>
+                <Image
+                  src="/carrr.jpg"
+                  alt="Auto Bourn Premium Vehicle"
+                  fill
+                  style={{ objectFit: 'cover', objectPosition: 'center' }}
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  priority
+                />
+              </div>
+            </motion.div>
+          </div>
         </div>
       </section>
 

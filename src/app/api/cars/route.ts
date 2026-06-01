@@ -1,10 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createServiceRoleClient } from '@/lib/supabase/server';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await createServiceRoleClient();
     const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (id) {
+      const { data: car, error } = await supabase
+        .from('cars')
+        .select('*, car_images(image_url, display_order), employee:employees!employee_id(name, employee_id)')
+        .eq('id', id)
+        .single();
+
+      if (error || !car) {
+        return NextResponse.json({ error: error?.message || 'Car not found' }, { status: 404 });
+      }
+      return NextResponse.json({ car });
+    }
+
     const brand = searchParams.get('brand');
     const status = searchParams.get('status') || 'available';
     const featured = searchParams.get('featured');
@@ -14,7 +29,7 @@ export async function GET(request: NextRequest) {
     const order = searchParams.get('order') || 'desc';
 
     let query = supabase.from('cars')
-      .select('*, car_images(image_url, display_order)', { count: 'exact' })
+      .select('*, car_images(image_url, display_order), employee:employees!employee_id(name, employee_id)', { count: 'exact' })
       .eq('status', status);
 
     if (brand) query = query.eq('brand', brand);
@@ -27,7 +42,8 @@ export async function GET(request: NextRequest) {
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     return NextResponse.json({ cars: data, total: count });
-  } catch {
+  } catch (err: any) {
+    console.error('API Error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

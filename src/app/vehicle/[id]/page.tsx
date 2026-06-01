@@ -4,19 +4,45 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { vehicles, formatPrice, formatMileage } from '@/data/vehicles';
-import { useWishlist } from '@/context/WishlistContext';
-import { useState } from 'react';
+import { Vehicle, formatPrice, formatMileage } from '@/data/vehicles';
+import { useState, useEffect } from 'react';
+import { fetchDbVehicleById, fetchDbVehicles } from '@/lib/supabase/vehicles';
 
 export default function VehicleDetailPage() {
   const params = useParams();
-  const vehicle = vehicles.find(v => v.id === params.id);
+  const [vehicle, setVehicle] = useState<Vehicle | null>(null);
+  const [similar, setSimilar] = useState<Vehicle[]>([]);
+  const [loading, setLoading] = useState(true);
   const [emiMonths, setEmiMonths] = useState(60);
   const [downPayment, setDownPayment] = useState(20);
   const [activeImg, setActiveImg] = useState(0);
   const [lightbox, setLightbox] = useState(false);
   const [formSent, setFormSent] = useState(false);
-  const { toggleWishlist, isWishlisted, toggleCompare, isComparing } = useWishlist();
+
+
+  useEffect(() => {
+    async function load() {
+      if (!params?.id) return;
+      const data = await fetchDbVehicleById(params.id as string);
+      setVehicle(data);
+      if (data) {
+        const allDb = await fetchDbVehicles();
+        const sim = allDb.filter(v => v.id !== data.id && v.bodyType === data.bodyType).slice(0, 3);
+        setSimilar(sim);
+      }
+      setLoading(false);
+    }
+    load();
+  }, [params?.id]);
+
+  if (loading) {
+    return (
+      <div className="container" style={{ textAlign: 'center', padding: '8rem 0' }}>
+        <div className="shimmer" style={{ width: '200px', height: '24px', borderRadius: '8px', margin: '0 auto 1rem' }} />
+        <div className="shimmer" style={{ width: '300px', height: '16px', borderRadius: '8px', margin: '0 auto' }} />
+      </div>
+    );
+  }
 
   if (!vehicle) {
     return (
@@ -28,12 +54,9 @@ export default function VehicleDetailPage() {
     );
   }
 
-  const wishlisted = isWishlisted(vehicle.id);
-  const comparing = isComparing(vehicle.id);
   const loanAmount = vehicle.price * (1 - downPayment / 100);
   const rate = 8.5 / 12 / 100;
   const emi = Math.round(loanAmount * rate * Math.pow(1 + rate, emiMonths) / (Math.pow(1 + rate, emiMonths) - 1));
-  const similar = vehicles.filter(v => v.id !== vehicle.id && v.bodyType === vehicle.bodyType).slice(0, 3);
   const whatsappMsg = encodeURIComponent(`Hi Auto Bourn, I'm interested in the ${vehicle.year} ${vehicle.brand} ${vehicle.model} ${vehicle.variant} (${formatPrice(vehicle.price)}). Please share more details.`);
 
   return (
@@ -93,17 +116,10 @@ export default function VehicleDetailPage() {
             <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8, delay: 0.2 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
                 <p className="text-overline">{vehicle.brand}</p>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button onClick={() => toggleWishlist(vehicle.id)} title="Wishlist" style={{ width: '40px', height: '40px', borderRadius: '50%', background: wishlisted ? 'rgba(225,6,19,0.08)' : '#F5F5F5', border: '1px solid ' + (wishlisted ? '#E10613' : '#ECECEC'), cursor: 'pointer', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
-                    {wishlisted ? '❤️' : '🤍'}
-                  </button>
-                  <button onClick={() => toggleCompare(vehicle.id)} title="Compare" style={{ width: '40px', height: '40px', borderRadius: '50%', background: comparing ? '#E10613' : '#F5F5F5', border: '1px solid ' + (comparing ? '#E10613' : '#ECECEC'), cursor: 'pointer', fontSize: '0.875rem', display: 'flex', alignItems: 'center', justifyContent: 'center', color: comparing ? '#fff' : '#8A8A8A', transition: 'all 0.3s' }}>
-                    ⚖️
-                  </button>
-                </div>
               </div>
               <h1 style={{ fontFamily: 'var(--font-primary)', fontSize: 'clamp(2rem, 3.5vw, 3rem)', fontWeight: 700, color: '#2A2A2A', letterSpacing: '-0.03em', marginBottom: '0.25rem' }}>{vehicle.model}</h1>
-              <p style={{ fontSize: '1rem', color: '#8A8A8A', marginBottom: '1.5rem' }}>{vehicle.variant} · {vehicle.year}</p>
+              <p style={{ fontSize: '1rem', color: '#8A8A8A', marginBottom: '0.75rem' }}>{vehicle.variant} · {vehicle.year}</p>
+
 
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '1rem', marginBottom: '2rem' }}>
                 <p style={{ fontFamily: 'var(--font-primary)', fontSize: '2rem', fontWeight: 700, color: '#2A2A2A' }}>{formatPrice(vehicle.price)}</p>

@@ -4,7 +4,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Vehicle, formatPrice, formatMileage } from '@/data/vehicles';
-import { useWishlist } from '@/context/WishlistContext';
 
 interface VehicleCardProps {
   vehicle: Vehicle;
@@ -12,9 +11,6 @@ interface VehicleCardProps {
 }
 
 export default function VehicleCard({ vehicle, index = 0 }: VehicleCardProps) {
-  const { toggleWishlist, isWishlisted, toggleCompare, isComparing } = useWishlist();
-  const wishlisted = isWishlisted(vehicle.id);
-  const comparing = isComparing(vehicle.id);
 
   return (
     <motion.div
@@ -45,48 +41,6 @@ export default function VehicleCard({ vehicle, index = 0 }: VehicleCardProps) {
               zIndex: 2,
             }}>{vehicle.tags[0]}</span>
           )}
-          {/* Action Buttons */}
-          <div style={{
-            position: 'absolute', top: '10px', right: '10px',
-            display: 'flex', flexDirection: 'column', gap: '6px', zIndex: 2,
-          }}>
-            <button
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(vehicle.id); }}
-              title={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
-              style={{
-                width: '36px', height: '36px', borderRadius: '50%',
-                background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)',
-                border: 'none', cursor: 'pointer', display: 'flex',
-                alignItems: 'center', justifyContent: 'center',
-                fontSize: '1rem', transition: 'all 0.3s ease',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                color: wishlisted ? '#E10613' : '#B0B0B0',
-              }}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill={wishlisted ? '#E10613' : 'none'} stroke={wishlisted ? '#E10613' : '#B0B0B0'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-              </svg>
-            </button>
-            <button
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleCompare(vehicle.id); }}
-              title={comparing ? 'Remove from compare' : 'Add to compare'}
-              style={{
-                width: '36px', height: '36px', borderRadius: '50%',
-                background: comparing ? '#E10613' : 'rgba(255,255,255,0.9)',
-                backdropFilter: 'blur(10px)',
-                border: 'none', cursor: 'pointer', display: 'flex',
-                alignItems: 'center', justifyContent: 'center',
-                fontSize: '0.75rem', fontWeight: 700, transition: 'all 0.3s ease',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                color: comparing ? '#fff' : '#8A8A8A',
-                fontFamily: 'var(--font-secondary)',
-              }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={comparing ? '#fff' : '#8A8A8A'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
-              </svg>
-            </button>
-          </div>
           {/* Savings Badge */}
           {vehicle.originalPrice && (
             <div style={{

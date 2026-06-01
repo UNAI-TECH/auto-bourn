@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error || !data) {
+      console.error('API Resolve supabase error:', error);
       return NextResponse.json({ error: 'Employee ID not found' }, { status: 404 });
     }
 

@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { UserPlus, Search, MoreVertical, X, Shield, Ban, RotateCcw, Trash2, Key, Check, AlertCircle, Copy, CheckCheck } from 'lucide-react';
 import { formatDate, timeAgo, generateEmployeeId } from '@/lib/utils';
 import type { Employee } from '@/types/database';
+import ConfirmModal from '@/components/ConfirmModal';
 
 interface CredentialsModal {
   name: string;
@@ -21,6 +22,7 @@ export default function EmployeesPage() {
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', employee_id: generateEmployeeId() });
   const [submitting, setSubmitting] = useState(false);
@@ -97,11 +99,16 @@ export default function EmployeesPage() {
     setMenuOpen(null);
   };
 
-  const removeEmployee = async (id: string) => {
-    if (!confirm('Are you sure you want to remove this employee?')) return;
-    await supabase.from('employees').delete().eq('id', id);
-    showToast('Employee removed');
+  const removeEmployee = (id: string) => {
+    setDeleteTargetId(id);
     setMenuOpen(null);
+  };
+
+  const handleRemoveConfirm = async () => {
+    if (!deleteTargetId) return;
+    await supabase.from('employees').delete().eq('id', deleteTargetId);
+    showToast('Employee removed');
+    setDeleteTargetId(null);
     fetchEmployees();
   };
 
@@ -256,6 +263,17 @@ export default function EmployeesPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ConfirmModal
+        isOpen={!!deleteTargetId}
+        title="Remove Employee"
+        message="Are you sure you want to remove this employee? This will permanently delete their account and logs."
+        confirmLabel="Remove"
+        cancelLabel="Cancel"
+        onConfirm={handleRemoveConfirm}
+        onCancel={() => setDeleteTargetId(null)}
+        isDanger={true}
+      />
 
       {/* Toast */}
       <AnimatePresence>

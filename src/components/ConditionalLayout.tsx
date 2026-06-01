@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import ClientProviders from '@/components/ClientProviders';
+import FloatingIcons from '@/components/FloatingIcons';
 
 export default function ConditionalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -23,6 +24,7 @@ export default function ConditionalLayout({ children }: { children: React.ReactN
         {children}
       </main>
       <Footer />
+      <FloatingIcons />
     </ClientProviders>
   );
 }
