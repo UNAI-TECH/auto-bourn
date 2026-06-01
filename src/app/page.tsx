@@ -194,29 +194,29 @@ export default function HomePage() {
 
 
       {/* ═══ FEATURED INVENTORY ═══ */}
-      <section ref={section2.ref} className="section" style={{ background: '#FFFFFF' }}>
-        <div className="container">
-          <motion.div initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}
-            style={{ textAlign: 'center', marginBottom: 'clamp(3rem, 5vw, 4rem)' }}>
-            <p className="text-overline" style={{ marginBottom: '0.75rem' }}>Featured Collection</p>
-            <h2 className="headline-section">Handpicked Luxury</h2>
-          </motion.div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'clamp(1.5rem, 2vw, 2rem)' }}>
-            {loading ? (
-              Array(4).fill(0).map((_, i) => (
-                <div key={i} className="shimmer" style={{ height: '380px', borderRadius: '16px' }} />
-              ))
-            ) : featuredVehicles.length === 0 ? (
-              <p style={{ textAlign: 'center', gridColumn: '1/-1', color: '#8A8A8A', padding: '2rem 0' }}>No featured vehicles available.</p>
-            ) : (
-              featuredVehicles.map((v, i) => <VehicleCard key={v.id} vehicle={v} index={i} />)
-            )}
+      {(loading || featuredVehicles.length > 0) && (
+        <section ref={section2.ref} className="section" style={{ background: '#FFFFFF' }}>
+          <div className="container">
+            <motion.div initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}
+              style={{ textAlign: 'center', marginBottom: 'clamp(3rem, 5vw, 4rem)' }}>
+              <p className="text-overline" style={{ marginBottom: '0.75rem' }}>Featured Collection</p>
+              <h2 className="headline-section">Handpicked Luxury</h2>
+            </motion.div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'clamp(1.5rem, 2vw, 2rem)' }}>
+              {loading ? (
+                Array(4).fill(0).map((_, i) => (
+                  <div key={i} className="shimmer" style={{ height: '380px', borderRadius: '16px' }} />
+                ))
+              ) : (
+                featuredVehicles.map((v, i) => <VehicleCard key={v.id} vehicle={v} index={i} />)
+              )}
+            </div>
+            <div style={{ textAlign: 'center', marginTop: '3rem' }}>
+              <Link href="/inventory" className="btn btn-secondary btn-lg" style={{ textDecoration: 'none' }}>View All Vehicles</Link>
+            </div>
           </div>
-          <div style={{ textAlign: 'center', marginTop: '3rem' }}>
-            <Link href="/inventory" className="btn btn-secondary btn-lg" style={{ textDecoration: 'none' }}>View All Vehicles</Link>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ═══ BRAND SHOWCASE — CAROUSEL ═══ */}
       <section ref={section3.ref} className="section" style={{ background: '#F5F5F5', overflow: 'hidden' }}>

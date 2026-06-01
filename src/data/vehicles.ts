@@ -358,7 +358,7 @@ export const testimonials: Testimonial[] = [
     name: 'Arjun Mehta',
     role: 'Investment Banker',
     avatar: '/testimonials/avatar3.jpg',
-    content: 'Finding a certified pre-owned Porsche with warranty was my priority. Auto Bourn delivered beyond expectations — transparent pricing, immaculate vehicle, seamless finance.',
+    content: 'Finding a certified pre-owned luxury SUV with warranty was my priority. Auto Bourn delivered beyond expectations — transparent pricing, immaculate vehicle, seamless finance.',
     rating: 5,
     vehicle: 'Audi Q7 55 TFSI'
   },
@@ -371,10 +371,37 @@ export const testimonials: Testimonial[] = [
     rating: 5,
     vehicle: 'Land Rover Defender 110'
   },
+  {
+    id: '5',
+    name: 'Vikram Malhotra',
+    role: 'Real Estate Developer',
+    avatar: '/testimonials/avatar1.jpg',
+    content: 'Purchasing my Audi A8 L from Auto Bourn was a breeze. Extremely professional staff, transparent history reports, and seamless delivery. Highly recommended for luxury car enthusiasts.',
+    rating: 5,
+    vehicle: 'Audi A8 L'
+  },
+  {
+    id: '6',
+    name: 'Dr. Sandeep Sen',
+    role: 'Cardiologist',
+    avatar: '/testimonials/avatar2.jpg',
+    content: 'The team at Auto Bourn went above and beyond to source the exact Mercedes-Benz E-Class configuration I wanted. The car drives like it just rolled out of the showroom.',
+    rating: 5,
+    vehicle: 'Mercedes-Benz E-Class'
+  },
+  {
+    id: '7',
+    name: 'Kavita Rao',
+    role: 'Executive VP',
+    avatar: '/testimonials/avatar3.jpg',
+    content: 'Auto Bourn makes luxury vehicle acquisition a seamless pleasure. Excellent finance assistance, zero-hassle documentation, and pristine-condition inventory.',
+    rating: 5,
+    vehicle: 'BMW 5 Series'
+  },
 ];
 
 export const statistics = [
-  { value: 500, suffix: '+', label: 'Luxury Vehicles Delivered' },
+  { value: 3000, suffix: '+', label: 'Luxury Vehicles Delivered' },
   { value: 98, suffix: '%', label: 'Customer Satisfaction' },
   { value: 150, suffix: 'Cr+', label: 'Finance Processed' },
   { value: 50, suffix: '+', label: 'Premium Brands' },

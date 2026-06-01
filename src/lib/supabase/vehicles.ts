@@ -9,9 +9,13 @@ export async function fetchDbVehicles(): Promise<Vehicle[]> {
     const cars = data.cars || [];
 
     return cars.map((car: any) => {
-      const images = car.car_images && car.car_images.length > 0
+      const rawImages = car.car_images && car.car_images.length > 0
         ? car.car_images.sort((a: any, b: any) => a.display_order - b.display_order).map((img: any) => img.image_url)
-        : [car.thumbnail || '/vehicles/placeholder.png'];
+        : [];
+
+      const images = car.thumbnail
+        ? [car.thumbnail, ...rawImages.filter((img: string) => img !== car.thumbnail)]
+        : (rawImages.length > 0 ? rawImages : ['/vehicles/placeholder.png']);
 
       return {
         id: car.id,
@@ -59,9 +63,13 @@ export async function fetchDbVehicleById(id: string): Promise<Vehicle | null> {
     const car = data.car;
     if (!car) return null;
 
-    const images = car.car_images && car.car_images.length > 0
+    const rawImages = car.car_images && car.car_images.length > 0
       ? car.car_images.sort((a: any, b: any) => a.display_order - b.display_order).map((img: any) => img.image_url)
-      : [car.thumbnail || '/vehicles/placeholder.png'];
+      : [];
+
+    const images = car.thumbnail
+      ? [car.thumbnail, ...rawImages.filter((img: string) => img !== car.thumbnail)]
+      : (rawImages.length > 0 ? rawImages : ['/vehicles/placeholder.png']);
 
     return {
       id: car.id,
