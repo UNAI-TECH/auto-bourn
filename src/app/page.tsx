@@ -315,24 +315,24 @@ export default function HomePage() {
       </section>
 
       {/* ═══ CTA BANNER ═══ */}
-      <section className="section" style={{ background: '#FFFFFF' }}>
+      <section className="section" style={{ background: '#FFFFFF', padding: 'clamp(4rem, 8vw, 6rem) 0' }}>
         <div className="container">
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
             style={{
-              textAlign: 'center', padding: 'clamp(3rem, 6vw, 5rem)',
-              background: 'linear-gradient(135deg, #FAFAFA 0%, #F5F5F5 100%)',
-              borderRadius: '24px', border: '1px solid #ECECEC',
+              textAlign: 'center',
+              maxWidth: '800px',
+              margin: '0 auto',
             }}
           >
-            <p className="text-overline" style={{ marginBottom: '1rem' }}>Ready to Begin?</p>
-            <h2 style={{ fontFamily: 'var(--font-primary)', fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 700, color: '#2A2A2A', marginBottom: '1rem', letterSpacing: '-0.03em' }}>
+            <p className="text-overline" style={{ marginBottom: '1rem', color: '#E10613', letterSpacing: '0.2em' }}>Ready to Begin?</p>
+            <h2 style={{ fontFamily: 'var(--font-primary)', fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: 800, color: '#2A2A2A', marginBottom: '1.5rem', letterSpacing: '-0.04em', lineHeight: 1.1 }}>
               Your Next Luxury Drive<br /><span style={{ color: '#E10613' }}>Starts Here</span>
             </h2>
-            <p style={{ fontSize: '1rem', color: '#8A8A8A', maxWidth: '500px', margin: '0 auto 2rem', lineHeight: 1.7 }}>
+            <p style={{ fontSize: 'clamp(1rem, 1.5vw, 1.125rem)', color: '#4A4A4A', maxWidth: '600px', margin: '0 auto 2.5rem', lineHeight: 1.7 }}>
               Schedule a private showing or browse our curated collection from the comfort of your home.
             </p>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
