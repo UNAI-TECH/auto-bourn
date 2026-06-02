@@ -151,8 +151,8 @@ export default function UploadCarPage() {
                 <option value="">Select Brand</option>{BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
               </select>
             </div>
-            <div className="emp-field"><label>Model *</label><input value={form.model} onChange={e => setField('model', e.target.value)} required placeholder="e.g. GLE 300d" /></div>
-            <div className="emp-field"><label>Variant</label><input value={form.variant} onChange={e => setField('variant', e.target.value)} placeholder="e.g. AMG Line" /></div>
+            <div className="emp-field"><label>Model *</label><input value={form.model} onChange={e => setField('model', e.target.value)} required /></div>
+            <div className="emp-field"><label>Variant</label><input value={form.variant} onChange={e => setField('variant', e.target.value)} /></div>
             <div className="emp-field"><label>Year *</label><input type="number" value={form.year} onChange={e => setField('year', +e.target.value)} min={2000} max={2030} required /></div>
             <div className="emp-field"><label>Body Type</label>
               <select value={form.body_type} onChange={e => setField('body_type', e.target.value)}>{BODY_TYPES.map(b => <option key={b}>{b}</option>)}</select>
@@ -167,21 +167,21 @@ export default function UploadCarPage() {
             <div className="emp-field"><label>Ownership</label>
               <select value={form.ownership} onChange={e => setField('ownership', e.target.value)}>{OWNERSHIPS.map(o => <option key={o}>{o}</option>)}</select>
             </div>
-            <div className="emp-field"><label>Price (₹) *</label><input type="number" value={form.price || ''} onChange={e => setField('price', +e.target.value)} min={0} required placeholder="e.g. 5800000" /></div>
+            <div className="emp-field"><label>Price (₹) *</label><input type="number" value={form.price || ''} onChange={e => setField('price', +e.target.value)} min={0} required /></div>
             <div className="emp-field"><label>Original Price (₹)</label><input type="number" value={form.original_price || ''} onChange={e => setField('original_price', +e.target.value)} min={0} /></div>
-            <div className="emp-field"><label>Color</label><input value={form.color} onChange={e => setField('color', e.target.value)} placeholder="e.g. Obsidian Black" /></div>
+            <div className="emp-field"><label>Color</label><input value={form.color} onChange={e => setField('color', e.target.value)} /></div>
             <div className="emp-field"><label>Interior Color</label><input value={form.interior_color} onChange={e => setField('interior_color', e.target.value)} /></div>
-            <div className="emp-field"><label>Engine</label><input value={form.engine} onChange={e => setField('engine', e.target.value)} placeholder="e.g. 2.0L Turbo" /></div>
+            <div className="emp-field"><label>Engine</label><input value={form.engine} onChange={e => setField('engine', e.target.value)} /></div>
             <div className="emp-field"><label>Horsepower</label><input type="number" value={form.horsepower || ''} onChange={e => setField('horsepower', +e.target.value)} /></div>
-            <div className="emp-field"><label>Registration</label><input value={form.registration_number} onChange={e => setField('registration_number', e.target.value)} placeholder="e.g. KA-01-XX-1234" /></div>
-            <div className="emp-field"><label>Insurance Validity</label><input value={form.insurance_validity} onChange={e => setField('insurance_validity', e.target.value)} placeholder="e.g. Dec 2026" /></div>
-            <div className="emp-field"><label>Location</label><input value={form.location} onChange={e => setField('location', e.target.value)} placeholder="e.g. Bangalore" /></div>
+            <div className="emp-field"><label>Registration</label><input value={form.registration_number} onChange={e => setField('registration_number', e.target.value)} /></div>
+            <div className="emp-field"><label>Insurance Validity</label><input value={form.insurance_validity} onChange={e => setField('insurance_validity', e.target.value)} /></div>
+            <div className="emp-field"><label>Location</label><input value={form.location} onChange={e => setField('location', e.target.value)} /></div>
           </div>
           <div className="emp-field" style={{ marginTop: '1rem' }}><label>Features (comma separated)</label>
-            <textarea value={form.features} onChange={e => setField('features', e.target.value)} rows={2} placeholder="Sunroof, Heated Seats, 360 Camera..." />
+            <textarea value={form.features} onChange={e => setField('features', e.target.value)} rows={2} />
           </div>
           <div className="emp-field" style={{ marginTop: '1rem' }}><label>Description</label>
-            <textarea value={form.description} onChange={e => setField('description', e.target.value)} rows={3} placeholder="Detailed description of the vehicle..." />
+            <textarea value={form.description} onChange={e => setField('description', e.target.value)} rows={3} />
           </div>
         </div>
 
@@ -221,37 +221,250 @@ export default function UploadCarPage() {
         )}
 
         <button type="submit" className="db-btn-gold upl-submit" disabled={uploading}>
-          {uploading ? <><Loader2 size={18} className="login-spinner" />Uploading...</> : <><Upload size={18} />Upload Car</>}
+          {uploading ? <><Loader2 size={18} className="login-spinner" />Uploading...</> : 'Upload Car'}
         </button>
       </form>
 
       <AnimatePresence>{toast && <motion.div className={`db-toast ${toast.type}`} initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }}>{toast.type === 'success' ? <Check size={16} /> : <AlertCircle size={16} />}{toast.msg}</motion.div>}</AnimatePresence>
 
-      <style jsx>{`
-.upl-form{display:flex;flex-direction:column;gap:1.5rem}
-.upl-section{background:var(--db-sf);border:1px solid var(--db-bd);border-radius:14px;padding:1.5rem}
-.upl-section-title{font-family:'Outfit',sans-serif;font-size:1.125rem;font-weight:600;margin:0 0 1.25rem;color:var(--db-gold)}
-.upl-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
-.upl-grid select,.upl-grid textarea,.emp-field textarea,.emp-field select{width:100%;padding:.75rem 1rem;background:var(--db-sf2);border:1px solid var(--db-bd);border-radius:10px;color:var(--db-tx);font-size:.875rem;font-family:inherit;outline:0;transition:border-color .2s;resize:vertical}
-.upl-grid select:focus,.upl-grid textarea:focus,.emp-field textarea:focus,.emp-field select:focus{border-color:var(--db-gold)}
-.upl-img-row{display:grid;grid-template-columns:200px 1fr;gap:1.5rem}
-.upl-thumb-area label,.upl-gallery-area label{display:block;font-size:.8125rem;font-weight:500;color:var(--db-tx2);margin-bottom:.5rem}
-.upl-thumb-box{width:200px;height:200px;border:2px dashed var(--db-bd);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem;cursor:pointer;color:var(--db-tx3);font-size:.8125rem;overflow:hidden;transition:border-color .2s}
-.upl-thumb-box:hover{border-color:var(--db-gold)}
-.upl-thumb-box img{width:100%;height:100%;object-fit:cover}
-.upl-dropzone{border:2px dashed var(--db-bd);border-radius:14px;padding:2rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem;cursor:pointer;color:var(--db-tx3);font-size:.8125rem;transition:border-color .2s;min-height:120px}
-.upl-dropzone:hover{border-color:var(--db-gold)}
-.upl-hint{font-size:.6875rem;opacity:.6}
-.upl-preview-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:.5rem;margin-top:.75rem}
-.upl-preview-item{position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1}
-.upl-preview-item img{width:100%;height:100%;object-fit:cover}
-.upl-preview-item button{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.7);border:0;color:#fff;padding:4px;border-radius:6px;cursor:pointer;display:flex}
-.upl-progress{background:var(--db-sf2);border-radius:10px;height:32px;overflow:hidden;position:relative;border:1px solid var(--db-bd)}
-.upl-progress-bar{height:100%;background:linear-gradient(90deg,#e10613,#c70511);border-radius:10px;transition:width .3s}
-.upl-progress span{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:.75rem;font-weight:600;color:var(--db-tx)}
-.upl-submit{width:100%;justify-content:center;padding:1rem;font-size:.9375rem}
-@media(max-width:768px){.upl-grid{grid-template-columns:1fr 1fr}.upl-img-row{grid-template-columns:1fr}}
-@media(max-width:480px){.upl-grid{grid-template-columns:1fr}}
+      <style jsx global>{`
+.upl-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.upl-section {
+  background: var(--db-sf);
+  border: 1px solid var(--db-bd);
+  border-radius: 16px;
+  padding: 1.75rem;
+  box-shadow: var(--card-shadow);
+}
+.upl-section-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 1.5rem;
+  color: #E10613; /* Use prominent brand red for section titles */
+  letter-spacing: -0.01em;
+}
+.upl-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+.emp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.emp-field label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--db-tx); /* Bold, dark text for maximum readability */
+  letter-spacing: -0.01em;
+}
+
+/* Beautiful Input Boxes */
+.upl-grid input,
+.upl-grid select,
+.upl-grid textarea,
+.emp-field input,
+.emp-field select,
+.emp-field textarea {
+  width: 100%;
+  padding: 0.85rem 1.1rem;
+  background: var(--db-sf2);
+  border: 1.5px solid var(--db-bd); /* Highly visible border */
+  border-radius: 12px;
+  color: var(--db-tx);
+  font-size: 0.9rem;
+  font-family: inherit;
+  outline: 0;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+.upl-grid input:focus,
+.upl-grid select:focus,
+.upl-grid textarea:focus,
+.emp-field input:focus,
+.emp-field select:focus,
+.emp-field textarea:focus {
+  border-color: #E10613; /* Highlight active border in brand red */
+  background: var(--db-sf);
+  box-shadow: 0 0 0 3px rgba(225, 6, 19, 0.08);
+}
+
+.upl-img-row {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 1.5rem;
+}
+.upl-thumb-area label,
+.upl-gallery-area label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--db-tx);
+  margin-bottom: 0.5rem;
+}
+.upl-thumb-box {
+  width: 220px;
+  height: 220px;
+  border: 2px dashed var(--db-bd);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  color: var(--db-tx3);
+  font-size: 0.8125rem;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  background: var(--db-sf2);
+}
+.upl-thumb-box:hover {
+  border-color: #E10613;
+  color: #E10613;
+}
+.upl-thumb-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.upl-dropzone {
+  border: 2px dashed var(--db-bd);
+  border-radius: 16px;
+  padding: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  color: var(--db-tx3);
+  font-size: 0.8125rem;
+  transition: all 0.2s ease;
+  min-height: 150px;
+  background: var(--db-sf2);
+}
+.upl-dropzone:hover {
+  border-color: #E10613;
+  color: #E10613;
+}
+.upl-hint {
+  font-size: 0.6875rem;
+  opacity: 0.6;
+}
+.upl-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+.upl-preview-item {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  aspect-ratio: 1;
+  border: 1px solid var(--db-bd);
+}
+.upl-preview-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.upl-preview-item button {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(0, 0, 0, 0.75);
+  border: 0;
+  color: #fff;
+  padding: 5px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  transition: background 0.2s;
+}
+.upl-preview-item button:hover {
+  background: #E10613;
+}
+.upl-progress {
+  background: var(--db-sf2);
+  border-radius: 10px;
+  height: 32px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid var(--db-bd);
+}
+.upl-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #e10613, #c70511);
+  border-radius: 10px;
+  transition: width 0.3s;
+}
+.upl-progress span {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--db-tx);
+}
+
+/* Red Upload Submit Button (No Icon) */
+.upl-submit {
+  width: 100%;
+  justify-content: center;
+  padding: 1rem 2rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  background: #E10613 !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 14px !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-shadow: 0 4px 14px rgba(225, 6, 19, 0.25) !important;
+}
+.upl-submit:hover:not(:disabled) {
+  background: #c70511 !important;
+  box-shadow: 0 6px 20px rgba(225, 6, 19, 0.35) !important;
+  transform: translateY(-1px);
+}
+.upl-submit:active:not(:disabled) {
+  transform: translateY(0);
+}
+.upl-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none !important;
+}
+
+@media(max-width: 992px) {
+  .upl-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media(max-width: 768px) {
+  .upl-img-row {
+    grid-template-columns: 1fr;
+  }
+  .upl-thumb-box {
+    width: 100%;
+  }
+}
+@media(max-width: 576px) {
+  .upl-grid {
+    grid-template-columns: 1fr;
+  }
+}
       `}</style>
     </div>
   );
