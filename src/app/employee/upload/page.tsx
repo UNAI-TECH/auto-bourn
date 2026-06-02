@@ -12,14 +12,32 @@ const TRANSMISSIONS = ['Automatic','Manual','CVT','DCT','AMT'];
 const BODY_TYPES = ['SUV','Sedan','Hatchback','Coupe','Convertible','MPV','Pickup'];
 const OWNERSHIPS = ['1st Owner','2nd Owner','3rd Owner','4th Owner+','Unregistered'];
 
+const YEARS = Array.from({ length: 28 }, (_, i) => String(new Date().getFullYear() + 1 - i)); // e.g. 2027 down to 2000
+
 const brandOptions = [
   { value: '', label: 'Select Brand' },
   ...BRANDS.map(b => ({ value: b, label: b }))
 ];
-const bodyTypeOptions = BODY_TYPES.map(b => ({ value: b, label: b }));
-const fuelTypeOptions = FUEL_TYPES.map(f => ({ value: f, label: f }));
-const transmissionOptions = TRANSMISSIONS.map(t => ({ value: t, label: t }));
-const ownershipOptions = OWNERSHIPS.map(o => ({ value: o, label: o }));
+const yearOptions = [
+  { value: '', label: 'Select Year' },
+  ...YEARS.map(y => ({ value: y, label: y }))
+];
+const bodyTypeOptions = [
+  { value: '', label: 'Select Body Type' },
+  ...BODY_TYPES.map(b => ({ value: b, label: b }))
+];
+const fuelTypeOptions = [
+  { value: '', label: 'Select Fuel Type' },
+  ...FUEL_TYPES.map(f => ({ value: f, label: f }))
+];
+const transmissionOptions = [
+  { value: '', label: 'Select Transmission' },
+  ...TRANSMISSIONS.map(t => ({ value: t, label: t }))
+];
+const ownershipOptions = [
+  { value: '', label: 'Select Ownership' },
+  ...OWNERSHIPS.map(o => ({ value: o, label: o }))
+];
 
 interface Option {
   value: string;
@@ -172,10 +190,10 @@ function CustomSelect({ options, value, onChange, placeholder }: CustomSelectPro
 export default function UploadCarPage() {
   const { employee } = useEmpContext();
   const [form, setForm] = useState({
-    brand: '', model: '', variant: '', year: new Date().getFullYear(), fuel_type: 'Petrol',
-    transmission: 'Automatic', km_driven: 0, ownership: '1st Owner', price: 0, original_price: 0,
+    brand: '', model: '', variant: '', year: '' as string | number, fuel_type: '',
+    transmission: '', km_driven: 0, ownership: '', price: 0, original_price: 0,
     description: '', features: '', insurance_validity: '', registration_number: '',
-    location: '', body_type: 'SUV', color: '', interior_color: '', engine: '', horsepower: 0,
+    location: '', body_type: '', color: '', interior_color: '', engine: '', horsepower: 0,
   });
   const [thumbnail, setThumbnail] = useState<File | null>(null);
   const [thumbPreview, setThumbPreview] = useState('');
@@ -228,7 +246,10 @@ export default function UploadCarPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!employee) return;
-    if (!form.brand || !form.model || !form.price) { showToast('Please fill required fields', 'error'); return; }
+    if (!form.brand || !form.model || !form.price || !form.year) {
+      showToast('Please fill required fields (Brand, Model, Year, Price)', 'error');
+      return;
+    }
 
     setUploading(true);
     setProgress(0);
@@ -246,14 +267,15 @@ export default function UploadCarPage() {
       }
 
       // Insert car
+      const parsedYear = typeof form.year === 'string' ? parseInt(form.year) : form.year;
       const { data: car, error: carError } = await supabase.from('cars').insert({
         employee_id: employee.id,
-        brand: form.brand, model: form.model, variant: form.variant, year: form.year,
-        fuel_type: form.fuel_type, transmission: form.transmission, km_driven: form.km_driven,
-        ownership: form.ownership, price: form.price, original_price: form.original_price || null,
+        brand: form.brand, model: form.model, variant: form.variant, year: parsedYear,
+        fuel_type: form.fuel_type || null, transmission: form.transmission || null, km_driven: form.km_driven,
+        ownership: form.ownership || null, price: form.price, original_price: form.original_price || null,
         description: form.description, features: form.features.split(',').map(f => f.trim()).filter(Boolean),
         insurance_validity: form.insurance_validity || null, registration_number: form.registration_number || null,
-        location: form.location || null, body_type: form.body_type, color: form.color || null,
+        location: form.location || null, body_type: form.body_type || null, color: form.color || null,
         interior_color: form.interior_color || null, engine: form.engine || null,
         horsepower: form.horsepower || null, thumbnail: thumbnailUrl, status: 'available',
       }).select().single();
@@ -281,7 +303,7 @@ export default function UploadCarPage() {
       showToast(`${form.brand} ${form.model} uploaded successfully!`);
 
       // Reset form
-      setForm({ brand: '', model: '', variant: '', year: new Date().getFullYear(), fuel_type: 'Petrol', transmission: 'Automatic', km_driven: 0, ownership: '1st Owner', price: 0, original_price: 0, description: '', features: '', insurance_validity: '', registration_number: '', location: '', body_type: 'SUV', color: '', interior_color: '', engine: '', horsepower: 0 });
+      setForm({ brand: '', model: '', variant: '', year: '', fuel_type: '', transmission: '', km_driven: 0, ownership: '', price: 0, original_price: 0, description: '', features: '', insurance_validity: '', registration_number: '', location: '', body_type: '', color: '', interior_color: '', engine: '', horsepower: 0 });
       setThumbnail(null); setThumbPreview(''); setGallery([]); setGalleryPreviews([]);
     } catch (err) {
       console.error(err);
@@ -313,7 +335,14 @@ export default function UploadCarPage() {
             </div>
             <div className="emp-field"><label>Model *</label><input value={form.model} onChange={e => setField('model', e.target.value)} required /></div>
             <div className="emp-field"><label>Variant</label><input value={form.variant} onChange={e => setField('variant', e.target.value)} /></div>
-            <div className="emp-field"><label>Year *</label><input type="number" value={form.year} onChange={e => setField('year', +e.target.value)} min={2000} max={2030} required /></div>
+            <div className="emp-field"><label>Year *</label>
+              <CustomSelect
+                options={yearOptions}
+                value={String(form.year)}
+                onChange={val => setField('year', val)}
+                placeholder="Select Year"
+              />
+            </div>
             <div className="emp-field"><label>Body Type</label>
               <CustomSelect
                 options={bodyTypeOptions}
