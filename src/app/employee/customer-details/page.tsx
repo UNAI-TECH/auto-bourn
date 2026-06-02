@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useEmpContext } from '../layout';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -20,6 +20,157 @@ interface CarItem {
 
 const BRANDS = ['Mercedes-Benz','BMW','Audi','Jaguar','Land Rover','Volvo','Lexus','Porsche','Toyota','Honda','Hyundai','Kia','Tata','Mahindra','Maruti Suzuki','Volkswagen','Skoda','MG','Other'];
 const TIMELINES = ['Within 1 week','1–2 weeks','1 month','1–3 months','3–6 months','6+ months'];
+
+interface Option {
+  value: string;
+  label: string;
+}
+
+interface CustomSelectProps {
+  options: Option[];
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  disabled?: boolean;
+}
+
+function CustomSelect({ options, value, onChange, placeholder, disabled = false }: CustomSelectProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find(opt => opt.value === value) || { label: placeholder, value };
+
+  return (
+    <div ref={containerRef} style={{ position: 'relative', width: '100%', fontFamily: 'inherit' }}>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0.75rem 1rem',
+          border: isOpen ? '1.5px solid #E10613' : '1.5px solid var(--emp-bd)',
+          borderRadius: '10px',
+          background: 'var(--emp-sf2, rgba(255,255,255,0.03))',
+          fontSize: '0.875rem',
+          color: 'var(--emp-tx)',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          opacity: disabled ? 0.5 : 1,
+          outline: 'none',
+          boxShadow: isOpen ? '0 4px 15px rgba(225,6,19,0.05)' : 'none',
+          transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+          boxSizing: 'border-box',
+          textAlign: 'left'
+        }}
+      >
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: '8px' }}>
+          {selectedOption.label}
+        </span>
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="var(--emp-tx2, #8A8A8A)"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{
+            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+            transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+            flexShrink: 0
+          }}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+
+      <AnimatePresence>
+        {isOpen && !disabled && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.2 }}
+            style={{
+              position: 'absolute',
+              top: 'calc(100% + 6px)',
+              left: 0,
+              right: 0,
+              background: 'var(--emp-sf, #FFFFFF)',
+              border: '1.5px solid var(--emp-bd)',
+              borderRadius: '10px',
+              boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
+              zIndex: 100,
+              maxHeight: '260px',
+              overflowY: 'auto',
+              padding: '6px',
+              boxSizing: 'border-box'
+            }}
+          >
+            {options.map((option) => {
+              const isSelected = option.value === value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => {
+                    onChange(option.value);
+                    setIsOpen(false);
+                  }}
+                  style={{
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '0.625rem 0.875rem',
+                    border: 'none',
+                    borderRadius: '6px',
+                    background: isSelected ? 'rgba(225,6,19,0.08)' : 'transparent',
+                    color: isSelected ? '#E10613' : 'var(--emp-tx)',
+                    fontSize: '0.8125rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    fontWeight: isSelected ? 700 : 500,
+                    outline: 'none',
+                    display: 'block',
+                    marginBottom: '2px',
+                    boxSizing: 'border-box'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.background = 'var(--emp-sf2, rgba(255,255,255,0.03))';
+                      e.currentTarget.style.color = '#E10613';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = 'var(--emp-tx)';
+                    }
+                  }}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 export default function CustomerDetailsPage() {
   const { employee } = useEmpContext();
@@ -48,6 +199,24 @@ export default function CustomerDetailsPage() {
 
   const [errorMsg, setErrorMsg] = useState('');
   const supabase = createClient();
+
+  const carOptions = [
+    { value: '', label: 'Select from here...' },
+    ...cars.map(c => ({
+      value: c.id,
+      label: `${c.brand} ${c.model} (${c.year}) — ₹${(c.price / 100000).toFixed(1)}L`
+    }))
+  ];
+
+  const brandOptions = [
+    { value: '', label: 'Select from here...' },
+    ...BRANDS.map(b => ({ value: b, label: b }))
+  ];
+
+  const timelineOptions = [
+    { value: '', label: 'Select from here...' },
+    ...TIMELINES.map(t => ({ value: t, label: t }))
+  ];
 
   useEffect(() => {
     const fetchAvailableCars = async () => {
@@ -222,7 +391,6 @@ export default function CustomerDetailsPage() {
                   <input 
                     type="text" 
                     required 
-                    placeholder="Enter customer name" 
                     value={form.customer_name}
                     onChange={e => setForm(f => ({ ...f, customer_name: e.target.value }))}
                   />
@@ -233,7 +401,6 @@ export default function CustomerDetailsPage() {
                   <input 
                     type="tel" 
                     required 
-                    placeholder="Enter 10-digit phone" 
                     value={form.phone}
                     onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
                   />
@@ -255,7 +422,6 @@ export default function CustomerDetailsPage() {
                   <input 
                     type="tel" 
                     disabled={form.sameAsPhone}
-                    placeholder="WhatsApp number" 
                     value={form.sameAsPhone ? form.phone : form.whatsapp}
                     onChange={e => setForm(f => ({ ...f, whatsapp: e.target.value }))}
                   />
@@ -265,7 +431,6 @@ export default function CustomerDetailsPage() {
                   <label>Email Address</label>
                   <input 
                     type="email" 
-                    placeholder="customer@email.com" 
                     value={form.email}
                     onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                   />
@@ -277,25 +442,19 @@ export default function CustomerDetailsPage() {
               <div className="form-row">
                 <div className="form-group">
                   <label><Car size={14} /> Interested Car (From Inventory)</label>
-                  <select 
+                  <CustomSelect
+                    options={carOptions}
                     value={form.interested_car_id}
-                    onChange={e => handleCarChange(e.target.value)}
+                    onChange={handleCarChange}
+                    placeholder="Select from here..."
                     disabled={loadingCars}
-                  >
-                    <option value="">-- Choose available vehicle --</option>
-                    {cars.map(c => (
-                      <option key={c.id} value={c.id}>
-                        {c.brand} {c.model} ({c.year}) — ₹{(c.price / 100000).toFixed(1)}L
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
 
                 <div className="form-group">
                   <label>Or Type Car Name Manually</label>
                   <input 
                     type="text" 
-                    placeholder="e.g. BMW 5 Series 530d" 
                     value={form.interested_car_manual}
                     onChange={e => setForm(f => ({ ...f, interested_car_manual: e.target.value, interested_car_id: '' }))}
                   />
@@ -305,22 +464,18 @@ export default function CustomerDetailsPage() {
               <div className="form-row">
                 <div className="form-group">
                   <label>Preferred Brand</label>
-                  <select 
+                  <CustomSelect
+                    options={brandOptions}
                     value={form.preferred_brand}
-                    onChange={e => setForm(f => ({ ...f, preferred_brand: e.target.value }))}
-                  >
-                    <option value="">Select brand</option>
-                    {BRANDS.map(b => (
-                      <option key={b} value={b}>{b}</option>
-                    ))}
-                  </select>
+                    onChange={val => setForm(f => ({ ...f, preferred_brand: val }))}
+                    placeholder="Select from here..."
+                  />
                 </div>
 
                 <div className="form-group">
                   <label><DollarSign size={14} /> Budget Range (₹ in Rupees)</label>
                   <input 
                     type="number" 
-                    placeholder="Enter maximum budget" 
                     value={form.budget}
                     onChange={e => setForm(f => ({ ...f, budget: e.target.value }))}
                   />
@@ -330,22 +485,18 @@ export default function CustomerDetailsPage() {
               <div className="form-row">
                 <div className="form-group">
                   <label><Calendar size={14} /> Purchase Timeline</label>
-                  <select 
+                  <CustomSelect
+                    options={timelineOptions}
                     value={form.purchase_timeline}
-                    onChange={e => setForm(f => ({ ...f, purchase_timeline: e.target.value }))}
-                  >
-                    <option value="">Choose timeline</option>
-                    {TIMELINES.map(t => (
-                      <option key={t} value={t}>{t}</option>
-                    ))}
-                  </select>
+                    onChange={val => setForm(f => ({ ...f, purchase_timeline: val }))}
+                    placeholder="Select from here..."
+                  />
                 </div>
 
                 <div className="form-group">
                   <label><Briefcase size={14} /> Customer Occupation</label>
                   <input 
                     type="text" 
-                    placeholder="e.g. Business Owner, Doctor" 
                     value={form.occupation}
                     onChange={e => setForm(f => ({ ...f, occupation: e.target.value }))}
                   />
@@ -357,7 +508,6 @@ export default function CustomerDetailsPage() {
                   <label>City</label>
                   <input 
                     type="text" 
-                    placeholder="Enter city" 
                     value={form.city}
                     onChange={e => setForm(f => ({ ...f, city: e.target.value }))}
                   />
@@ -367,7 +517,6 @@ export default function CustomerDetailsPage() {
                   <label>State</label>
                   <input 
                     type="text" 
-                    placeholder="Enter state" 
                     value={form.state}
                     onChange={e => setForm(f => ({ ...f, state: e.target.value }))}
                   />
@@ -378,7 +527,6 @@ export default function CustomerDetailsPage() {
                 <label>Requirements & Notes</label>
                 <textarea 
                   rows={3} 
-                  placeholder="Enter initial discussion notes, trade-in details or custom demands"
                   value={form.notes}
                   onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                 />
@@ -390,7 +538,6 @@ export default function CustomerDetailsPage() {
                 disabled={saving}
               >
                 {saving ? 'Creating Lead...' : 'Submit & Save Lead'}
-                <Plus size={16} style={{ marginLeft: '4px' }} />
               </button>
             </form>
           </motion.div>
@@ -486,7 +633,7 @@ export default function CustomerDetailsPage() {
         }
         .form-group label {
           font-size: 0.8125rem;
-          font-weight: 600;
+          font-weight: 700;
           color: var(--emp-tx);
           display: flex;
           align-items: center;
@@ -504,7 +651,7 @@ export default function CustomerDetailsPage() {
           display: flex;
           align-items: center;
           gap: 4px !important;
-          font-weight: 400 !important;
+          font-weight: 700 !important;
         }
         .toggle-label input {
           cursor: pointer;
@@ -516,19 +663,20 @@ export default function CustomerDetailsPage() {
           width: 100%;
           padding: 0.75rem 1rem;
           background: var(--emp-sf2, rgba(255,255,255,0.03));
-          border: 1px solid var(--emp-bd);
+          border: 1.5px solid var(--emp-bd);
           border-radius: 10px;
           color: var(--emp-tx);
           font-family: inherit;
           font-size: 0.875rem;
           outline: none;
           transition: all 0.2s;
+          box-sizing: border-box;
         }
         .form-group input:focus, 
         .form-group select:focus, 
         .form-group textarea:focus {
-          border-color: var(--db-gold, #c5a880);
-          box-shadow: 0 0 0 1px var(--db-gold);
+          border-color: #E10613;
+          box-shadow: 0 0 0 3px rgba(225,6,19,0.08);
         }
         .form-group input:disabled {
           opacity: 0.5;
@@ -538,7 +686,7 @@ export default function CustomerDetailsPage() {
           width: 100%;
           padding: 0.875rem;
           margin-top: 1rem;
-          background: linear-gradient(135deg, #E10613, #c70511);
+          background: #E10613;
           color: #fff;
           border: none;
           border-radius: 12px;
@@ -549,12 +697,12 @@ export default function CustomerDetailsPage() {
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 0.375rem;
           transition: all 0.2s;
         }
         .submit-btn:hover:not(:disabled) {
           transform: translateY(-1px);
           box-shadow: 0 6px 20px rgba(225,6,19,0.3);
+          background: #c70511;
         }
         .submit-btn:disabled {
           opacity: 0.6;
