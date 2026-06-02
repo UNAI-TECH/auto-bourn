@@ -111,38 +111,6 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Inventory */}
-          <div>
-            <h4 style={{
-              fontFamily: 'var(--font-primary)',
-              fontSize: '0.8125rem',
-              fontWeight: 600,
-              textTransform: 'uppercase',
-              letterSpacing: '0.1em',
-              color: '#2A2A2A',
-              marginBottom: '1.25rem',
-            }}>
-              Inventory
-            </h4>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-              {footerLinks.inventory.map((link) => (
-                <li key={link.label} style={{ marginBottom: '0.625rem' }}>
-                  <Link
-                    href={link.href}
-                    className="footer-link"
-                    style={{
-                      textDecoration: 'none',
-                      color: '#8A8A8A',
-                      fontSize: '0.9375rem',
-                      transition: 'color 0.3s ease',
-                    }}
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
 
           {/* Services */}
           <div>
@@ -216,10 +184,10 @@ export default function Footer() {
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '12px',
+                gap: '14px',
                 background: '#1F1E1D',
-                borderRadius: '16px',
-                padding: '10px 18px',
+                borderRadius: '18px',
+                padding: '12px 24px',
                 textDecoration: 'none',
                 transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
                 border: '1px solid rgba(255, 255, 255, 0.08)',
@@ -228,15 +196,15 @@ export default function Footer() {
               }}
               className="unai-badge"
             >
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', textAlign: 'left' }}>
-                <span style={{ fontSize: '0.55rem', fontWeight: 600, color: '#9E9185', textTransform: 'uppercase', letterSpacing: '0.15em', lineHeight: 1.2 }}>Presented by</span>
-                <span style={{ fontSize: '0.9375rem', fontWeight: 800, letterSpacing: '0.04em', fontFamily: 'var(--font-primary)', lineHeight: 1.1 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', textAlign: 'left' }}>
+                <span style={{ fontSize: '0.65rem', fontWeight: 600, color: '#9E9185', textTransform: 'uppercase', letterSpacing: '0.15em', lineHeight: 1.2 }}>Presented by</span>
+                <span style={{ fontSize: '1.05rem', fontWeight: 800, letterSpacing: '0.04em', fontFamily: 'var(--font-primary)', lineHeight: 1.1 }}>
                   <span style={{ color: '#E5B549' }}>UNAI</span> <span style={{ color: '#FFFFFF' }}>TECH</span>
                 </span>
               </div>
               <div style={{
-                width: '26px',
-                height: '26px',
+                width: '30px',
+                height: '30px',
                 borderRadius: '50%',
                 background: 'rgba(229, 181, 73, 0.15)',
                 display: 'flex',
@@ -245,7 +213,7 @@ export default function Footer() {
                 flexShrink: 0,
                 transition: 'all 0.3s ease'
               }} className="unai-arrow-circle">
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                <svg width="11" height="11" viewBox="0 0 10 10" fill="none">
                   <path d="M2 8L8 2M8 2H3M8 2V7" stroke="#E5B549" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
