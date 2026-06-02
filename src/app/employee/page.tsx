@@ -423,7 +423,7 @@ export default function EmployeeDashboard() {
 
       </div>
 
-      <style jsx>{`
+      <style jsx global>{`
 .crextio-dashboard {
   display: flex;
   flex-direction: column;
@@ -506,7 +506,7 @@ export default function EmployeeDashboard() {
 /* Grid Layout */
 .crextio-grid {
   display: grid;
-  grid-template-columns: 280px 1fr 280px;
+  grid-template-columns: 310px 1fr 310px;
   gap: 1.5rem;
   width: 100%;
 }
@@ -622,37 +622,50 @@ export default function EmployeeDashboard() {
   gap: 8px;
 }
 .shortcut-btn {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: .85rem 1rem;
-  border-radius: 16px;
-  text-decoration: none;
-  font-size: .875rem;
-  font-weight: 600;
-  transition: all .2s;
+  display: flex !important;
+  align-items: center !important;
+  flex-direction: row !important;
+  gap: 12px !important;
+  padding: 0.9rem 1.25rem !important;
+  border-radius: 16px !important;
+  text-decoration: none !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+.shortcut-btn svg {
+  flex-shrink: 0 !important;
+}
+.shortcut-btn span {
+  flex: 1 !important;
+  text-align: left !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 .shortcut-btn .arrow {
-  margin-left: auto;
-  transition: transform .2s;
+  margin-left: auto !important;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 .shortcut-btn:hover .arrow {
-  transform: translateX(3px);
+  transform: translateX(4px) !important;
 }
 .shortcut-btn.primary {
-  background: var(--db-gold);
-  color: #fff;
+  background: var(--db-gold) !important;
+  color: #fff !important;
 }
 .db-dark .shortcut-btn.primary {
-  color: #121212;
+  color: #121212 !important;
 }
 .shortcut-btn.secondary {
-  background: var(--db-sf2);
-  color: var(--db-tx);
-  border: 1px solid var(--db-bd);
+  background: var(--db-sf2) !important;
+  color: var(--db-tx) !important;
+  border: 1px solid var(--db-bd) !important;
 }
 .shortcut-btn.secondary:hover {
-  background: var(--db-gd);
+  background: var(--db-gd) !important;
 }
 
 /* Middle Column */

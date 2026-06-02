@@ -160,22 +160,13 @@ export default function HomePage() {
               overflow: 'hidden', position: 'relative',
             }}>
               <Image
-                src="/vehicles/hero-showroom.png"
+                src="/home.png"
                 alt="Auto Bourn Premium Showroom"
                 fill
                 style={{ objectFit: 'cover' }}
                 priority
                 sizes="(max-width: 768px) 100vw, 50vw"
               />
-              {/* Price tag */}
-              <div style={{
-                position: 'absolute', bottom: '24px', right: '24px',
-                background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(20px)',
-                borderRadius: '12px', padding: '12px 20px', border: '1px solid #ECECEC',
-              }}>
-                <p style={{ fontSize: '0.625rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#8A8A8A', marginBottom: '2px' }}>Starting from</p>
-                <p style={{ fontFamily: 'var(--font-primary)', fontWeight: 700, fontSize: '1.125rem', color: '#2A2A2A' }}>{formatPrice(3800000)}</p>
-              </div>
               {/* Brand badge */}
               <div style={{
                 position: 'absolute', top: '24px', left: '24px',
