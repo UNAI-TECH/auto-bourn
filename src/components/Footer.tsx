@@ -214,24 +214,41 @@ export default function Footer() {
               target="_blank"
               rel="noopener noreferrer"
               style={{
-                display: 'inline-flex', alignItems: 'center', gap: '8px',
-                background: '#FFFFFF', borderRadius: '8px',
-                padding: '10px 16px',
-                textDecoration: 'none', transition: 'all 0.3s ease',
-                border: '1px solid #E0E0E0',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '12px',
+                background: '#1F1E1D',
+                borderRadius: '16px',
+                padding: '10px 18px',
+                textDecoration: 'none',
+                transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
                 marginTop: '1.75rem',
-                boxShadow: 'none',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
               }}
               className="unai-badge"
             >
-              <span style={{ fontSize: '0.625rem', fontWeight: 500, color: '#8A8A8A', textTransform: 'uppercase', letterSpacing: '0.12em', lineHeight: 1 }}>Presented by</span>
-              <span style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#E10613', letterSpacing: '0.04em', fontFamily: 'var(--font-primary)' }}>UNAI</span>
-              <span style={{ fontSize: '0.9375rem', fontWeight: 700, color: '#2A2A2A', letterSpacing: '0.04em', fontFamily: 'var(--font-primary)' }}>TECH</span>
-              <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#E10613', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', textAlign: 'left' }}>
+                <span style={{ fontSize: '0.55rem', fontWeight: 600, color: '#9E9185', textTransform: 'uppercase', letterSpacing: '0.15em', lineHeight: 1.2 }}>Presented by</span>
+                <span style={{ fontSize: '0.9375rem', fontWeight: 800, letterSpacing: '0.04em', fontFamily: 'var(--font-primary)', lineHeight: 1.1 }}>
+                  <span style={{ color: '#E5B549' }}>UNAI</span> <span style={{ color: '#FFFFFF' }}>TECH</span>
+                </span>
+              </div>
+              <div style={{
+                width: '26px',
+                height: '26px',
+                borderRadius: '50%',
+                background: 'rgba(229, 181, 73, 0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                transition: 'all 0.3s ease'
+              }} className="unai-arrow-circle">
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                  <path d="M2 8L8 2M8 2H3M8 2V7" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M2 8L8 2M8 2H3M8 2V7" stroke="#E5B549" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-              </span>
+              </div>
             </a>
           </div>
         </div>
@@ -270,10 +287,14 @@ export default function Footer() {
           transform: translateY(-2px);
         }
         .unai-badge:hover {
-          background: #F5F5F5 !important;
+          background: #151413 !important;
           transform: translateY(-2px);
-          box-shadow: none !important;
-          border-color: #E10613 !important;
+          border-color: rgba(229, 181, 73, 0.4) !important;
+          box-shadow: 0 8px 30px rgba(0,0,0,0.2) !important;
+        }
+        .unai-badge:hover .unai-arrow-circle {
+          background: rgba(229, 181, 73, 0.3) !important;
+          transform: scale(1.05);
         }
       `}</style>
     </footer>
