@@ -57,7 +57,10 @@ export default function MyCarsPage() {
 
   const fetchCars = async () => {
     if (!employee) return;
-    const { data } = await supabase.from('cars').select('*').eq('employee_id', employee.id).order('created_at', { ascending: false });
+    const { data } = await supabase
+      .from('cars')
+      .select('*, employee:employees!employee_id(name, employee_id)')
+      .order('created_at', { ascending: false });
     setCars(data || []);
     setLoading(false);
   };
@@ -170,19 +173,23 @@ export default function MyCarsPage() {
 
   const filtered = cars.filter(c => {
     const ms = `${c.brand} ${c.model}`.toLowerCase().includes(search.toLowerCase());
-    const sf = statusFilter === 'all' || c.status === statusFilter;
+    const sf = statusFilter === 'all' ? true :
+               statusFilter === 'my' ? c.employee_id === employee?.id :
+               c.status === statusFilter;
     return ms && sf;
   });
 
   return (
     <div className="db-page">
-      <div className="db-page-header"><div><h1 className="db-page-title">My Cars</h1><p className="db-page-sub">{cars.length} listings</p></div></div>
+      <div className="db-page-header"><div><h1 className="db-page-title">{statusFilter === 'my' ? 'My Cars' : 'All Listings'}</h1><p className="db-page-sub">{filtered.length} listings</p></div></div>
 
       <div className="car-filters" style={{ marginBottom: '1.5rem' }}>
         <div className="db-search-inline"><Search size={16} /><input placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} /></div>
         <div className="emp-tabs">
-          {['all','available','sold','reserved'].map(f => (
-            <button key={f} className={`emp-tab ${statusFilter === f ? 'active' : ''}`} onClick={() => setStatusFilter(f)}>{f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}</button>
+          {['all','available','sold','reserved','my'].map(f => (
+            <button key={f} className={`emp-tab ${statusFilter === f ? 'active' : ''}`} onClick={() => setStatusFilter(f)}>
+              {f === 'all' ? 'All' : f === 'my' ? 'My Cars' : f.charAt(0).toUpperCase() + f.slice(1)}
+            </button>
           ))}
         </div>
       </div>
@@ -201,13 +208,27 @@ export default function MyCarsPage() {
               <p className="car-variant">{car.variant} · {car.year}</p>
               <p className="car-price">{formatPrice(car.price)}</p>
               <div className="car-meta"><span>{car.fuel_type}</span><span>·</span><span>{car.transmission}</span><span>·</span><span>{car.km_driven?.toLocaleString()} km</span></div>
-              <div className="car-meta2"><span><Eye size={12} /> {car.views}</span><span>{timeAgo(car.created_at)}</span></div>
+              <div className="car-meta2">
+                <span><Eye size={12} /> {car.views} views</span>
+                <span style={{ color: car.employee_id === employee?.id ? 'var(--db-gold)' : 'var(--db-tx3)', fontWeight: 600 }}>
+                  By: {car.employee_id === employee?.id ? 'Me' : (car.employee as unknown as { name: string })?.name || 'Other'}
+                </span>
+              </div>
+              <div className="car-meta2" style={{ justifyContent: 'flex-start' }}>
+                <span>{timeAgo(car.created_at)}</span>
+              </div>
               <div className="car-actions">
-                <button onClick={() => setEditCar(car)}><Edit size={15} /> Edit</button>
-                {car.status === 'available' && <button className="act-green" onClick={() => updateStatus(car.id, 'sold')}>Mark Sold</button>}
-                {car.status === 'sold' && <button onClick={() => updateStatus(car.id, 'available')}>Restore</button>}
-                {car.status === 'available' && <button onClick={() => updateStatus(car.id, 'reserved')}>Reserve</button>}
-                <button className="act-red" onClick={() => deleteCar(car.id)}><Trash2 size={15} /></button>
+                {car.employee_id === employee?.id ? (
+                  <>
+                    <button onClick={() => setEditCar(car)}><Edit size={15} /> Edit</button>
+                    {car.status === 'available' && <button className="act-green" onClick={() => updateStatus(car.id, 'sold')}>Mark Sold</button>}
+                    {car.status === 'sold' && <button onClick={() => updateStatus(car.id, 'available')}>Restore</button>}
+                    {car.status === 'available' && <button onClick={() => updateStatus(car.id, 'reserved')}>Reserve</button>}
+                    <button className="act-red" onClick={() => deleteCar(car.id)}><Trash2 size={15} /></button>
+                  </>
+                ) : (
+                  <span style={{ fontSize: '0.75rem', color: 'var(--db-tx3)', fontStyle: 'italic', padding: '4px 0' }}>Read-only (uploaded by another employee)</span>
+                )}
               </div>
             </div>
           </motion.div>
