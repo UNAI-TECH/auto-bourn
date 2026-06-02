@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useEmpContext } from '../layout';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,6 +11,163 @@ const FUEL_TYPES = ['Petrol','Diesel','Electric','Hybrid','Petrol Mild-Hybrid','
 const TRANSMISSIONS = ['Automatic','Manual','CVT','DCT','AMT'];
 const BODY_TYPES = ['SUV','Sedan','Hatchback','Coupe','Convertible','MPV','Pickup'];
 const OWNERSHIPS = ['1st Owner','2nd Owner','3rd Owner','4th Owner+','Unregistered'];
+
+const brandOptions = [
+  { value: '', label: 'Select Brand' },
+  ...BRANDS.map(b => ({ value: b, label: b }))
+];
+const bodyTypeOptions = BODY_TYPES.map(b => ({ value: b, label: b }));
+const fuelTypeOptions = FUEL_TYPES.map(f => ({ value: f, label: f }));
+const transmissionOptions = TRANSMISSIONS.map(t => ({ value: t, label: t }));
+const ownershipOptions = OWNERSHIPS.map(o => ({ value: o, label: o }));
+
+interface Option {
+  value: string;
+  label: string;
+}
+
+interface CustomSelectProps {
+  options: Option[];
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+}
+
+function CustomSelect({ options, value, onChange, placeholder }: CustomSelectProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find(opt => opt.value === value) || { label: placeholder, value };
+
+  return (
+    <div ref={containerRef} style={{ position: 'relative', width: '100%', fontFamily: 'inherit' }}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0.85rem 1.1rem',
+          border: isOpen ? '1.5px solid #E10613' : '1.5px solid var(--db-bd)',
+          borderRadius: '12px',
+          background: 'var(--db-sf2)',
+          fontSize: '0.9rem',
+          color: 'var(--db-tx)',
+          cursor: 'pointer',
+          outline: 'none',
+          boxShadow: isOpen ? '0 4px 15px rgba(225,6,19,0.05)' : 'none',
+          transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+          boxSizing: 'border-box',
+          textAlign: 'left'
+        }}
+      >
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: '8px' }}>
+          {selectedOption.label}
+        </span>
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="var(--db-tx3)"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{
+            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+            transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+            flexShrink: 0
+          }}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.2 }}
+            style={{
+              position: 'absolute',
+              top: 'calc(100% + 6px)',
+              left: 0,
+              right: 0,
+              background: 'var(--db-sf)',
+              border: '1.5px solid var(--db-bd)',
+              borderRadius: '12px',
+              boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
+              zIndex: 100,
+              maxHeight: '260px',
+              overflowY: 'auto',
+              padding: '6px',
+              boxSizing: 'border-box'
+            }}
+          >
+            {options.map((option) => {
+              const isSelected = option.value === value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => {
+                    onChange(option.value);
+                    setIsOpen(false);
+                  }}
+                  style={{
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '0.75rem 1rem',
+                    border: 'none',
+                    borderRadius: '8px',
+                    background: isSelected ? 'rgba(225,6,19,0.08)' : 'transparent',
+                    color: isSelected ? '#E10613' : 'var(--db-tx)',
+                    fontSize: '0.875rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    fontWeight: isSelected ? 700 : 500,
+                    outline: 'none',
+                    display: 'block',
+                    marginBottom: '2px',
+                    boxSizing: 'border-box'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.background = 'var(--db-sf2)';
+                      e.currentTarget.style.color = '#E10613';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = 'var(--db-tx)';
+                    }
+                  }}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 export default function UploadCarPage() {
   const { employee } = useEmpContext();
@@ -147,25 +304,48 @@ export default function UploadCarPage() {
           <h3 className="upl-section-title">Car Details</h3>
           <div className="upl-grid">
             <div className="emp-field"><label>Brand *</label>
-              <select value={form.brand} onChange={e => setField('brand', e.target.value)} required>
-                <option value="">Select Brand</option>{BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
-              </select>
+              <CustomSelect
+                options={brandOptions}
+                value={form.brand}
+                onChange={val => setField('brand', val)}
+                placeholder="Select Brand"
+              />
             </div>
             <div className="emp-field"><label>Model *</label><input value={form.model} onChange={e => setField('model', e.target.value)} required /></div>
             <div className="emp-field"><label>Variant</label><input value={form.variant} onChange={e => setField('variant', e.target.value)} /></div>
             <div className="emp-field"><label>Year *</label><input type="number" value={form.year} onChange={e => setField('year', +e.target.value)} min={2000} max={2030} required /></div>
             <div className="emp-field"><label>Body Type</label>
-              <select value={form.body_type} onChange={e => setField('body_type', e.target.value)}>{BODY_TYPES.map(b => <option key={b}>{b}</option>)}</select>
+              <CustomSelect
+                options={bodyTypeOptions}
+                value={form.body_type}
+                onChange={val => setField('body_type', val)}
+                placeholder="Select Body Type"
+              />
             </div>
             <div className="emp-field"><label>Fuel Type</label>
-              <select value={form.fuel_type} onChange={e => setField('fuel_type', e.target.value)}>{FUEL_TYPES.map(f => <option key={f}>{f}</option>)}</select>
+              <CustomSelect
+                options={fuelTypeOptions}
+                value={form.fuel_type}
+                onChange={val => setField('fuel_type', val)}
+                placeholder="Select Fuel Type"
+              />
             </div>
             <div className="emp-field"><label>Transmission</label>
-              <select value={form.transmission} onChange={e => setField('transmission', e.target.value)}>{TRANSMISSIONS.map(t => <option key={t}>{t}</option>)}</select>
+              <CustomSelect
+                options={transmissionOptions}
+                value={form.transmission}
+                onChange={val => setField('transmission', val)}
+                placeholder="Select Transmission"
+              />
             </div>
             <div className="emp-field"><label>KM Driven</label><input type="number" value={form.km_driven} onChange={e => setField('km_driven', +e.target.value)} min={0} /></div>
             <div className="emp-field"><label>Ownership</label>
-              <select value={form.ownership} onChange={e => setField('ownership', e.target.value)}>{OWNERSHIPS.map(o => <option key={o}>{o}</option>)}</select>
+              <CustomSelect
+                options={ownershipOptions}
+                value={form.ownership}
+                onChange={val => setField('ownership', val)}
+                placeholder="Select Ownership"
+              />
             </div>
             <div className="emp-field"><label>Price (₹) *</label><input type="number" value={form.price || ''} onChange={e => setField('price', +e.target.value)} min={0} required /></div>
             <div className="emp-field"><label>Original Price (₹)</label><input type="number" value={form.original_price || ''} onChange={e => setField('original_price', +e.target.value)} min={0} /></div>
