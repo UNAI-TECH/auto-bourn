@@ -455,7 +455,9 @@ export default function MyCarsPage() {
 .emp-tabs{display:flex;align-items:center;gap:4px;background:rgba(0, 0, 0, 0.03);padding:4px;border-radius:999px;border:1px solid rgba(0, 0, 0, 0.02)}
 .emp-tab{background:transparent;border:0;padding:.45rem 1.1rem;border-radius:999px;font-size:.8125rem;font-weight:600;color:var(--db-tx2);cursor:pointer;transition:all .2s}
 .emp-tab.active{background:var(--db-gold);color:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
-.car-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1.5rem}
+.car-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.5rem}
+@media(max-width:1200px){.car-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:900px){.car-grid{grid-template-columns:repeat(2,1fr)}}
 .car-card{background:var(--db-sf);border:1px solid var(--db-bd);border-radius:24px;overflow:hidden;box-shadow:var(--card-shadow);transition:all .25s ease-in-out}
 .car-card:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(0,0,0,0.08)}
 .car-thumb{position:relative;height:190px;background:var(--db-sf2);overflow:hidden}
