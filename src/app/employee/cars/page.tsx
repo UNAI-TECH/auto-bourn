@@ -139,13 +139,15 @@ export default function MyCarsPage() {
       }
 
       // 4. Update the car document
-      const { id, created_at, sold_at, sold_by, featured, views, employee_id, ...rest } = editCar;
+      const { id, created_at, sold_at, sold_by, featured, views, employee_id, employee: _emp, car_images, ...rest } = editCar as Car & { employee?: unknown; car_images?: unknown };
       void created_at;
       void sold_at;
       void sold_by;
       void featured;
       void views;
       void employee_id;
+      void _emp;
+      void car_images;
 
       const { error: updateError } = await supabase.from('cars').update({
         ...rest,
