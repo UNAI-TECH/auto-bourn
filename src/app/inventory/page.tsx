@@ -7,7 +7,7 @@ import { Vehicle, brands } from '@/data/vehicles';
 import VehicleCard from '@/components/VehicleCard';
 import { fetchDbVehicles } from '@/lib/supabase/vehicles';
 
-const ITEMS_PER_PAGE = 6;
+const ITEMS_PER_PAGE = 8;
 
 interface Option {
   value: string;
