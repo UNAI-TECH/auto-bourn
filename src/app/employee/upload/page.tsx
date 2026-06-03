@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useEmpContext } from '../layout';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -189,6 +190,7 @@ function CustomSelect({ options, value, onChange, placeholder }: CustomSelectPro
 
 export default function UploadCarPage() {
   const { employee } = useEmpContext();
+  const router = useRouter();
   const [form, setForm] = useState({
     brand: '', model: '', variant: '', year: '' as string | number, fuel_type: '',
     transmission: '', km_driven: 0, ownership: '', price: 0, original_price: 0,
@@ -305,6 +307,11 @@ export default function UploadCarPage() {
       // Reset form
       setForm({ brand: '', model: '', variant: '', year: '', fuel_type: '', transmission: '', km_driven: 0, ownership: '', price: 0, original_price: 0, description: '', features: '', insurance_validity: '', registration_number: '', location: '', body_type: '', color: '', interior_color: '', engine: '', horsepower: 0 });
       setThumbnail(null); setThumbPreview(''); setGallery([]); setGalleryPreviews([]);
+      
+      // Redirect to cars list after a brief delay
+      setTimeout(() => {
+        router.push('/employee/cars');
+      }, 1500);
     } catch (err) {
       console.error(err);
       showToast('Failed to upload. Please try again.', 'error');
