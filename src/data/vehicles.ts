@@ -57,6 +57,10 @@ export const brands: Brand[] = [
   { name: 'Land Rover', logo: '/landrover.png', count: 12, slug: 'land-rover' },
   { name: 'Volvo', logo: '/volvo.png', count: 10, slug: 'volvo' },
   { name: 'Lexus', logo: '/lexus.jpeg', count: 6, slug: 'lexus' },
+  { name: 'Audi', logo: '/brands/6.png', count: 14, slug: 'audi' },
+  { name: 'Lamborghini', logo: '/brands/4.png', count: 4, slug: 'lamborghini' },
+  { name: 'Mini', logo: '/brands/10.png', count: 5, slug: 'mini' },
+  { name: 'Jeep', logo: '/brands/11.png', count: 7, slug: 'jeep' },
 ];
 
 export const vehicles: Vehicle[] = [
