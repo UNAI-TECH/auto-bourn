@@ -7,7 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Employee } from '@/types/database';
-import { LayoutDashboard, Car, Upload, LogOut, Menu, X, Bell, FileText, AlertCircle, Clock, CheckCircle, PhoneCall } from 'lucide-react';
+import { LayoutDashboard, Car, Upload, LogOut, Menu, X, Bell, FileText, AlertCircle, Clock, CheckCircle, PhoneCall, FileSpreadsheet } from 'lucide-react';
 
 const EmpContext = createContext<{ employee: Employee | null; darkMode: boolean; onReportSubmitted: () => void }>({ employee: null, darkMode: false, onReportSubmitted: () => {} });
 export const useEmpContext = () => useContext(EmpContext);
@@ -15,6 +15,7 @@ export const useEmpContext = () => useContext(EmpContext);
 const navItems = [
   { href: '/employee', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/employee/upload', label: 'Upload Car', icon: Upload },
+  { href: '/employee/bulk-upload', label: 'Bulk Upload', icon: FileSpreadsheet },
   { href: '/employee/cars', label: 'My Cars', icon: Car },
   { href: '/employee/customer-details', label: 'Customer Details', icon: FileText },
   { href: '/employee/crm', label: 'My Leads (CRM)', icon: PhoneCall },

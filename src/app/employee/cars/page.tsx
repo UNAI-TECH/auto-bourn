@@ -18,7 +18,6 @@ export default function MyCarsPage() {
   const [editCar, setEditCar] = useState<Car | null>(null);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
   
   const [gallery, setGallery] = useState<{ id: string; image_url: string }[]>([]);
   const [newThumbnail, setNewThumbnail] = useState<File | null>(null);
@@ -55,7 +54,6 @@ export default function MyCarsPage() {
   };
 
   useEffect(() => { if (employee) fetchCars(); }, [employee]);
-  useEffect(() => { setCurrentPage(1); }, [search, statusFilter]);
 
   const fetchCars = async () => {
     if (!employee) return;
@@ -181,10 +179,6 @@ export default function MyCarsPage() {
     return ms && sf;
   });
 
-  const ITEMS_PER_PAGE = 8;
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-  const paginatedCars = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
-
   return (
     <div className="db-page">
       <div className="db-page-header"><div><h1 className="db-page-title">{statusFilter === 'my' ? 'My Cars' : 'All Listings'}</h1><p className="db-page-sub">{filtered.length} listings</p></div></div>
@@ -203,7 +197,7 @@ export default function MyCarsPage() {
       <div className="car-grid">
         {loading ? Array(4).fill(0).map((_, i) => <div key={i} className="car-skel" />) :
         filtered.length === 0 ? <p className="db-empty-full">No cars found</p> :
-        paginatedCars.map(car => (
+        filtered.map(car => (
           <motion.div key={car.id} className="car-card" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
             <div className="car-thumb">
               {car.thumbnail ? <img src={car.thumbnail} alt={`${car.brand} ${car.model}`} /> : <div className="car-no-img">No Image</div>}
@@ -240,71 +234,6 @@ export default function MyCarsPage() {
           </motion.div>
         ))}
       </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div style={{
-          display: 'flex', justifyContent: 'center', alignItems: 'center',
-          gap: '0.5rem', marginTop: '3rem', paddingTop: '2rem',
-          borderTop: '1px solid var(--db-bd)',
-        }}>
-          <button
-            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-            disabled={currentPage === 1}
-            style={{
-              padding: '0.625rem 1rem', borderRadius: '10px', border: '1px solid var(--db-bd)',
-              background: currentPage === 1 ? 'var(--db-sf2)' : 'var(--db-sf)',
-              color: currentPage === 1 ? 'var(--db-tx3)' : 'var(--db-tx2)',
-              opacity: currentPage === 1 ? 0.5 : 1,
-              cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-              fontSize: '0.8125rem', fontWeight: 600, transition: 'all 0.2s',
-              fontFamily: 'inherit',
-            }}
-          >
-            ← Prev
-          </button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-            <button
-              key={page}
-              onClick={() => setCurrentPage(page)}
-              style={{
-                width: '36px', height: '36px', borderRadius: '10px',
-                border: page === currentPage ? '1px solid var(--db-gold)' : '1px solid var(--db-bd)',
-                background: page === currentPage ? 'var(--db-gold)' : 'var(--db-sf)',
-                color: page === currentPage ? '#fff' : 'var(--db-tx)',
-                cursor: 'pointer', fontSize: '0.8125rem', fontWeight: 700,
-                transition: 'all 0.2s',
-                fontFamily: 'inherit',
-              }}
-            >
-              {page}
-            </button>
-          ))}
-          <button
-            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages}
-            style={{
-              padding: '0.625rem 1rem', borderRadius: '10px', border: '1px solid var(--db-bd)',
-              background: currentPage === totalPages ? 'var(--db-sf2)' : 'var(--db-sf)',
-              color: currentPage === totalPages ? 'var(--db-tx3)' : 'var(--db-tx2)',
-              opacity: currentPage === totalPages ? 0.5 : 1,
-              cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
-              fontSize: '0.8125rem', fontWeight: 600, transition: 'all 0.2s',
-              fontFamily: 'inherit',
-            }}
-          >
-            Next →
-          </button>
-        </div>
-      )}
-      {filtered.length > 0 && (
-        <p style={{
-          textAlign: 'center', fontSize: '0.75rem', color: 'var(--db-tx3)',
-          marginTop: '1rem', fontWeight: 500
-        }}>
-          Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length} listings
-        </p>
-      )}
 
       {/* Edit Modal */}
       <AnimatePresence>
@@ -455,9 +384,7 @@ export default function MyCarsPage() {
 .emp-tabs{display:flex;align-items:center;gap:4px;background:rgba(0, 0, 0, 0.03);padding:4px;border-radius:999px;border:1px solid rgba(0, 0, 0, 0.02)}
 .emp-tab{background:transparent;border:0;padding:.45rem 1.1rem;border-radius:999px;font-size:.8125rem;font-weight:600;color:var(--db-tx2);cursor:pointer;transition:all .2s}
 .emp-tab.active{background:var(--db-gold);color:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
-.car-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.5rem}
-@media(max-width:1200px){.car-grid{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:900px){.car-grid{grid-template-columns:repeat(2,1fr)}}
+.car-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1.5rem}
 .car-card{background:var(--db-sf);border:1px solid var(--db-bd);border-radius:24px;overflow:hidden;box-shadow:var(--card-shadow);transition:all .25s ease-in-out}
 .car-card:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(0,0,0,0.08)}
 .car-thumb{position:relative;height:190px;background:var(--db-sf2);overflow:hidden}
