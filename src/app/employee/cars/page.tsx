@@ -411,9 +411,9 @@ export default function MyCarsPage() {
 .car-actions .act-red:hover{color:#ef4444;border-color:rgba(239,68,68,.3)}
 .car-skel{background:var(--db-sf);border:1px solid var(--db-bd);border-radius:24px;height:380px;animation:pulse 1.5s infinite;box-shadow:var(--card-shadow)}
 .db-empty-full{color:var(--db-tx3);text-align:center;padding:5rem 0;font-size:.9375rem;grid-column:1/-1;font-weight:600}
-.emp-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:250;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(5px)}
-.emp-modal{background:var(--db-sf);border:1px solid var(--db-bd);border-radius:24px;width:100%;margin:1.5rem;box-shadow:0 24px 60px rgba(0,0,0,0.15);overflow:hidden}
-.car-edit-modal{max-width:680px}
+.emp-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(5px);padding:1.5rem}
+.emp-modal{background:var(--db-sf);border:1px solid var(--db-bd);border-radius:24px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,0.15)}
+.car-edit-modal{max-width:800px}
 .emp-modal-head{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--db-bd)}
 .emp-modal-head h2{font-family:'Outfit',sans-serif;font-size:1.35rem;font-weight:700;margin:0;color:var(--db-tx)}
 .emp-modal-head button{background:0;border:0;color:var(--db-tx3);cursor:pointer;padding:4px;border-radius:50%}
