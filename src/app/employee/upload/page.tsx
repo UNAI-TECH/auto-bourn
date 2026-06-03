@@ -6,7 +6,7 @@ import { useEmpContext } from '../layout';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, X, Image, Check, AlertCircle, Loader2 } from 'lucide-react';
 
-const BRANDS = ['Mercedes-Benz','BMW','Audi','Jaguar','Land Rover','Volvo','Lexus','Porsche','Toyota','Honda','Hyundai','Kia','Tata','Mahindra','Maruti Suzuki','Volkswagen','Skoda','MG','Other'];
+const BRANDS = ['Mercedes-Benz','BMW','Audi','Jaguar','Land Rover','Volvo','Lexus','Porsche','Toyota','Honda','Hyundai','Kia','Tata','Mahindra','Maruti Suzuki','Volkswagen','Skoda','MG','Mini','Lamborghini','Jeep','Crysta','Tucson','Other'];
 const FUEL_TYPES = ['Petrol','Diesel','Electric','Hybrid','Petrol Mild-Hybrid','CNG','LPG'];
 const TRANSMISSIONS = ['Automatic','Manual','CVT','DCT','AMT'];
 const BODY_TYPES = ['SUV','Sedan','Hatchback','Coupe','Convertible','MPV','Pickup'];

@@ -8,7 +8,7 @@ import { LEAD_STAGES, SOURCE_LABELS, formatBudget, type Lead, type LeadStatus, t
 
 const SOURCES: LeadSource[] = ['website','instagram','facebook','whatsapp','walk_in','referral','olx','cardekho','manual'];
 const TIMELINES = ['Within 1 week','1–2 weeks','1 month','1–3 months','3–6 months','6+ months'];
-const BRANDS = ['Mercedes-Benz','BMW','Audi','Jaguar','Land Rover','Volvo','Lexus','Porsche','Toyota','Honda','Hyundai','Kia','Tata','Mahindra','Maruti Suzuki','Volkswagen','Skoda','MG','Other'];
+const BRANDS = ['Mercedes-Benz','BMW','Audi','Jaguar','Land Rover','Volvo','Lexus','Porsche','Toyota','Honda','Hyundai','Kia','Tata','Mahindra','Maruti Suzuki','Volkswagen','Skoda','MG','Mini','Lamborghini','Jeep','Crysta','Tucson','Other'];
 
 const emptyForm = { customer_name:'', phone:'', whatsapp:'', email:'', city:'', state:'', occupation:'', source:'manual' as LeadSource, interested_car:'', preferred_brand:'', budget:'', purchase_timeline:'', lead_status:'new' as LeadStatus, assigned_to:'', notes:'' };
 
