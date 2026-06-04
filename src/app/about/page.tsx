@@ -101,6 +101,14 @@ export default function AboutPage() {
                   sizes="(max-width: 768px) 100vw, 50vw"
                 />
               </div>
+              <div style={{ marginTop: '1.5rem' }}>
+                <p style={{ fontFamily: 'var(--font-primary)', fontSize: '1.25rem', fontWeight: 700, color: '#2A2A2A', marginBottom: '0.25rem' }}>
+                  Mr. S. Prasanna
+                </p>
+                <p style={{ fontSize: '0.8125rem', color: '#E10613', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                  Founder & Managing Director, Auto Bourn
+                </p>
+              </div>
             </motion.div>
 
             {/* Founder Note Text */}
@@ -123,14 +131,6 @@ export default function AboutPage() {
                 </p>
                 <p>
                   Thank you for choosing Auto Bourn to be a part of your luxury driving journey. We look forward to offering you the finest experience, built on transparency and absolute commitment.
-                </p>
-              </div>
-              <div style={{ marginTop: '2.5rem', borderTop: '1px solid #F0F0F0', paddingTop: '1.5rem' }}>
-                <p style={{ fontFamily: 'var(--font-primary)', fontSize: '1.25rem', fontWeight: 700, color: '#2A2A2A', marginBottom: '0.25rem' }}>
-                  Mr. S. Prasanna
-                </p>
-                <p style={{ fontSize: '0.8125rem', color: '#E10613', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                  Founder & Managing Director, Auto Bourn
                 </p>
               </div>
             </motion.div>
