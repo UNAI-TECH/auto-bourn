@@ -6,6 +6,7 @@ import { testimonials, statistics } from '@/data/vehicles';
 import { useCountUp } from '@/hooks/useAnimations';
 import Image from 'next/image';
 import TestimonialCarousel from '@/components/TestimonialCarousel';
+import MagicBento from '@/components/MagicBento';
 
 function StatItem({ value, suffix, label, index }: { value: number; suffix: string; label: string; index: number }) {
   const { ref, count } = useCountUp(value, 2000);
@@ -144,6 +145,57 @@ export default function AboutPage() {
             {statistics.map((s, i) => <StatItem key={s.label} value={s.value} suffix={s.suffix} label={s.label} index={i} />)}
           </div>
         </div>
+      </section>
+
+      {/* Why Choose Auto Bourn — MagicBento */}
+      <section className="section" style={{ background: '#FAFAFA', overflow: 'hidden' }}>
+        <div className="container">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            style={{ textAlign: 'center', marginBottom: 'clamp(2rem, 4vw, 3.5rem)' }}
+          >
+            <p
+              style={{
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.15em',
+                color: '#E10613',
+                marginBottom: '0.75rem',
+              }}
+            >
+              Why Choose Auto Bourn
+            </p>
+            <h2
+              style={{
+                fontFamily: 'var(--font-primary)',
+                fontSize: 'clamp(2rem, 4vw, 3rem)',
+                fontWeight: 700,
+                color: '#2A2A2A',
+                letterSpacing: '-0.03em',
+                lineHeight: 1.1,
+              }}
+            >
+              Trusted.{' '}
+              <span style={{ color: '#E10613' }}>Certified.</span>{' '}
+              Customer-Focused.
+            </h2>
+          </motion.div>
+        </div>
+
+        <MagicBento
+          enableStars={true}
+          enableSpotlight={true}
+          enableBorderGlow={true}
+          enableTilt={false}
+          enableMagnetism={true}
+          clickEffect={true}
+          spotlightRadius={300}
+          particleCount={10}
+          glowColor="225, 6, 19"
+        />
       </section>
 
       {/* Values */}
