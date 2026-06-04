@@ -3,6 +3,11 @@ import { createServiceRoleClient } from '@/lib/supabase/server';
 
 export async function GET(request: NextRequest) {
   try {
+    const isPlaceholder = !process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL.includes('placeholder');
+    if (isPlaceholder) {
+      return NextResponse.json({ cars: [], total: 0, warning: 'Database connection not configured' });
+    }
+
     const supabase = await createServiceRoleClient();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
