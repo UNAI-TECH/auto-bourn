@@ -40,7 +40,7 @@ export default function ContactPage() {
   };
 
   const contactInfo = [
-    { icon: 'location', label: 'Visit Us', value: 'Auto Bourn Showroom, Indiranagar, Bengaluru, KA 560038' },
+    { icon: 'location', label: 'Visit Us', value: 'Autobourn Cars, Chennai.' },
     { icon: 'phone', label: 'Call Us', value: '+91 98765 43210' },
     { icon: 'email', label: 'Email', value: 'hello@autobourn.com' },
     { icon: 'clock', label: 'Hours', value: 'Mon–Sat: 10 AM – 8 PM | Sun: 11 AM – 6 PM' },
