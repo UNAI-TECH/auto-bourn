@@ -98,7 +98,7 @@ export default function Footer() {
                 </svg>
               </a>
               {/* WhatsApp */}
-              <a href="https://wa.me/919876543210" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"
+              <a href="https://wa.me/919176777222" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"
                 style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#FFFFFF', border: '1px solid #DADADA', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8A8A8A', textDecoration: 'none', transition: 'all 0.3s ease' }}
                 className="social-icon"
               >

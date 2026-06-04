@@ -8,7 +8,7 @@ export default function FloatingIcons() {
     }}>
       {/* WhatsApp */}
       <a
-        href="https://wa.me/919876543210?text=Hi%20Auto%20Bourn%2C%20I%27m%20interested%20in%20a%20luxury%20vehicle."
+        href="https://wa.me/919176777222?text=Hi%20Auto%20Bourn%2C%20I%27m%20interested%20in%20a%20luxury%20vehicle."
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Chat on WhatsApp"
@@ -28,7 +28,7 @@ export default function FloatingIcons() {
 
       {/* Phone */}
       <a
-        href="tel:+919876543210"
+        href="tel:+919176777222"
         aria-label="Call us"
         style={{
           width: '52px', height: '52px', borderRadius: '50%',

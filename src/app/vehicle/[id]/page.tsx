@@ -147,8 +147,8 @@ export default function VehicleDetailPage() {
                 <button className="btn btn-secondary btn-lg" style={{ flex: 1, minWidth: '160px' }}>Reserve Vehicle</button>
               </div>
               <div style={{ display: 'flex', gap: '1rem' }}>
-                <a href="tel:+919876543210" className="btn btn-ghost btn-sm" style={{ flex: 1, textDecoration: 'none' }}>📞 Call Now</a>
-                <a href={`https://wa.me/919876543210?text=${whatsappMsg}`} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm" style={{ flex: 1, textDecoration: 'none', color: '#25D366', borderColor: '#25D366' }}>💬 WhatsApp</a>
+                <a href="tel:+919176777222" className="btn btn-ghost btn-sm" style={{ flex: 1, textDecoration: 'none' }}>📞 Call Now</a>
+                <a href={`https://wa.me/919176777222?text=${whatsappMsg}`} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm" style={{ flex: 1, textDecoration: 'none', color: '#25D366', borderColor: '#25D366' }}>💬 WhatsApp</a>
               </div>
             </motion.div>
           </div>
