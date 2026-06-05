@@ -3,9 +3,8 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, EyeOff, Lock, ArrowRight, Car, AlertCircle, Loader2, BadgeCheck } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function EmployeeConsolePage() {
   const [identifier, setIdentifier] = useState('');
@@ -82,7 +81,7 @@ export default function EmployeeConsolePage() {
           details: `Employee ${emp.name} logged in via /console portal`,
         });
 
-        // Admin logging in from employee console — redirect to dashboard
+        // Redirect based on role
         if (emp.role === 'admin') {
           router.push('/dashboard');
         } else {
@@ -96,413 +95,454 @@ export default function EmployeeConsolePage() {
     }
   };
 
-
   return (
     <div className="console-page">
-      {/* Background */}
-      <div className="console-bg">
-        <div className="console-bg-gradient" />
-        <div className="console-bg-dots" />
-      </div>
-
-      {/* Left brand panel */}
-      <div className="console-panel">
-        <motion.div
-          className="console-panel-inner"
-          initial={{ opacity: 0, x: -30 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-        >
-          <div className="console-panel-logo">
-            <Image src="/logo.jpg" alt="Auto Bourn Logo" width={56} height={56} style={{ objectFit: 'cover', borderRadius: '12px' }} />
-          </div>
-          <h2>AUTO BOURN</h2>
-          <p>Management Portal</p>
-
-          <div className="console-features">
-            {[
-              { icon: '🛡️', text: 'Admin: full dashboard access' },
-              { icon: '🚗', text: 'Upload & manage car listings' },
-              { icon: '✅', text: 'Mark cars as sold or available' },
-              { icon: '📊', text: 'Track upload activity & reports' },
-            ].map((f, i) => (
-              <motion.div
-                key={i}
-                className="console-feature-item"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3 + i * 0.1 }}
-              >
-                <span>{f.icon}</span>
-                <span>{f.text}</span>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Right login card */}
-      <div className="console-right">
-        <motion.div
-          className="console-card"
-          initial={{ opacity: 0, y: 30, scale: 0.96 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-        >
-          <div className="console-header">
-            <div className="console-badge">
-              <BadgeCheck size={13} />
-              <span>AUTO BOURN PORTAL</span>
+      <div className="console-container">
+        {/* Left Side: Brand Panel */}
+        <div className="console-panel">
+          <div className="console-panel-top">
+            <div className="console-badge-pill">
+              <span className="console-badge-dot" />
+              ADMINISTRATOR PORTAL
             </div>
-            <h1>Welcome Back</h1>
-            <p>Sign in with your ID or email address</p>
           </div>
 
-          <form onSubmit={handleLogin}>
-            <div className="console-field">
-              <label htmlFor="emp-id">Employee ID or Email</label>
-              <div className="console-input-wrap">
-                <span className="console-input-prefix">@</span>
-                <input
-                  id="emp-id"
-                  type="text"
-                  placeholder="e.g. EMP001 or your email"
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  required
-                  autoComplete="username"
-                />
+          <div className="console-panel-middle">
+            <h2 className="console-panel-title">
+              Manage the <span className="highlight-text">Auto Bourn</span> ecosystem with ease.
+            </h2>
+            <p className="console-panel-desc">
+              Log in to access complete dashboard controls, view metrics, manage luxury car listings, approve sellers, and manage all your platform data in one place.
+            </p>
+
+            <div className="console-features">
+              {[
+                { icon: '🛡️', text: 'Admin: full dashboard access' },
+                { icon: '🚗', text: 'Upload & manage car listings' },
+                { icon: '✅', text: 'Mark cars as sold or available' },
+                { icon: '📊', text: 'Track upload activity & reports' },
+              ].map((f, i) => (
+                <div key={i} className="console-feature-bullet">
+                  <span className="bullet-icon">{f.icon}</span>
+                  <span className="bullet-text">{f.text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="console-panel-bottom">
+            <div className="footer-divider" />
+            <div className="footer-brand-row">
+              <div className="footer-brand-square">A</div>
+              <div className="footer-brand-text">
+                <span className="footer-brand-title">Auto Bourn</span>
+                <span className="footer-brand-sub">Management Console</span>
               </div>
+              <span className="footer-brand-est">EST. 2026</span>
             </div>
-
-            <div className="console-field">
-              <label htmlFor="emp-pw">Password</label>
-              <div className="console-input-wrap">
-                <Lock size={16} className="console-input-icon" />
-                <input
-                  id="emp-pw"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  autoComplete="current-password"
-                />
-                <button
-                  type="button"
-                  className="console-toggle-pw"
-                  onClick={() => setShowPassword(!showPassword)}
-                  tabIndex={-1}
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-            </div>
-
-            <AnimatePresence>
-              {error && (
-                <motion.div
-                  className="console-error"
-                  initial={{ opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                >
-                  <AlertCircle size={15} />
-                  <span>{error}</span>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <button type="submit" className="console-submit" disabled={loading}>
-              {loading ? (
-                <Loader2 size={20} className="console-spinner" />
-              ) : (
-                <>
-                  Sign In to Console
-                  <ArrowRight size={18} />
-                </>
-              )}
-            </button>
-          </form>
-
-          <p className="console-help">
-            Don&apos;t have credentials? Contact your{' '}
-            <a href="/admin">administrator</a>.
-          </p>
-
-          <div className="console-footer">
-            <span>Auto Bourn Employee Console</span>
-            <span>© 2026</span>
           </div>
-        </motion.div>
+        </div>
+
+        {/* Right Side: Login Form */}
+        <div className="console-right">
+          <div className="console-form-container">
+            <div className="console-header">
+              <h1>Portal Access</h1>
+              <p>Sign in using your administrator credentials below.</p>
+            </div>
+
+            <form onSubmit={handleLogin}>
+              <div className="console-field">
+                <label htmlFor="emp-id">EMAIL ADDRESS</label>
+                <div className="console-input-wrap">
+                  <Mail size={18} className="console-input-icon" />
+                  <input
+                    id="emp-id"
+                    type="text"
+                    placeholder="Admin@autobourn.com"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    required
+                    autoComplete="username"
+                  />
+                </div>
+              </div>
+
+              <div className="console-field">
+                <label htmlFor="emp-pw">PASSWORD</label>
+                <div className="console-input-wrap">
+                  <Lock size={18} className="console-input-icon" />
+                  <input
+                    id="emp-pw"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    className="console-toggle-pw"
+                    onClick={() => setShowPassword(!showPassword)}
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <AnimatePresence>
+                {error && (
+                  <motion.div
+                    className="console-error-box"
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                  >
+                    <AlertCircle size={15} />
+                    <span>{error}</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <button type="submit" className="console-submit-btn" disabled={loading}>
+                {loading ? (
+                  <Loader2 size={20} className="console-spinner" />
+                ) : (
+                  <>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
+                      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13.8 12H3"/>
+                    </svg>
+                    Access Admin Console
+                  </>
+                )}
+              </button>
+            </form>
+
+            <div className="console-footer-notes">
+              <span>Auto Bourn Management Systems</span>
+              <span>© 2026</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <style jsx>{`
-        .console-checking {
-          min-height: 100vh;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: #fafafa;
-        }
-        .console-checking-spinner {
-          width: 40px;
-          height: 40px;
-          border: 3px solid rgba(225,6,19,.15);
-          border-top-color: #e10613;
-          border-radius: 50%;
-        }
         .console-page {
           min-height: 100vh;
           display: flex;
+          align-items: center;
+          justify-content: center;
+          background-color: #FAF8F6;
           font-family: 'Outfit', sans-serif;
-          background: #fafafa;
-          position: relative;
-          overflow: hidden;
-        }
-        .console-bg {
-          position: fixed;
-          inset: 0;
-          z-index: 0;
-          pointer-events: none;
-        }
-        .console-bg-gradient {
-          position: absolute;
-          inset: 0;
-          background: radial-gradient(ellipse at 70% 50%, rgba(225,6,19,.04) 0%, transparent 60%);
-        }
-        .console-bg-dots {
-          position: absolute;
-          inset: 0;
-          background-image: radial-gradient(rgba(0,0,0,.06) 1px, transparent 1px);
-          background-size: 24px 24px;
+          padding: 2rem;
         }
 
-        /* Left panel */
+        .console-container {
+          display: grid;
+          grid-template-columns: 460px 1fr;
+          width: 100%;
+          max-width: 980px;
+          min-height: 620px;
+          background: #FFFFFF;
+          border-radius: 24px;
+          overflow: hidden;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.04);
+          border: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        /* Left Side Panel */
         .console-panel {
-          width: 380px;
-          flex-shrink: 0;
-          background: linear-gradient(160deg, #e10613 0%, #8b0000 100%);
-          display: flex;
-          align-items: center;
-          justify-content: center;
+          background: linear-gradient(135deg, #E10613 0%, #4A0000 100%);
           padding: 3rem 2.5rem;
-          position: relative;
-          z-index: 1;
-        }
-        @media(max-width: 768px) { .console-panel { display: none; } }
-        .console-panel-inner {
-          color: #fff;
-        }
-        .console-panel-logo {
-          width: 60px;
-          height: 60px;
-          border-radius: 16px;
-          background: rgba(255,255,255,.15);
           display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          color: #ffffff;
+        }
+
+        .console-badge-pill {
+          display: inline-flex;
           align-items: center;
-          justify-content: center;
-          margin-bottom: 1.25rem;
-          backdrop-filter: blur(10px);
+          gap: 6px;
+          background: rgba(255, 255, 255, 0.12);
+          border: 1px solid rgba(255, 255, 255, 0.25);
+          color: #ffffff;
+          border-radius: 20px;
+          padding: 0.4rem 0.85rem;
+          font-size: 0.6875rem;
+          font-weight: 700;
+          letter-spacing: 0.08em;
         }
-        .console-panel-inner h2 {
-          font-family: 'Outfit', sans-serif;
-          font-size: 1.875rem;
+
+        .console-badge-dot {
+          width: 6px;
+          height: 6px;
+          background-color: #4ADE80;
+          border-radius: 50%;
+        }
+
+        .console-panel-middle {
+          margin: 2rem 0;
+        }
+
+        .console-panel-title {
+          font-size: 2.25rem;
           font-weight: 800;
-          letter-spacing: .08em;
-          margin: 0 0 .35rem;
+          line-height: 1.2;
+          margin-bottom: 1rem;
+          letter-spacing: -0.02em;
         }
-        .console-panel-inner p {
-          font-size: .875rem;
-          opacity: .75;
-          margin: 0 0 2rem;
+
+        .highlight-text {
+          color: #FFD700; /* Luxury gold highlight */
         }
+
+        .console-panel-desc {
+          font-size: 0.9375rem;
+          line-height: 1.6;
+          color: rgba(255, 255, 255, 0.85);
+          margin-bottom: 2rem;
+        }
+
         .console-features {
           display: flex;
           flex-direction: column;
-          gap: .875rem;
-        }
-        .console-feature-item {
-          display: flex;
-          align-items: center;
-          gap: .875rem;
-          font-size: .875rem;
-          opacity: .9;
-        }
-        .console-feature-item span:first-child {
-          font-size: 1.25rem;
-          flex-shrink: 0;
+          gap: 0.75rem;
         }
 
-        /* Right side */
-        .console-right {
-          flex: 1;
+        .console-feature-bullet {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          font-size: 0.875rem;
+          color: rgba(255, 255, 255, 0.9);
+        }
+
+        .bullet-icon {
+          font-size: 1.125rem;
+        }
+
+        /* Bottom Row */
+        .footer-divider {
+          height: 1px;
+          background-color: rgba(255, 255, 255, 0.15);
+          margin-bottom: 1.5rem;
+        }
+
+        .footer-brand-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .footer-brand-square {
+          width: 38px;
+          height: 38px;
+          background-color: rgba(255, 255, 255, 0.15);
+          border-radius: 8px;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 2rem;
-          position: relative;
-          z-index: 1;
+          font-weight: 800;
+          font-size: 1.125rem;
+          color: #ffffff;
         }
-        .console-card {
-          width: 100%;
-          max-width: 400px;
-          background: #fff;
-          border-radius: 20px;
-          padding: 2.5rem;
-          box-shadow: 0 8px 40px rgba(0,0,0,.08), 0 2px 8px rgba(0,0,0,.04);
-          border: 1px solid rgba(0,0,0,.06);
+
+        .footer-brand-text {
+          display: flex;
+          flex-direction: column;
         }
-        .console-header {
-          margin-bottom: 1.75rem;
+
+        .footer-brand-title {
+          font-weight: 700;
+          font-size: 0.9375rem;
+          letter-spacing: 0.02em;
         }
-        .console-badge {
-          display: inline-flex;
+
+        .footer-brand-sub {
+          font-size: 0.75rem;
+          color: rgba(255, 255, 255, 0.6);
+        }
+
+        .footer-brand-est {
+          margin-left: auto;
+          font-size: 0.75rem;
+          color: rgba(255, 255, 255, 0.6);
+          letter-spacing: 0.05em;
+        }
+
+        /* Right Side Form */
+        .console-right {
+          display: flex;
           align-items: center;
-          gap: 5px;
-          background: rgba(225,6,19,.08);
-          border: 1px solid rgba(225,6,19,.2);
-          color: #e10613;
-          border-radius: 20px;
-          padding: .3rem .85rem;
-          font-size: .6875rem;
-          font-weight: 700;
-          letter-spacing: .1em;
-          margin-bottom: 1rem;
+          justify-content: center;
+          padding: 3rem;
         }
+
+        .console-form-container {
+          width: 100%;
+          max-width: 360px;
+        }
+
+        .console-header {
+          margin-bottom: 2.25rem;
+        }
+
         .console-header h1 {
-          font-family: 'Outfit', sans-serif;
-          font-size: 1.625rem;
-          font-weight: 700;
-          color: #1a1a1a;
-          margin: 0 0 .35rem;
+          font-size: 1.75rem;
+          font-weight: 800;
+          color: #1A1A1A;
+          margin-bottom: 0.5rem;
+          letter-spacing: -0.01em;
         }
+
         .console-header p {
-          font-size: .875rem;
-          color: #8a8a8a;
-          margin: 0;
+          font-size: 0.875rem;
+          color: #6A6A6A;
         }
+
         .console-field {
-          margin-bottom: .875rem;
+          margin-bottom: 1.25rem;
         }
+
         .console-field label {
           display: block;
-          font-size: .8rem;
-          font-weight: 500;
-          color: #4a4a4a;
-          margin-bottom: .4rem;
+          font-size: 0.75rem;
+          font-weight: 700;
+          color: #1A1A1A;
+          margin-bottom: 0.5rem;
+          letter-spacing: 0.05em;
         }
+
         .console-input-wrap {
           position: relative;
           display: flex;
           align-items: center;
         }
-        .console-input-prefix {
-          position: absolute;
-          left: 13px;
-          color: #e10613;
-          font-weight: 700;
-          font-size: 1rem;
-          pointer-events: none;
-          line-height: 1;
-        }
+
         .console-input-icon {
           position: absolute;
-          left: 13px;
-          color: #b0b0b0;
+          left: 14px;
+          color: #A0A0A0;
           pointer-events: none;
-          flex-shrink: 0;
         }
+
         .console-input-wrap input {
           width: 100%;
-          padding: .875rem 1rem .875rem 2.5rem;
-          background: #f5f5f5;
-          border: 1.5px solid #ececec;
+          padding: 0.875rem 1rem 0.875rem 2.75rem;
+          background-color: #FAFAFA;
+          border: 1px solid #ECECEC;
           border-radius: 12px;
-          color: #1a1a1a;
-          font-size: .9375rem;
+          color: #1A1A1A;
+          font-size: 0.9375rem;
           font-family: 'Outfit', sans-serif;
           outline: none;
-          transition: all .25s;
+          transition: all 0.2s ease;
         }
-        .console-input-wrap input::placeholder { color: #b0b0b0; }
+
+        .console-input-wrap input::placeholder {
+          color: #B0B0B0;
+        }
+
         .console-input-wrap input:focus {
-          border-color: #e10613;
-          background: rgba(225,6,19,.02);
-          box-shadow: 0 0 0 3px rgba(225,6,19,.08);
+          border-color: #E10613;
+          background-color: #FFFFFF;
+          box-shadow: 0 0 0 4px rgba(225, 6, 19, 0.06);
         }
+
         .console-toggle-pw {
           position: absolute;
           right: 12px;
-          background: 0;
-          border: 0;
-          color: #b0b0b0;
+          background: none;
+          border: none;
+          color: #B0B0B0;
           cursor: pointer;
           padding: 4px;
           display: flex;
-          transition: color .2s;
+          align-items: center;
         }
-        .console-toggle-pw:hover { color: #4a4a4a; }
-        .console-error {
+
+        .console-toggle-pw:hover {
+          color: #1A1A1A;
+        }
+
+        .console-error-box {
           display: flex;
           align-items: center;
-          gap: .5rem;
-          background: #fff1f2;
-          border: 1px solid rgba(239,68,68,.2);
-          color: #dc2626;
+          gap: 8px;
+          background-color: #FFF5F5;
+          border: 1px solid #FED7D7;
+          color: #C53030;
           border-radius: 10px;
-          padding: .75rem 1rem;
-          font-size: .8125rem;
-          margin-bottom: .875rem;
+          padding: 0.75rem 1rem;
+          font-size: 0.8125rem;
+          margin-bottom: 1.25rem;
         }
-        .console-submit {
+
+        .console-submit-btn {
           width: 100%;
-          padding: .9375rem;
-          background: linear-gradient(135deg, #e10613, #c70511);
+          padding: 0.9375rem;
+          background-color: #E10613;
           border: none;
           border-radius: 12px;
-          color: #fff;
-          font-size: .9375rem;
-          font-weight: 600;
+          color: #FFFFFF;
+          font-size: 0.9375rem;
+          font-weight: 700;
           font-family: 'Outfit', sans-serif;
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: .5rem;
-          transition: all .3s;
-          margin-top: .25rem;
-          letter-spacing: .02em;
+          transition: all 0.2s ease;
+          box-shadow: 0 4px 12px rgba(225, 6, 19, 0.15);
         }
-        .console-submit:hover:not(:disabled) {
-          background: linear-gradient(135deg, #ff1a26, #e10613);
-          transform: translateY(-2px);
-          box-shadow: 0 8px 28px rgba(225,6,19,.3);
+
+        .console-submit-btn:hover:not(:disabled) {
+          background-color: #C70511;
+          transform: translateY(-1px);
+          box-shadow: 0 6px 16px rgba(225, 6, 19, 0.25);
         }
-        .console-submit:disabled { opacity: .6; cursor: not-allowed; }
-        .console-spinner { animation: spin 1s linear infinite; }
-        @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-        .console-help {
-          text-align: center;
-          font-size: .8125rem;
-          color: #8a8a8a;
-          margin-top: 1.25rem;
+
+        .console-submit-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
         }
-        .console-help a {
-          color: #e10613;
-          font-weight: 500;
-          text-decoration: none;
+
+        .console-spinner {
+          animation: spin 1s linear infinite;
         }
-        .console-help a:hover { text-decoration: underline; }
-        .console-footer {
+
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+
+        .console-footer-notes {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          margin-top: 1.5rem;
-          padding-top: 1.25rem;
-          border-top: 1px solid #ececec;
-          font-size: .75rem;
-          color: #b0b0b0;
+          margin-top: 2.5rem;
+          padding-top: 1.5rem;
+          border-top: 1px solid #F5F5F5;
+          font-size: 0.75rem;
+          color: #B0B0B0;
+        }
+
+        /* Responsive */
+        @media (max-width: 860px) {
+          .console-container {
+            grid-template-columns: 1fr;
+            max-width: 460px;
+            min-height: auto;
+          }
+          .console-panel {
+            display: none;
+          }
+          .console-right {
+            padding: 3rem 2rem;
+          }
         }
       `}</style>
     </div>
