@@ -117,13 +117,25 @@ export default function EmployeeConsolePage() {
 
             <div className="console-features">
               {[
-                { icon: '🛡️', text: 'Admin: full dashboard access' },
-                { icon: '🚗', text: 'Upload & manage car listings' },
-                { icon: '✅', text: 'Mark cars as sold or available' },
-                { icon: '📊', text: 'Track upload activity & reports' },
+                {
+                  svg: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>,
+                  text: 'Admin: full dashboard access'
+                },
+                {
+                  svg: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>,
+                  text: 'Upload & manage car listings'
+                },
+                {
+                  svg: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
+                  text: 'Mark cars as sold or available'
+                },
+                {
+                  svg: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
+                  text: 'Track upload activity & reports'
+                },
               ].map((f, i) => (
                 <div key={i} className="console-feature-bullet">
-                  <span className="bullet-icon">{f.icon}</span>
+                  <span className="bullet-icon">{f.svg}</span>
                   <span className="bullet-text">{f.text}</span>
                 </div>
               ))}
@@ -293,10 +305,11 @@ export default function EmployeeConsolePage() {
           line-height: 1.2;
           margin-bottom: 1rem;
           letter-spacing: -0.02em;
+          color: #ffffff;
         }
 
         .highlight-text {
-          color: #FFD700; /* Luxury gold highlight */
+          color: #FFD700;
         }
 
         .console-panel-desc {
@@ -317,11 +330,24 @@ export default function EmployeeConsolePage() {
           align-items: center;
           gap: 0.75rem;
           font-size: 0.875rem;
-          color: rgba(255, 255, 255, 0.9);
+          color: #ffffff;
         }
 
         .bullet-icon {
-          font-size: 1.125rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 28px;
+          height: 28px;
+          background: rgba(255, 255, 255, 0.15);
+          border-radius: 7px;
+          flex-shrink: 0;
+          color: #ffffff;
+        }
+
+        .bullet-text {
+          color: #ffffff;
+          font-weight: 500;
         }
 
         /* Bottom Row */
@@ -359,11 +385,12 @@ export default function EmployeeConsolePage() {
           font-weight: 700;
           font-size: 0.9375rem;
           letter-spacing: 0.02em;
+          color: #ffffff;
         }
 
         .footer-brand-sub {
           font-size: 0.75rem;
-          color: rgba(255, 255, 255, 0.6);
+          color: rgba(255, 255, 255, 0.75);
         }
 
         .footer-brand-est {
