@@ -190,7 +190,7 @@ export default function TermsPage() {
           <p style={{ color: '#8A8A8A', lineHeight: 1.6, maxWidth: '480px', margin: '0 auto 2rem' }}>
             If you have any questions regarding our terms, agreements, or transactional structures, please feel free to reach out to us.
           </p>
-          <a href="mailto:hello@autobourn.com" style={{
+          <a href="mailto:hello@autobourncars.com" style={{
             display: 'inline-block',
             background: '#E10613',
             color: '#FFFFFF',

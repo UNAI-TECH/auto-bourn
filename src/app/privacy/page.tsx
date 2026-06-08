@@ -29,7 +29,7 @@ export default function PrivacyPage() {
     {
       icon: <HelpCircle size={20} style={{ color: '#E10613' }} />,
       title: '5. Your Rights & Choice',
-      content: 'You maintain full control over your data. You may request to review, correct, update, or completely delete your personal information from our active databases at any time. For such requests or inquiries regarding our data protection practices, please contact our privacy compliance officer at hello@autobourn.com.'
+      content: 'You maintain full control over your data. You may request to review, correct, update, or completely delete your personal information from our active databases at any time. For such requests or inquiries regarding our data protection practices, please contact our privacy compliance officer at hello@autobourncars.com.'
     }
   ];
 
@@ -185,7 +185,7 @@ export default function PrivacyPage() {
           <p style={{ color: '#8A8A8A', lineHeight: 1.6, maxWidth: '480px', margin: '0 auto 2rem' }}>
             Our client relationship team is here to help with any inquiries regarding our data handling or security protocols.
           </p>
-          <a href="mailto:hello@autobourn.com" style={{
+          <a href="mailto:hello@autobourncars.com" style={{
             display: 'inline-block',
             background: '#E10613',
             color: '#FFFFFF',

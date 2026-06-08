@@ -40,10 +40,29 @@ export default function ContactPage() {
   };
 
   const contactInfo = [
-    { icon: 'location', label: 'Visit Us', value: 'Autobourn Cars, Chennai.' },
-    { icon: 'phone', label: 'Call Us', value: '+91 91767 77222' },
-    { icon: 'email', label: 'Email', value: 'hello@autobourn.com' },
-    { icon: 'clock', label: 'Hours', value: 'Mon–Sat: 10 AM – 8 PM | Sun: 11 AM – 6 PM' },
+    {
+      icon: 'location',
+      label: 'Visit Us',
+      value: '137, Jawaharlal Nehru Salai, opposite to sunshine school, AGS Colony, Velachery, Chennai, Tamil Nadu 600042',
+      link: 'https://www.google.com/maps/search/?api=1&query=137,+Jawaharlal+Nehru+Salai,+opposite+to+sunshine+school,+AGS+Colony,+Velachery,+Chennai,+Tamil+Nadu+600042'
+    },
+    {
+      icon: 'phone',
+      label: 'Call Us',
+      value: '+91 91767 77222',
+      link: 'tel:+919176777222'
+    },
+    {
+      icon: 'email',
+      label: 'Email',
+      value: 'hello@autobourncars.com',
+      link: 'mailto:hello@autobourncars.com'
+    },
+    {
+      icon: 'clock',
+      label: 'Hours',
+      value: 'Mon–Sat: 10 AM – 8 PM | Sun: 11 AM – 6 PM'
+    },
   ];
 
   return (
@@ -95,25 +114,68 @@ export default function ContactPage() {
             {/* Contact Info */}
             <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }}
               style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              {contactInfo.map((c, i) => (
-                <motion.div key={c.label} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 + i * 0.1 }}>
-                  <div style={{ background: '#FAFAFA', borderRadius: '16px', padding: '1.5rem', border: '1px solid #ECECEC', display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-                    <ContactIcon type={c.icon} />
-                    <div>
-                      <p style={{ fontFamily: 'var(--font-primary)', fontSize: '0.875rem', fontWeight: 700, color: '#2A2A2A', marginBottom: '0.25rem' }}>{c.label}</p>
-                      <p style={{ fontSize: '0.9375rem', color: '#4A4A4A', lineHeight: 1.6 }}>{c.value}</p>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
+              {contactInfo.map((c, i) => {
+                const isLink = !!c.link;
+                const CardElement = isLink ? 'a' : 'div';
+                const extraProps = isLink ? {
+                  href: c.link,
+                  target: c.link.startsWith('http') ? '_blank' : undefined,
+                  rel: c.link.startsWith('http') ? 'noopener noreferrer' : undefined,
+                } : {};
 
-              {/* Map placeholder */}
+                return (
+                  <motion.div
+                    key={c.label}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.1 + i * 0.1 }}
+                    whileHover={isLink ? { y: -4, boxShadow: '0 8px 30px rgba(0,0,0,0.06)', borderColor: '#E10613' } : undefined}
+                    style={{ display: 'block' }}
+                  >
+                    <CardElement
+                      {...(extraProps as any)}
+                      style={{
+                        background: '#FAFAFA',
+                        borderRadius: '16px',
+                        padding: '1.5rem',
+                        border: '1px solid #ECECEC',
+                        display: 'flex',
+                        gap: '1rem',
+                        alignItems: 'flex-start',
+                        textDecoration: 'none',
+                        color: 'inherit',
+                        cursor: isLink ? 'pointer' : 'default',
+                        transition: 'border-color 0.3s ease, box-shadow 0.3s ease',
+                        height: '100%',
+                      }}
+                    >
+                      <ContactIcon type={c.icon} />
+                      <div>
+                        <p style={{ fontFamily: 'var(--font-primary)', fontSize: '0.875rem', fontWeight: 700, color: '#2A2A2A', marginBottom: '0.25rem' }}>{c.label}</p>
+                        <p style={{ fontSize: '0.9375rem', color: '#4A4A4A', lineHeight: 1.6 }}>{c.value}</p>
+                      </div>
+                    </CardElement>
+                  </motion.div>
+                );
+              })}
+
+              {/* Interactive Map */}
               <div style={{
                 borderRadius: '16px', overflow: 'hidden', aspectRatio: '16/9',
-                background: 'linear-gradient(135deg, #F0F0F0, #E8E8E8)', border: '1px solid #ECECEC',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, minHeight: '200px',
+                border: '1px solid #ECECEC', display: 'flex', flex: 1, minHeight: '250px',
+                background: '#FAFAFA'
               }}>
-                <p style={{ color: '#B0B0B0', fontFamily: 'var(--font-primary)', fontSize: '1rem' }}>Interactive Map</p>
+                <iframe
+                  title="Auto Bourn Location Map"
+                  src="https://maps.google.com/maps?q=137%2C%20Jawaharlal%20Nehru%20Salai%2C%20opposite%20to%20sunshine%20school%2C%20AGS%20Colony%2C%20Velachery%2C%20Chennai%2C%20Tamil%20Nadu%20600042&t=&z=15&ie=UTF8&iwloc=&output=embed"
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  allowFullScreen={true}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                ></iframe>
               </div>
             </motion.div>
           </div>
