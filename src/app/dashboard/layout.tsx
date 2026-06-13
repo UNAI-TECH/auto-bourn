@@ -31,6 +31,7 @@ const navItems = [
   { href: '/dashboard/cars', label: 'Cars', icon: Car },
   { href: '/dashboard/uploads', label: 'Upload Tracking', icon: ClipboardList },
   { href: '/dashboard/reports', label: 'Daily Reports', icon: Bell },
+  { href: '/dashboard/test-drives', label: 'Test Drives', icon: CalendarClock },
   { href: '/dashboard/logs', label: 'Activity Logs', icon: Activity },
 ];
 

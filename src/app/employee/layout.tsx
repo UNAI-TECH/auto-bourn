@@ -18,6 +18,7 @@ const navItems = [
   { href: '/employee/cars', label: 'My Cars', icon: Car },
   { href: '/employee/customer-details', label: 'Customer Details', icon: FileText },
   { href: '/employee/crm', label: 'My Leads (CRM)', icon: PhoneCall },
+  { href: '/employee/test-drives', label: 'Test Drives', icon: Clock },
 ];
 
 export default function EmployeeLayout({ children }: { children: React.ReactNode }) {

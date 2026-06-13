@@ -19,6 +19,53 @@ export default function VehicleDetailPage() {
   const [lightbox, setLightbox] = useState(false);
   const [formSent, setFormSent] = useState(false);
 
+  const [showModal, setShowModal] = useState(false);
+  const [bookingName, setBookingName] = useState('');
+  const [bookingPhone, setBookingPhone] = useState('');
+  const [bookingEmail, setBookingEmail] = useState('');
+  const [bookingLoading, setBookingLoading] = useState(false);
+  const [bookingError, setBookingError] = useState('');
+  const [bookingSuccess, setBookingSuccess] = useState(false);
+
+  const handleBookingSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bookingName || !bookingPhone || !bookingEmail) {
+      setBookingError('Name, Phone Number, and Email ID are required.');
+      return;
+    }
+    setBookingLoading(true);
+    setBookingError('');
+    try {
+      const res = await fetch('/api/test-drives', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: bookingName,
+          phone: bookingPhone,
+          email: bookingEmail,
+          carId: vehicle?.id,
+          carName: `${vehicle?.brand} ${vehicle?.model}`
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to submit booking request.');
+      }
+      setBookingSuccess(true);
+      setBookingName('');
+      setBookingPhone('');
+      setBookingEmail('');
+      setTimeout(() => {
+        setShowModal(false);
+        setBookingSuccess(false);
+      }, 3000);
+    } catch (err: any) {
+      setBookingError(err.message || 'An error occurred. Please try again.');
+    } finally {
+      setBookingLoading(false);
+    }
+  };
+
 
   useEffect(() => {
     async function load() {
@@ -141,8 +188,8 @@ export default function VehicleDetailPage() {
               </div>
 
               <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
-                <button onClick={() => { setFormSent(true); setTimeout(() => setFormSent(false), 3000); }} className="btn btn-primary btn-lg" style={{ flex: 1, minWidth: '160px' }}>
-                  {formSent ? '✓ Request Sent!' : 'Book Test Drive'}
+                <button onClick={() => setShowModal(true)} className="btn btn-primary btn-lg" style={{ flex: 1, minWidth: '160px' }}>
+                  Book Test Drive
                 </button>
                 <button className="btn btn-secondary btn-lg" style={{ flex: 1, minWidth: '160px' }}>Reserve Vehicle</button>
               </div>
@@ -242,10 +289,204 @@ export default function VehicleDetailPage() {
         </section>
       )}
 
+      {/* Test Drive Modal */}
+      <AnimatePresence>
+        {showModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 3000,
+              background: 'rgba(0,0,0,0.6)',
+              backdropFilter: 'blur(8px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '1.5rem',
+            }}
+            onClick={() => !bookingLoading && setShowModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: 'spring', duration: 0.5 }}
+              style={{
+                width: '100%',
+                maxWidth: '480px',
+                background: '#FFFFFF',
+                borderRadius: '24px',
+                padding: '2.5rem 2rem',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                position: 'relative',
+                border: '1px solid rgba(0, 0, 0, 0.05)',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                disabled={bookingLoading}
+                onClick={() => setShowModal(false)}
+                style={{
+                  position: 'absolute',
+                  top: '1.25rem',
+                  right: '1.25rem',
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#A0A0A0',
+                  transition: 'color 0.2s',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#E10613')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = '#A0A0A0')}
+              >
+                ✕
+              </button>
+
+              {bookingSuccess ? (
+                <div style={{ textAlign: 'center', padding: '1.5rem 0' }}>
+                  <div
+                    style={{
+                      width: '64px',
+                      height: '64px',
+                      borderRadius: '50%',
+                      background: 'rgba(34, 197, 94, 0.1)',
+                      color: '#22C55E',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '2rem',
+                      margin: '0 auto 1.5rem',
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    ✓
+                  </div>
+                  <h2 style={{ fontFamily: 'var(--font-primary)', fontSize: '1.5rem', fontWeight: 700, color: '#2A2A2A', marginBottom: '0.5rem' }}>
+                    Request Submitted!
+                  </h2>
+                  <p style={{ fontSize: '0.9375rem', color: '#8A8A8A', lineHeight: 1.6 }}>
+                    Thank you. Our luxury consultant will contact you shortly to schedule your test drive.
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <h2 style={{ fontFamily: 'var(--font-primary)', fontSize: '1.5rem', fontWeight: 700, color: '#2A2A2A', marginBottom: '0.25rem' }}>
+                    Book a Test Drive
+                  </h2>
+                  <p style={{ fontSize: '0.875rem', color: '#8A8A8A', marginBottom: '1.75rem' }}>
+                    For the {vehicle?.brand} {vehicle?.model}
+                  </p>
+
+                  <form onSubmit={handleBookingSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                    <div>
+                      <label style={{ fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#8A8A8A', display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>
+                        Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        disabled={bookingLoading}
+                        placeholder="Your full name"
+                        value={bookingName}
+                        onChange={(e) => setBookingName(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '0.875rem 1.125rem',
+                          border: '1px solid #ECECEC',
+                          borderRadius: '12px',
+                          background: '#FAFAFA',
+                          fontSize: '0.9375rem',
+                          color: '#2A2A2A',
+                          outline: 'none',
+                          transition: 'all 0.3s',
+                          boxSizing: 'border-box',
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#8A8A8A', display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>
+                        Phone Number *
+                      </label>
+                      <input
+                        type="tel"
+                        required
+                        disabled={bookingLoading}
+                        placeholder="Your 10-digit number"
+                        value={bookingPhone}
+                        onChange={(e) => setBookingPhone(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '0.875rem 1.125rem',
+                          border: '1px solid #ECECEC',
+                          borderRadius: '12px',
+                          background: '#FAFAFA',
+                          fontSize: '0.9375rem',
+                          color: '#2A2A2A',
+                          outline: 'none',
+                          transition: 'all 0.3s',
+                          boxSizing: 'border-box',
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#8A8A8A', display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>
+                        Email ID *
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        disabled={bookingLoading}
+                        placeholder="your@email.com"
+                        value={bookingEmail}
+                        onChange={(e) => setBookingEmail(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '0.875rem 1.125rem',
+                          border: '1px solid #ECECEC',
+                          borderRadius: '12px',
+                          background: '#FAFAFA',
+                          fontSize: '0.9375rem',
+                          color: '#2A2A2A',
+                          outline: 'none',
+                          transition: 'all 0.3s',
+                          boxSizing: 'border-box',
+                        }}
+                      />
+                    </div>
+
+                    {bookingError && (
+                      <div style={{ color: '#E10613', fontSize: '0.8125rem', fontWeight: 500 }}>
+                        ⚠️ {bookingError}
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={bookingLoading}
+                      className="btn btn-primary btn-lg"
+                      style={{ width: '100%', marginTop: '0.5rem', border: 'none', cursor: 'pointer' }}
+                    >
+                      {bookingLoading ? 'Submitting...' : 'Schedule Test Drive'}
+                    </button>
+                  </form>
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <style jsx global>{`
         @media (max-width: 768px) { .vehicle-detail-grid { grid-template-columns: 1fr !important; } }
         .spec-chip:hover { background: #fff !important; border-color: #E10613 !important; }
         .feature-row:hover { border-color: #E10613 !important; transform: translateX(4px); }
+        .modal-input:focus { border-color: #E10613 !important; background: #ffffff !important; }
       `}</style>
     </>
   );
