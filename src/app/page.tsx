@@ -100,8 +100,6 @@ export default function HomePage() {
     load();
   }, []);
 
-  const featuredVehicles = vehiclesList.filter(v => v.featured).slice(0, 4);
-  const recentVehicles = vehiclesList.filter(v => v.recentlyAdded).slice(0, 4);
   const section2 = useScrollReveal();
   const section3 = useScrollReveal();
   const section4 = useScrollReveal();
@@ -111,10 +109,10 @@ export default function HomePage() {
       {/* ═══ HERO ═══ */}
       <section style={{ minHeight: '90vh', display: 'flex', alignItems: 'center', background: '#FFFFFF', position: 'relative', overflow: 'hidden' }}>
         {/* Subtle background accents */}
-        <div style={{ position: 'absolute', top: '-20%', right: '-10%', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(225,6,19,0.03) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', bottom: '-30%', left: '-10%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(245,245,245,0.8) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', top: '-20%', right: '-10%', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(225,6,19,0.03) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none', zIndex: 1 }} />
+        <div style={{ position: 'absolute', bottom: '-30%', left: '-10%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(245,245,245,0.8) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none', zIndex: 1 }} />
 
-        <div className="container-wide" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'clamp(2rem, 6vw, 6rem)', alignItems: 'center', width: '100%', padding: 'clamp(2rem, 4vw, 4rem) clamp(1.5rem, 4vw, 3rem)' }}>
+        <div className="container-wide" style={{ position: 'relative', zIndex: 2, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'clamp(2rem, 6vw, 6rem)', alignItems: 'center', width: '100%', padding: 'clamp(2rem, 4vw, 4rem) clamp(1.5rem, 4vw, 3rem)' }}>
           {/* Left */}
           <div>
             <motion.div initial={{ opacity: 0, x: -60 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}>
@@ -132,10 +130,11 @@ export default function HomePage() {
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
               <Link 
                 href="/inventory" 
-                className="btn btn-primary btn-lg" 
+                className="btn btn-primary btn-lg btn-no-shadow" 
                 style={{ 
                   textDecoration: 'none', 
-                  transition: 'transform var(--duration-normal) var(--ease-luxury), box-shadow var(--duration-normal) var(--ease-luxury)' 
+                  boxShadow: 'none',
+                  transition: 'transform var(--duration-normal) var(--ease-luxury), background var(--duration-normal) var(--ease-luxury)' 
                 }}
               >
                 Explore Collection
@@ -184,27 +183,83 @@ export default function HomePage() {
 
 
 
-      {/* ═══ FEATURED INVENTORY ═══ */}
-      {(loading || featuredVehicles.length > 0) && (
-        <section ref={section2.ref} className="section" style={{ background: '#FFFFFF' }}>
+      {/* ═══ FEATURED INVENTORY — AUTO-SCROLLING CAROUSEL ═══ */}
+      {(loading || vehiclesList.length > 0) && (
+        <section ref={section2.ref} className="section" style={{ background: '#FFFFFF', overflow: 'hidden' }}>
           <div className="container">
             <motion.div initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}
               style={{ textAlign: 'center', marginBottom: 'clamp(3rem, 5vw, 4rem)' }}>
               <p className="text-overline" style={{ marginBottom: '0.75rem' }}>Featured Collection</p>
               <h2 className="headline-section">Handpicked Luxury</h2>
             </motion.div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'clamp(1.5rem, 2vw, 2rem)' }}>
-              {loading ? (
-                Array(4).fill(0).map((_, i) => (
-                  <div key={i} className="shimmer" style={{ height: '380px', borderRadius: '16px' }} />
-                ))
-              ) : (
-                featuredVehicles.map((v, i) => <VehicleCard key={v.id} vehicle={v} index={i} />)
-              )}
-            </div>
-            <div style={{ textAlign: 'center', marginTop: '3rem' }}>
-              <Link href="/inventory" className="btn btn-secondary btn-lg" style={{ textDecoration: 'none' }}>View All Vehicles</Link>
-            </div>
+          </div>
+
+          {/* Auto-scrolling carousel */}
+          <div style={{ position: 'relative', width: '100%', overflow: 'hidden' }}>
+            {/* Fade edge left */}
+            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '60px', background: 'linear-gradient(to right, #FFFFFF, transparent)', zIndex: 2, pointerEvents: 'none' }} />
+            {/* Fade edge right */}
+            <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '60px', background: 'linear-gradient(to left, #FFFFFF, transparent)', zIndex: 2, pointerEvents: 'none' }} />
+
+            {loading ? (
+              <div style={{ display: 'flex', gap: '1.5rem', padding: '0 clamp(1.5rem, 4vw, 3rem)' }}>
+                {Array(4).fill(0).map((_, i) => (
+                  <div key={i} className="shimmer" style={{ height: '420px', minWidth: '340px', borderRadius: '16px', flexShrink: 0 }} />
+                ))}
+              </div>
+            ) : (
+              <div className="featured-carousel-track">
+                {[...vehiclesList, ...vehiclesList, ...vehiclesList].map((v, i) => (
+                  <div key={`${v.id}-${i}`} className="featured-carousel-item">
+                    <div className="card" style={{ cursor: 'pointer', position: 'relative', height: '100%' }}>
+                      <div style={{ aspectRatio: '16/10', position: 'relative', overflow: 'hidden', background: '#F5F5F5' }}>
+                        <Image
+                          src={v.images[0]}
+                          alt={`${v.brand} ${v.model} ${v.variant}`}
+                          fill
+                          style={{
+                            objectFit: 'cover',
+                            transition: 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
+                          }}
+                          className="vehicle-card-img"
+                          sizes="340px"
+                        />
+                        {v.tags[0] && (
+                          <span style={{
+                            position: 'absolute', top: '12px', left: '12px',
+                            background: '#E10613', color: '#fff', fontSize: '0.625rem',
+                            fontWeight: 600, padding: '5px 12px', borderRadius: '999px',
+                            textTransform: 'uppercase', letterSpacing: '0.08em',
+                            zIndex: 2,
+                          }}>{v.tags[0]}</span>
+                        )}
+                      </div>
+                      <Link href={`/vehicle/${v.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                        <div style={{ padding: '1.25rem 1.5rem 1.5rem' }}>
+                          <p style={{ fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#E10613', marginBottom: '0.375rem' }}>
+                            {v.brand}
+                          </p>
+                          <h3 style={{ fontFamily: 'var(--font-primary)', fontSize: '1.25rem', fontWeight: 700, color: '#2A2A2A', marginBottom: '0.25rem', letterSpacing: '-0.02em' }}>
+                            {v.model}
+                          </h3>
+                          <p style={{ fontSize: '0.8125rem', color: '#8A8A8A', marginBottom: '1rem' }}>
+                            {v.variant} · {v.year}
+                          </p>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid #F0F0F0', paddingTop: '1rem' }}>
+                            <p style={{ fontFamily: 'var(--font-primary)', fontSize: '1.25rem', fontWeight: 700, color: '#2A2A2A' }}>{formatPrice(v.price)}</p>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#E10613', letterSpacing: '0.05em' }}>VIEW →</span>
+                          </div>
+                        </div>
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="container" style={{ textAlign: 'center', marginTop: '3rem' }}>
+            <Link href="/inventory" className="btn btn-secondary btn-lg" style={{ textDecoration: 'none' }}>View All Vehicles</Link>
           </div>
         </section>
       )}
@@ -252,7 +307,7 @@ export default function HomePage() {
             <p className="text-overline" style={{ marginBottom: '0.75rem' }}>The Auto Bourn Difference</p>
             <h2 className="headline-section">Why Choose Us</h2>
           </motion.div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '2rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '2rem', maxWidth: '1100px', margin: '0 auto' }}>
             {whyAutoBourn.map((item, i) => (
               <motion.div key={item.title} initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6, delay: i * 0.1 }}>
                 <div className="card-glass" style={{ padding: '2rem', height: '100%' }}>
@@ -266,33 +321,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ═══ RECENTLY ADDED ═══ */}
-      <section className="section" style={{ background: '#F5F5F5' }}>
-        <div className="container">
-          <motion.div initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}
-            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 'clamp(2rem, 4vw, 3rem)', flexWrap: 'wrap', gap: '1rem' }}>
-            <div>
-              <p className="text-overline" style={{ marginBottom: '0.5rem' }}>Just Arrived</p>
-              <h2 className="headline-section">Recently Added</h2>
-            </div>
-            <Link href="/inventory" className="btn btn-ghost btn-sm" style={{ textDecoration: 'none' }}>View All →</Link>
-          </motion.div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'clamp(1.5rem, 2vw, 2rem)' }}>
-            {loading ? (
-              Array(4).fill(0).map((_, i) => (
-                <div key={i} className="shimmer" style={{ height: '380px', borderRadius: '16px' }} />
-              ))
-            ) : recentVehicles.length === 0 ? (
-              <p style={{ textAlign: 'center', gridColumn: '1/-1', color: '#8A8A8A', padding: '2rem 0' }}>No vehicles recently added.</p>
-            ) : (
-              recentVehicles.map((v, i) => <VehicleCard key={v.id} vehicle={v} index={i} />)
-            )}
-          </div>
-        </div>
-      </section>
-
       {/* ═══ STATISTICS ═══ */}
-      <section className="section" style={{ background: '#FFFFFF' }}>
+      <section className="section" style={{ background: '#F5F5F5' }}>
         <div className="container">
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'clamp(2rem, 4vw, 4rem)' }}>
             {statistics.map((stat, i) => (
@@ -336,7 +366,7 @@ export default function HomePage() {
               Schedule a private showing or browse our curated collection from the comfort of your home.
             </p>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-              <Link href="/inventory" className="btn btn-primary btn-lg" style={{ textDecoration: 'none' }}>Explore Collection</Link>
+              <Link href="/inventory" className="btn btn-primary btn-lg btn-no-shadow" style={{ textDecoration: 'none', boxShadow: 'none' }}>Explore Collection</Link>
               <Link href="/sell" className="btn btn-secondary btn-lg" style={{ textDecoration: 'none' }}>Sell Your Car</Link>
             </div>
           </motion.div>
@@ -347,6 +377,34 @@ export default function HomePage() {
 
       {/* ── Global page styles ── */}
       <style jsx global>{`
+        /* Remove shadow/shade from Explore Collection buttons */
+        .btn-no-shadow {
+          box-shadow: none !important;
+        }
+        .btn-no-shadow:hover {
+          box-shadow: none !important;
+        }
+
+        /* Featured carousel auto-scroll */
+        .featured-carousel-track {
+          display: flex;
+          gap: 1.5rem;
+          padding: 0.5rem clamp(1.5rem, 4vw, 3rem) 1.5rem;
+          animation: featuredScroll 40s linear infinite;
+          width: max-content;
+        }
+        .featured-carousel-track:hover {
+          animation-play-state: paused;
+        }
+        @keyframes featuredScroll {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(calc(-100% / 3)); }
+        }
+        .featured-carousel-item {
+          flex-shrink: 0;
+          width: 340px;
+        }
+
         .brand-carousel-track {
           display: flex;
           align-items: center;
@@ -387,10 +445,23 @@ export default function HomePage() {
         }
         .brand-logo-card:hover .brand-logo-img { transform: scale(1.08); }
 
+        /* Why Choose Us — responsive 3-col grid */
+        @media (max-width: 1024px) {
+          section:nth-of-type(4) .container > div:last-child {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+        }
+        @media (max-width: 640px) {
+          section:nth-of-type(4) .container > div:last-child {
+            grid-template-columns: 1fr !important;
+          }
+        }
+
         @media (max-width: 768px) {
           .hero-vehicle-container { display: none; }
           section:first-of-type > div { grid-template-columns: 1fr !important; }
           .brand-logo-card { width: 110px; height: 100px; padding: 1rem; }
+          .featured-carousel-item { width: 280px; }
         }
       `}</style>
     </>

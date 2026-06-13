@@ -17,11 +17,11 @@ export default function TestimonialCarousel({ testimonials }: TestimonialCarouse
     <div style={{ position: 'relative', width: '100%', overflow: 'hidden', padding: '1rem 0' }}>
       {/* Gradient Fades for Left/Right Edges */}
       <div style={{
-        position: 'absolute', left: 0, top: 0, bottom: 0, width: '100px',
+        position: 'absolute', left: 0, top: 0, bottom: 0, width: '40px',
         background: 'linear-gradient(to right, #F5F5F5, transparent)', zIndex: 2, pointerEvents: 'none'
       }} />
       <div style={{
-        position: 'absolute', right: 0, top: 0, bottom: 0, width: '100px',
+        position: 'absolute', right: 0, top: 0, bottom: 0, width: '40px',
         background: 'linear-gradient(to left, #F5F5F5, transparent)', zIndex: 2, pointerEvents: 'none'
       }} />
 

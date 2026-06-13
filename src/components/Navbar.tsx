@@ -74,7 +74,7 @@ export default function Navbar() {
 
           {/* CTA */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }} className="desktop-nav">
-            <Link href="/inventory" className="btn btn-primary btn-sm" style={{ textDecoration: 'none' }}>
+            <Link href="/inventory" className="btn btn-primary btn-sm btn-no-shadow" style={{ textDecoration: 'none', boxShadow: 'none' }}>
               Explore Collection
             </Link>
           </div>
@@ -110,7 +110,7 @@ export default function Navbar() {
               </motion.div>
             ))}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} style={{ marginTop: 'auto', paddingTop: '2rem' }}>
-              <Link href="/inventory" className="btn btn-primary btn-lg" onClick={() => setMobileOpen(false)} style={{ textDecoration: 'none', width: '100%' }}>
+              <Link href="/inventory" className="btn btn-primary btn-lg btn-no-shadow" onClick={() => setMobileOpen(false)} style={{ textDecoration: 'none', width: '100%', boxShadow: 'none' }}>
                 Explore Collection
               </Link>
             </motion.div>
