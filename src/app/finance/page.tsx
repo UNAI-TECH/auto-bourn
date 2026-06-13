@@ -2,19 +2,20 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function FinancePage() {
   const partners = [
-    { name: 'HDFC Bank', rate: '8.25%', type: 'Bank' },
-    { name: 'ICICI Bank', rate: '8.50%', type: 'Bank' },
-    { name: 'Axis Bank', rate: '8.75%', type: 'Bank' },
-    { name: 'Kotak Mahindra', rate: '8.90%', type: 'Bank' },
-    { name: 'Bajaj Finance', rate: '9.00%', type: 'NBFC' },
-    { name: 'Tata Capital', rate: '9.25%', type: 'NBFC' },
+    { name: 'HDFC Bank', logo: '/assets/hdfc.png' },
+    { name: 'ICICI Bank', logo: '/assets/icici.png' },
+    { name: 'Axis Bank', logo: '/assets/axis.png' },
+    { name: 'Kotak Mahindra', logo: '/assets/kotak.png' },
+    { name: 'Bajaj Finance', logo: '/assets/bajaj.png' },
+    { name: 'Tata Capital', logo: '/assets/tata.png' },
   ];
 
   const benefits = [
-    { icon: '✦', title: 'Quick Approval', desc: 'Get loan approval within 24 hours with minimal documentation.' },
+    { icon: '✦', title: 'Quick Approval', desc: 'Get loan approval within 24 hours with perfect documentation.' },
     { icon: '◆', title: 'Flexible Tenure', desc: 'Choose repayment tenure from 12 to 84 months to suit your budget.' },
     { icon: '●', title: 'Competitive Rates', desc: 'Best-in-class interest rates starting from just 8.25% p.a.' },
     { icon: '▲', title: 'Hassle-Free Process', desc: 'End-to-end digital processing with dedicated relationship manager.' },
@@ -34,9 +35,9 @@ export default function FinancePage() {
           </motion.div>
 
           {/* Benefits Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.5rem', maxWidth: '1000px', margin: '0 auto 4rem' }}>
+          <div className="benefits-grid">
             {benefits.map((b, i) => (
-              <motion.div key={b.title} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}>
+              <motion.div key={b.title} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} style={{ height: '100%' }}>
                 <div style={{ background: '#FAFAFA', borderRadius: '16px', padding: '2rem', border: '1px solid #ECECEC', height: '100%' }}>
                   <span style={{ fontSize: '1.5rem', color: '#E10613', display: 'block', marginBottom: '1rem' }}>{b.icon}</span>
                   <h3 style={{ fontFamily: 'var(--font-primary)', fontSize: '1.125rem', fontWeight: 700, color: '#2A2A2A', marginBottom: '0.5rem' }}>{b.title}</h3>
@@ -65,31 +66,105 @@ export default function FinancePage() {
       </section>
 
       {/* Partners */}
-      <section className="section" style={{ background: '#F5F5F5' }}>
+      <section className="section" style={{ background: '#F5F5F5', overflow: 'hidden', padding: 'clamp(3rem, 6vw, 5rem) 0' }}>
         <div className="container">
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
             style={{ textAlign: 'center', marginBottom: '3rem' }}>
             <p className="text-overline" style={{ marginBottom: '0.5rem' }}>Our Partners</p>
             <h2 className="headline-section">Finance Partners</h2>
           </motion.div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1.5rem', maxWidth: '900px', margin: '0 auto' }}>
-            {partners.map((p, i) => (
-              <motion.div key={p.name} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }}>
-                <div style={{ background: '#FFFFFF', borderRadius: '12px', padding: '1.5rem', border: '1px solid #ECECEC', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <p style={{ fontWeight: 600, color: '#2A2A2A', marginBottom: '0.25rem' }}>{p.name}</p>
-                    <p style={{ fontSize: '0.75rem', color: '#B0B0B0' }}>{p.type}</p>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <p style={{ fontSize: '0.625rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#8A8A8A' }}>From</p>
-                    <p style={{ fontFamily: 'var(--font-primary)', fontWeight: 700, color: '#E10613' }}>{p.rate}</p>
-                  </div>
-                </div>
-              </motion.div>
+        </div>
+
+        {/* Infinite scroll carousel — logos only */}
+        <div style={{ position: 'relative', width: '100%', overflow: 'hidden' }}>
+          {/* Fade edge left */}
+          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '80px', background: 'linear-gradient(to right, #F5F5F5, transparent)', zIndex: 2, pointerEvents: 'none' }} />
+          {/* Fade edge right */}
+          <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '80px', background: 'linear-gradient(to left, #F5F5F5, transparent)', zIndex: 2, pointerEvents: 'none' }} />
+          
+          <div className="partner-carousel-track">
+            {[...partners, ...partners, ...partners].map((p, i) => (
+              <div key={`${p.name}-${i}`} className="partner-logo-card">
+                <Image
+                  src={p.logo}
+                  alt={`${p.name} logo`}
+                  width={160}
+                  height={50}
+                  style={{ objectFit: 'contain', width: '100%', height: '100%' }}
+                  className="partner-logo-img"
+                />
+              </div>
             ))}
           </div>
         </div>
       </section>
+
+      <style jsx global>{`
+        .partner-carousel-track {
+          display: flex;
+          align-items: center;
+          gap: 2.5rem;
+          padding: 0.5rem clamp(1.5rem, 4vw, 3rem) 1.5rem;
+          animation: partnerScroll 25s linear infinite;
+          width: max-content;
+        }
+        .partner-carousel-track:hover {
+          animation-play-state: paused;
+        }
+        @keyframes partnerScroll {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(calc(-100% / 3)); }
+        }
+        .partner-logo-card {
+          background: #FFFFFF;
+          border-radius: 16px;
+          width: 200px;
+          height: 100px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid #ECECEC;
+          transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+          padding: 1.25rem;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+        }
+        .partner-logo-card:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+          border-color: #E10613;
+        }
+        .partner-logo-img {
+          opacity: 0.85;
+          transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .partner-logo-card:hover .partner-logo-img {
+          opacity: 1;
+          transform: scale(1.05);
+        }
+
+        .benefits-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 1.5rem;
+          max-width: 1100px;
+          margin: 0 auto 4rem;
+        }
+        @media (max-width: 1024px) {
+          .benefits-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+        @media (max-width: 640px) {
+          .benefits-grid {
+            grid-template-columns: 1fr;
+          }
+          .partner-logo-card {
+            width: 160px;
+            height: 80px;
+            padding: 1rem;
+          }
+        }
+      `}</style>
     </>
   );
 }

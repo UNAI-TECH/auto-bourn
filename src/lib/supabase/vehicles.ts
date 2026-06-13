@@ -1,14 +1,25 @@
 import { createClient } from './client';
 import { Vehicle } from '@/data/vehicles';
 
-export async function fetchDbVehicles(): Promise<Vehicle[]> {
+let cachedVehicles: Vehicle[] | null = null;
+let lastFetchTime = 0;
+const CACHE_TTL = 60000; // Cache for 60 seconds
+
+const cachedVehicleById: Record<string, { data: Vehicle; timestamp: number }> = {};
+
+export async function fetchDbVehicles(forceRefresh = false): Promise<Vehicle[]> {
   try {
+    const now = Date.now();
+    if (!forceRefresh && cachedVehicles && (now - lastFetchTime < CACHE_TTL)) {
+      return cachedVehicles;
+    }
+
     const res = await fetch('/api/cars?limit=100');
     if (!res.ok) throw new Error('Failed to fetch vehicles');
     const data = await res.json();
     const cars = data.cars || [];
 
-    return cars.map((car: any) => {
+    const mapped = cars.map((car: any) => {
       const rawImages = car.car_images && car.car_images.length > 0
         ? car.car_images.sort((a: any, b: any) => a.display_order - b.display_order).map((img: any) => img.image_url)
         : [];
@@ -49,14 +60,23 @@ export async function fetchDbVehicles(): Promise<Vehicle[]> {
         employee: car.employee ? { name: car.employee.name, employee_id: car.employee.employee_id } : undefined,
       };
     });
+
+    cachedVehicles = mapped;
+    lastFetchTime = now;
+    return mapped;
   } catch (error) {
     console.error('Error fetching cars:', error);
-    return [];
+    return cachedVehicles || [];
   }
 }
 
-export async function fetchDbVehicleById(id: string): Promise<Vehicle | null> {
+export async function fetchDbVehicleById(id: string, forceRefresh = false): Promise<Vehicle | null> {
   try {
+    const now = Date.now();
+    if (!forceRefresh && cachedVehicleById[id] && (now - cachedVehicleById[id].timestamp < CACHE_TTL)) {
+      return cachedVehicleById[id].data;
+    }
+
     const res = await fetch(`/api/cars?id=${encodeURIComponent(id)}`);
     if (!res.ok) throw new Error('Failed to fetch vehicle');
     const data = await res.json();
@@ -71,7 +91,7 @@ export async function fetchDbVehicleById(id: string): Promise<Vehicle | null> {
       ? [car.thumbnail, ...rawImages.filter((img: string) => img !== car.thumbnail)]
       : (rawImages.length > 0 ? rawImages : ['/vehicles/placeholder.png']);
 
-    return {
+    const mapped: Vehicle = {
       id: car.id,
       brand: car.brand,
       model: car.model,
@@ -102,9 +122,13 @@ export async function fetchDbVehicleById(id: string): Promise<Vehicle | null> {
       description: car.description || '',
       employee: car.employee ? { name: car.employee.name, employee_id: car.employee.employee_id } : undefined,
     };
+
+    cachedVehicleById[id] = { data: mapped, timestamp: now };
+    return mapped;
   } catch (error) {
     console.error('Error fetching car:', error);
-    return null;
+    return cachedVehicleById[id]?.data || null;
   }
 }
+
 

@@ -22,7 +22,11 @@ export async function GET(request: NextRequest) {
       if (error || !car) {
         return NextResponse.json({ error: error?.message || 'Car not found' }, { status: 404 });
       }
-      return NextResponse.json({ car });
+      return NextResponse.json({ car }, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=30'
+        }
+      });
     }
 
     const brand = searchParams.get('brand');
@@ -46,7 +50,11 @@ export async function GET(request: NextRequest) {
     const { data, count, error } = await query;
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-    return NextResponse.json({ cars: data, total: count });
+    return NextResponse.json({ cars: data, total: count }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=30'
+      }
+    });
   } catch (err: any) {
     console.error('API Error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

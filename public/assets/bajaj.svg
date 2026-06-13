@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 80" width="100%" height="100%">
+  <circle cx="35" cy="40" r="25" fill="#00529B" />
+  <path d="M 24 28 H 38 C 42 28 45 30 45 33 C 45 35 43 37 41 38 C 44 39 46 41 46 45 C 46 48 43 51 38 51 H 24 V 28 Z M 29 32 V 37 H 37 C 39 37 40 36 40 34.5 C 40 33 39 32 37 32 H 29 Z M 29 41 V 47 H 38 C 40 47 41 46 41 44 C 41 42 40 41 38 41 H 29 Z" fill="#FFFFFF" />
+  <text x="75" y="38" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="22" fill="#00529B" letter-spacing="0.5">BAJAJ</text>
+  <text x="75" y="58" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="20" fill="#00529B" letter-spacing="0.5">FINSERV</text>
+</svg>

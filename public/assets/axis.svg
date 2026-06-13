@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 80" width="100%" height="100%">
+  <path d="M 20 20 L 50 20 L 35 55 Z" fill="#841A41" />
+  <path d="M 25 24 L 45 24 L 35 48 Z" fill="#FFFFFF" />
+  <path d="M 30 28 L 40 28 L 35 40 Z" fill="#841A41" />
+  <text x="75" y="48" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="30" fill="#841A41" letter-spacing="0.5">AXIS BANK</text>
+</svg>
