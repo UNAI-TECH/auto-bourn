@@ -165,49 +165,11 @@ export default function PrivacyPage() {
           ))}
         </div>
 
-        {/* Outro */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          style={{
-            marginTop: '4rem',
-            textAlign: 'center',
-            background: 'linear-gradient(135deg, #FAFAFA 0%, #FFFFFF 100%)',
-            border: '1px solid #ECECEC',
-            borderRadius: '24px',
-            padding: '3rem 2rem'
-          }}
-        >
-          <h3 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1rem' }}>
-            Questions or Concerns?
-          </h3>
-          <p style={{ color: '#8A8A8A', lineHeight: 1.6, maxWidth: '480px', margin: '0 auto 2rem' }}>
-            Our client relationship team is here to help with any inquiries regarding our data handling or security protocols.
-          </p>
-          <a href="mailto:hello@autobourncars.com" style={{
-            display: 'inline-block',
-            background: '#E10613',
-            color: '#FFFFFF',
-            textDecoration: 'none',
-            padding: '0.875rem 2rem',
-            borderRadius: '12px',
-            fontWeight: 600,
-            boxShadow: '0 4px 14px rgba(225, 6, 19, 0.2)',
-            transition: 'all 0.2s'
-          }} className="btn-contact">
-            Contact Compliance Officer
-          </a>
-        </motion.div>
       </div>
 
       <style jsx global>{`
         .back-link:hover {
           color: #E10613 !important;
-        }
-        .btn-contact:hover {
-          background: #c70511 !important;
-          transform: translateY(-1px);
         }
       `}</style>
     </div>

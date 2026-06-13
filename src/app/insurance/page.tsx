@@ -13,11 +13,10 @@ export default function InsurancePage() {
   ];
 
   const partners = [
-    { name: 'Cibil Score', logo: '/cibilscore.jpeg' },
     { name: 'IDFC First Bank', logo: '/idfcbank.png' },
     { name: 'Tata Capital', logo: '/tatacapital.png' },
     { name: 'Shriram Finance', logo: '/shriram.png' },
-    { name: 'Kuwy', logo: '/kuwy.jpeg' },
+    { name: 'Kuwy', logo: '/kuwy.png' },
   ];
 
   return (
@@ -65,27 +64,13 @@ export default function InsurancePage() {
                   boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
                   overflow: 'hidden',
                 }}>
-                  {partner.name === 'Cibil Score' ? (
-                    <div style={{ width: '120px', height: '52px', overflow: 'hidden', position: 'relative' }}>
-                      <div style={{ position: 'absolute', top: '-6px', left: 0, width: '120px', height: '70px' }}>
-                        <Image
-                          src={partner.logo}
-                          alt={partner.name}
-                          fill
-                          style={{ objectFit: 'contain' }}
-                          sizes="120px"
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <Image
-                      src={partner.logo}
-                      alt={partner.name}
-                      width={150}
-                      height={60}
-                      style={{ objectFit: 'contain', marginTop: '6px' }}
-                    />
-                  )}
+                  <Image
+                    src={partner.logo}
+                    alt={partner.name}
+                    width={150}
+                    height={60}
+                    style={{ objectFit: 'contain', marginTop: '6px' }}
+                  />
                 </div>
               ))}
             </div>

@@ -64,7 +64,7 @@ const cardData: CardDatum[] = [
     label: 'Our Promise',
     title: 'Your Trusted Destination for Certified Pre-Owned Cars',
     description:
-      'At Auto Bourn, we combine quality, transparency, and customer satisfaction to deliver a superior car-buying experience. With 10+ years of industry expertise, 3000+ happy customers, certified inspections, verified documentation, and dedicated after-sales support, we ensure every journey begins with confidence.',
+      'At Auto Bourn, we combine quality, transparency, and customer care to deliver an unmatched, certified luxury car-buying experience.',
   },
 ];
 
