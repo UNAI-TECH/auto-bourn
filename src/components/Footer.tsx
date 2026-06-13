@@ -17,6 +17,7 @@ const footerLinks = {
     { label: 'Insurance', href: '/insurance' },
     { label: 'Sell Your Car', href: '/sell' },
     { label: 'Trade-In', href: '/sell' },
+    { label: 'Body Shop', href: '/body-shop' },
   ],
   company: [
     { label: 'About Us', href: '/about' },
