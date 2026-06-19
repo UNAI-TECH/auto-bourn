@@ -3,16 +3,17 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, Car, User, Calendar, Mail, Phone, Clock, FileText, CheckCircle2, XCircle, AlertCircle, RefreshCw } from 'lucide-react';
+import { Search, Filter, Car, User, Calendar, Mail, Phone, Clock, FileText, CheckCircle2, XCircle, AlertCircle, RefreshCw, BookmarkCheck } from 'lucide-react';
 
-interface TestDriveRequest {
+interface BookingRequest {
   id: string;
   lead_id: string;
   car_id: string | null;
   car_name: string;
-  scheduled_at: string;
-  location: string | null;
-  status: 'scheduled' | 'completed' | 'cancelled' | 'no_show';
+  booking_amount: number | null;
+  total_amount: number | null;
+  payment_status: 'pending' | 'partial' | 'completed';
+  delivery_status: 'pending' | 'processing' | 'completed' | 'cancelled';
   notes: string | null;
   created_at: string;
   lead: {
@@ -32,14 +33,13 @@ interface Employee {
   name: string;
 }
 
-export default function AdminTestDrivesPage() {
-  const [requests, setRequests] = useState<TestDriveRequest[]>([]);
+export default function AdminBookingsPage() {
+  const [requests, setRequests] = useState<BookingRequest[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [currentAdminId, setCurrentAdminId] = useState<string | null>(null);
   const [toast, setToast] = useState('');
 
   const supabase = createClient();
@@ -51,10 +51,10 @@ export default function AdminTestDrivesPage() {
 
   const loadData = async () => {
     try {
-      const res = await fetch('/api/test-drives');
-      if (!res.ok) throw new Error('Failed to fetch test drives');
+      const res = await fetch('/api/bookings');
+      if (!res.ok) throw new Error('Failed to fetch reservations');
       const data = await res.json();
-      setRequests(data.testDrives || []);
+      setRequests(data.bookings || []);
 
       // Fetch employees to allow assignment
       const { data: emps } = await supabase
@@ -64,7 +64,7 @@ export default function AdminTestDrivesPage() {
       setEmployees(emps || []);
     } catch (err) {
       console.error(err);
-      showToast('Error loading test drives');
+      showToast('Error loading reservations');
     } finally {
       setLoading(false);
     }
@@ -72,32 +72,24 @@ export default function AdminTestDrivesPage() {
 
   useEffect(() => {
     loadData();
-
-    // Get current logged-in employee ID (Admin)
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        supabase
-          .from('employees')
-          .select('id')
-          .eq('auth_user_id', user.id)
-          .single()
-          .then(({ data }) => {
-            if (data) setCurrentAdminId(data.id);
-          });
-      }
-    });
   }, []);
 
-  const handleUpdateStatus = async (id: string, status: string) => {
+  const handleUpdateStatus = async (id: string, deliveryStatus: string) => {
     setUpdatingId(id);
     try {
-      const res = await fetch('/api/test-drives', {
+      const res = await fetch('/api/bookings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, status }),
+        body: JSON.stringify({ id, deliveryStatus }),
       });
       if (!res.ok) throw new Error('Failed to update status');
-      showToast(`Status updated to ${status}`);
+      
+      let msg = '';
+      if (deliveryStatus === 'processing') msg = 'Reservation accepted — Car status changed to Booked.';
+      else if (deliveryStatus === 'cancelled') msg = 'Reservation cancelled — Car status released to Available.';
+      else if (deliveryStatus === 'completed') msg = 'Reservation completed — Car status changed to Sold.';
+
+      showToast(msg);
       loadData();
     } catch (err) {
       console.error(err);
@@ -110,17 +102,17 @@ export default function AdminTestDrivesPage() {
   const handleAssignEmployee = async (id: string, employeeId: string | null) => {
     setUpdatingId(id);
     try {
-      const res = await fetch('/api/test-drives', {
+      const res = await fetch('/api/bookings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, employeeId: employeeId || null }),
       });
       if (!res.ok) throw new Error('Failed to assign employee');
-      showToast(employeeId ? 'Employee assigned' : 'Employee unassigned');
+      showToast(employeeId ? 'Consultant assigned' : 'Consultant unassigned');
       loadData();
     } catch (err) {
       console.error(err);
-      showToast('Failed to assign employee');
+      showToast('Failed to assign consultant');
     } finally {
       setUpdatingId(null);
     }
@@ -140,7 +132,7 @@ export default function AdminTestDrivesPage() {
       car.toLowerCase().includes(search.toLowerCase()) ||
       empName.toLowerCase().includes(search.toLowerCase());
 
-    const matchStatus = statusFilter === 'all' || req.status === statusFilter;
+    const matchStatus = statusFilter === 'all' || req.delivery_status === statusFilter;
 
     return matchSearch && matchStatus;
   });
@@ -148,13 +140,13 @@ export default function AdminTestDrivesPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
-        return { bg: 'rgba(34, 197, 94, 0.1)', color: '#22c55e' };
+        return { bg: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', label: 'Delivered (Sold)' };
       case 'cancelled':
-        return { bg: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' };
-      case 'no_show':
-        return { bg: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' };
+        return { bg: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', label: 'Cancelled' };
+      case 'processing':
+        return { bg: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', label: 'Booked (Active)' };
       default:
-        return { bg: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' };
+        return { bg: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', label: 'Pending Request' };
     }
   };
 
@@ -162,8 +154,8 @@ export default function AdminTestDrivesPage() {
     <div className="db-page">
       <div className="db-page-header" style={{ marginBottom: '2rem' }}>
         <div>
-          <h1 className="db-page-title">Test Drive Bookings</h1>
-          <p className="db-page-sub">Monitor and assign incoming vehicle test drive requests</p>
+          <h1 className="db-page-title">Vehicle Reservations</h1>
+          <p className="db-page-sub">Manage client booking requests, accept reservations, and assign consultants</p>
         </div>
       </div>
 
@@ -171,7 +163,7 @@ export default function AdminTestDrivesPage() {
         <div className="db-search-inline" style={{ flex: 1, minWidth: '260px' }}>
           <Search size={16} />
           <input
-            placeholder="Search bookings by customer, car, or consultant..."
+            placeholder="Search reservations by customer, car, or consultant..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -180,10 +172,10 @@ export default function AdminTestDrivesPage() {
           <Filter size={14} />
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="all">All Statuses</option>
-            <option value="scheduled">Scheduled</option>
-            <option value="completed">Completed</option>
+            <option value="pending">Pending</option>
+            <option value="processing">Booked (Active)</option>
+            <option value="completed">Delivered</option>
             <option value="cancelled">Cancelled</option>
-            <option value="no_show">No Show</option>
           </select>
         </div>
       </div>
@@ -206,11 +198,11 @@ export default function AdminTestDrivesPage() {
             ))
         ) : filtered.length === 0 ? (
           <p className="db-empty-full" style={{ textAlign: 'center', padding: '3rem', color: 'var(--db-tx3)' }}>
-            No test drives found.
+            No reservations found.
           </p>
         ) : (
           filtered.map((req, i) => {
-            const statusStyle = getStatusColor(req.status);
+            const statusStyle = getStatusColor(req.delivery_status);
             return (
               <motion.div
                 key={req.id}
@@ -223,12 +215,12 @@ export default function AdminTestDrivesPage() {
                   borderRadius: '16px',
                   padding: '1.5rem',
                   display: 'grid',
-                  gridTemplateColumns: '1.2fr 1fr 1fr 1fr',
+                  gridTemplateColumns: '1.2fr 1fr 1fr 1.2fr',
                   gap: '1.5rem',
                   alignItems: 'center',
                   transition: 'border-color 0.2s',
                 }}
-                className="test-drive-card"
+                className="booking-card"
               >
                 {/* Column 1: Client & Contact */}
                 <div>
@@ -257,7 +249,7 @@ export default function AdminTestDrivesPage() {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--db-tx2)' }}>
                     <Calendar size={13} style={{ color: 'var(--db-tx3)' }} />
-                    <span>{new Date(req.scheduled_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</span>
+                    <span>Requested: {new Date(req.created_at).toLocaleDateString('en-IN', { dateStyle: 'medium' })}</span>
                   </div>
                 </div>
 
@@ -285,61 +277,78 @@ export default function AdminTestDrivesPage() {
                       letterSpacing: '0.05em',
                     }}
                   >
-                    {req.status}
+                    {statusStyle.label}
                   </span>
 
-                  <div style={{ display: 'flex', gap: '4px' }}>
-                    <button
-                      disabled={updatingId === req.id || req.status === 'completed'}
-                      onClick={() => handleUpdateStatus(req.id, 'completed')}
-                      title="Mark Completed"
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        padding: '6px',
-                        borderRadius: '6px',
-                        color: req.status === 'completed' ? '#B0B0B0' : '#22c55e',
-                        transition: 'background 0.2s',
-                      }}
-                      className="status-btn"
-                    >
-                      <CheckCircle2 size={16} />
-                    </button>
-                    <button
-                      disabled={updatingId === req.id || req.status === 'cancelled'}
-                      onClick={() => handleUpdateStatus(req.id, 'cancelled')}
-                      title="Mark Cancelled"
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        padding: '6px',
-                        borderRadius: '6px',
-                        color: req.status === 'cancelled' ? '#B0B0B0' : '#ef4444',
-                        transition: 'background 0.2s',
-                      }}
-                      className="status-btn"
-                    >
-                      <XCircle size={16} />
-                    </button>
-                    <button
-                      disabled={updatingId === req.id || req.status === 'no_show'}
-                      onClick={() => handleUpdateStatus(req.id, 'no_show')}
-                      title="Mark No Show"
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        padding: '6px',
-                        borderRadius: '6px',
-                        color: req.status === 'no_show' ? '#B0B0B0' : '#f59e0b',
-                        transition: 'background 0.2s',
-                      }}
-                      className="status-btn"
-                    >
-                      <AlertCircle size={16} />
-                    </button>
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '0.25rem' }}>
+                    {req.delivery_status === 'pending' && (
+                      <button
+                        disabled={updatingId === req.id}
+                        onClick={() => handleUpdateStatus(req.id, 'processing')}
+                        className="btn-action btn-accept"
+                        style={{
+                          background: '#22c55e',
+                          color: '#fff',
+                          border: 'none',
+                          padding: '0.4rem 0.8rem',
+                          borderRadius: '8px',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                        }}
+                      >
+                        <BookmarkCheck size={14} /> Accept Request
+                      </button>
+                    )}
+                    
+                    {req.delivery_status === 'processing' && (
+                      <button
+                        disabled={updatingId === req.id}
+                        onClick={() => handleUpdateStatus(req.id, 'completed')}
+                        className="btn-action btn-complete"
+                        style={{
+                          background: 'var(--db-bl)',
+                          color: '#fff',
+                          border: 'none',
+                          padding: '0.4rem 0.8rem',
+                          borderRadius: '8px',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                        }}
+                      >
+                        <CheckCircle2 size={14} /> Mark Delivered
+                      </button>
+                    )}
+
+                    {req.delivery_status !== 'completed' && req.delivery_status !== 'cancelled' && (
+                      <button
+                        disabled={updatingId === req.id}
+                        onClick={() => handleUpdateStatus(req.id, 'cancelled')}
+                        className="btn-action btn-cancel"
+                        style={{
+                          background: '#ef4444',
+                          color: '#fff',
+                          border: 'none',
+                          padding: '0.4rem 0.8rem',
+                          borderRadius: '8px',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                        }}
+                      >
+                        <XCircle size={14} /> Cancel
+                      </button>
+                    )}
                   </div>
                 </div>
               </motion.div>
@@ -362,23 +371,31 @@ export default function AdminTestDrivesPage() {
       </AnimatePresence>
 
       <style jsx>{`
-        .test-drive-card:hover {
+        .booking-card:hover {
           border-color: var(--db-gold) !important;
         }
-        .status-btn:hover:not(:disabled) {
-          background: var(--db-sf2);
+        .btn-action {
+          transition: transform 0.2s, opacity 0.2s;
         }
-        .status-btn:disabled {
-          opacity: 0.4;
+        .btn-action:hover {
+          transform: translateY(-1px);
+          opacity: 0.9;
+        }
+        .btn-action:active {
+          transform: translateY(0);
+        }
+        .btn-action:disabled {
+          opacity: 0.5;
           cursor: not-allowed;
+          transform: none;
         }
         @media (max-width: 900px) {
-          .test-drive-card {
+          .booking-card {
             grid-template-columns: 1fr 1fr !important;
           }
         }
         @media (max-width: 600px) {
-          .test-drive-card {
+          .booking-card {
             grid-template-columns: 1fr !important;
             gap: 1rem !important;
           }

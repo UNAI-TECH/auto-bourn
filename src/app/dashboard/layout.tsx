@@ -10,7 +10,7 @@ import type { Employee } from '@/types/database';
 import {
   LayoutDashboard, Users, Car, ClipboardList, Activity,
   LogOut, Menu, X, ChevronRight, Moon, Sun, Bell, Search,
-  Users2, CalendarClock, BarChart3, PhoneCall
+  Users2, CalendarClock, BarChart3, PhoneCall, Bookmark
 } from 'lucide-react';
 
 interface DashboardContextType {
@@ -30,6 +30,7 @@ const navItems = [
   { href: '/dashboard/employees', label: 'Employees', icon: Users },
   { href: '/dashboard/cars', label: 'Cars', icon: Car },
   { href: '/dashboard/uploads', label: 'Upload Tracking', icon: ClipboardList },
+  { href: '/dashboard/bookings', label: 'Reservations', icon: Bookmark },
   { href: '/dashboard/reports', label: 'Daily Reports', icon: Bell },
   { href: '/dashboard/test-drives', label: 'Test Drives', icon: CalendarClock },
   { href: '/dashboard/logs', label: 'Activity Logs', icon: Activity },

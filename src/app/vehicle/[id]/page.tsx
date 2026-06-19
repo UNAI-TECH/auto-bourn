@@ -27,6 +27,53 @@ export default function VehicleDetailPage() {
   const [bookingError, setBookingError] = useState('');
   const [bookingSuccess, setBookingSuccess] = useState(false);
 
+  const [showReserveModal, setShowReserveModal] = useState(false);
+  const [reserveName, setReserveName] = useState('');
+  const [reservePhone, setReservePhone] = useState('');
+  const [reserveEmail, setReserveEmail] = useState('');
+  const [reserveLoading, setReserveLoading] = useState(false);
+  const [reserveError, setReserveError] = useState('');
+  const [reserveSuccess, setReserveSuccess] = useState(false);
+
+  const handleReserveSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reserveName || !reservePhone || !reserveEmail) {
+      setReserveError('Name, Phone Number, and Email ID are required.');
+      return;
+    }
+    setReserveLoading(true);
+    setReserveError('');
+    try {
+      const res = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: reserveName,
+          phone: reservePhone,
+          email: reserveEmail,
+          carId: vehicle?.id,
+          carName: `${vehicle?.brand} ${vehicle?.model}`
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to submit reservation request.');
+      }
+      setReserveSuccess(true);
+      setReserveName('');
+      setReservePhone('');
+      setReserveEmail('');
+      setTimeout(() => {
+        setShowReserveModal(false);
+        setReserveSuccess(false);
+      }, 3000);
+    } catch (err: any) {
+      setReserveError(err.message || 'An error occurred. Please try again.');
+    } finally {
+      setReserveLoading(false);
+    }
+  };
+
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!bookingName || !bookingPhone || !bookingEmail) {
@@ -188,10 +235,22 @@ export default function VehicleDetailPage() {
               </div>
 
               <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
-                <button onClick={() => setShowModal(true)} className="btn btn-primary btn-lg" style={{ flex: 1, minWidth: '160px' }}>
-                  Book Test Drive
-                </button>
-                <button className="btn btn-secondary btn-lg" style={{ flex: 1, minWidth: '160px' }}>Reserve Vehicle</button>
+                {vehicle.status === 'reserved' ? (
+                  <button className="btn btn-secondary btn-lg" style={{ flex: 1, minWidth: '160px', background: '#f59e0b', borderColor: '#f59e0b', color: '#fff', cursor: 'not-allowed' }} disabled>
+                    🔒 Booked
+                  </button>
+                ) : vehicle.status === 'sold' ? (
+                  <button className="btn btn-secondary btn-lg" style={{ flex: 1, minWidth: '160px', background: '#7f7f7f', borderColor: '#7f7f7f', color: '#fff', cursor: 'not-allowed' }} disabled>
+                    🚫 Sold Out
+                  </button>
+                ) : (
+                  <>
+                    <button onClick={() => setShowModal(true)} className="btn btn-primary btn-lg" style={{ flex: 1, minWidth: '160px' }}>
+                      Book Test Drive
+                    </button>
+                    <button onClick={() => setShowReserveModal(true)} className="btn btn-secondary btn-lg" style={{ flex: 1, minWidth: '160px' }}>Reserve Vehicle</button>
+                  </>
+                )}
               </div>
               <div style={{ display: 'flex', gap: '1rem' }}>
                 <a href="tel:+919176777222" className="btn btn-ghost btn-sm" style={{ flex: 1, textDecoration: 'none' }}>📞 Call Now</a>
@@ -473,6 +532,199 @@ export default function VehicleDetailPage() {
                       style={{ width: '100%', marginTop: '0.5rem', border: 'none', cursor: 'pointer' }}
                     >
                       {bookingLoading ? 'Submitting...' : 'Schedule Test Drive'}
+                    </button>
+                  </form>
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Reserve Vehicle Modal */}
+      <AnimatePresence>
+        {showReserveModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 3000,
+              background: 'rgba(0,0,0,0.6)',
+              backdropFilter: 'blur(8px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '1.5rem',
+            }}
+            onClick={() => !reserveLoading && setShowReserveModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: 'spring', duration: 0.5 }}
+              style={{
+                width: '100%',
+                maxWidth: '480px',
+                background: '#FFFFFF',
+                borderRadius: '24px',
+                padding: '2.5rem 2rem',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                position: 'relative',
+                border: '1px solid rgba(0, 0, 0, 0.05)',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                disabled={reserveLoading}
+                onClick={() => setShowReserveModal(false)}
+                style={{
+                  position: 'absolute',
+                  top: '1.25rem',
+                  right: '1.25rem',
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#A0A0A0',
+                  transition: 'color 0.2s',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#E10613')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = '#A0A0A0')}
+              >
+                ✕
+              </button>
+
+              {reserveSuccess ? (
+                <div style={{ textAlign: 'center', padding: '1.5rem 0' }}>
+                  <div
+                    style={{
+                      width: '64px',
+                      height: '64px',
+                      borderRadius: '50%',
+                      background: 'rgba(34, 197, 94, 0.1)',
+                      color: '#22C55E',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '2rem',
+                      margin: '0 auto 1.5rem',
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    ✓
+                  </div>
+                  <h2 style={{ fontFamily: 'var(--font-primary)', fontSize: '1.5rem', fontWeight: 700, color: '#2A2A2A', marginBottom: '0.5rem' }}>
+                    Reservation Requested!
+                  </h2>
+                  <p style={{ fontSize: '0.9375rem', color: '#8A8A8A', lineHeight: 1.6 }}>
+                    Thank you. Our luxury consultant will contact you shortly to confirm your reservation.
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <h2 style={{ fontFamily: 'var(--font-primary)', fontSize: '1.5rem', fontWeight: 700, color: '#2A2A2A', marginBottom: '0.25rem' }}>
+                    Reserve Vehicle
+                  </h2>
+                  <p style={{ fontSize: '0.875rem', color: '#8A8A8A', marginBottom: '1.75rem' }}>
+                    For the {vehicle?.brand} {vehicle?.model}
+                  </p>
+
+                  <form onSubmit={handleReserveSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                    <div>
+                      <label style={{ fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#8A8A8A', display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>
+                        Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        disabled={reserveLoading}
+                        placeholder="Your full name"
+                        value={reserveName}
+                        onChange={(e) => setReserveName(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '0.875rem 1.125rem',
+                          border: '1px solid #ECECEC',
+                          borderRadius: '12px',
+                          background: '#FAFAFA',
+                          fontSize: '0.9375rem',
+                          color: '#2A2A2A',
+                          outline: 'none',
+                          transition: 'all 0.3s',
+                          boxSizing: 'border-box',
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#8A8A8A', display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>
+                        Phone Number *
+                      </label>
+                      <input
+                        type="tel"
+                        required
+                        disabled={reserveLoading}
+                        placeholder="Your 10-digit number"
+                        value={reservePhone}
+                        onChange={(e) => setReservePhone(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '0.875rem 1.125rem',
+                          border: '1px solid #ECECEC',
+                          borderRadius: '12px',
+                          background: '#FAFAFA',
+                          fontSize: '0.9375rem',
+                          color: '#2A2A2A',
+                          outline: 'none',
+                          transition: 'all 0.3s',
+                          boxSizing: 'border-box',
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#8A8A8A', display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>
+                        Email ID *
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        disabled={reserveLoading}
+                        placeholder="your@email.com"
+                        value={reserveEmail}
+                        onChange={(e) => setReserveEmail(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '0.875rem 1.125rem',
+                          border: '1px solid #ECECEC',
+                          borderRadius: '12px',
+                          background: '#FAFAFA',
+                          fontSize: '0.9375rem',
+                          color: '#2A2A2A',
+                          outline: 'none',
+                          transition: 'all 0.3s',
+                          boxSizing: 'border-box',
+                        }}
+                      />
+                    </div>
+
+                    {reserveError && (
+                      <div style={{ color: '#E10613', fontSize: '0.8125rem', fontWeight: 500 }}>
+                        ⚠️ {reserveError}
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={reserveLoading}
+                      className="btn btn-primary btn-lg"
+                      style={{ width: '100%', marginTop: '0.5rem', border: 'none', cursor: 'pointer' }}
+                    >
+                      {reserveLoading ? 'Submitting...' : 'Reserve Now'}
                     </button>
                   </form>
                 </div>

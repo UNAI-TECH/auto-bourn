@@ -38,8 +38,15 @@ export async function GET(request: NextRequest) {
     const order = searchParams.get('order') || 'desc';
 
     let query = supabase.from('cars')
-      .select('*, car_images(image_url, display_order), employee:employees!employee_id(name, employee_id)', { count: 'exact' })
-      .eq('status', status);
+      .select('*, car_images(image_url, display_order), employee:employees!employee_id(name, employee_id)', { count: 'exact' });
+
+    if (status !== 'all') {
+      if (status === 'available_or_reserved') {
+        query = query.in('status', ['available', 'reserved']);
+      } else {
+        query = query.eq('status', status);
+      }
+    }
 
     if (brand) query = query.eq('brand', brand);
     if (featured === 'true') query = query.eq('featured', true);

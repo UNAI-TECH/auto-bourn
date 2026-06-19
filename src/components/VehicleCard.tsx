@@ -32,7 +32,23 @@ export default function VehicleCard({ vehicle, index = 0 }: VehicleCardProps) {
             className="vehicle-card-img"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
-          {vehicle.tags[0] && (
+          {vehicle.status === 'reserved' ? (
+            <span style={{
+              position: 'absolute', top: '12px', left: '12px',
+              background: '#f59e0b', color: '#fff', fontSize: '0.625rem',
+              fontWeight: 600, padding: '5px 12px', borderRadius: '999px',
+              textTransform: 'uppercase', letterSpacing: '0.08em',
+              zIndex: 2,
+            }}>Booked</span>
+          ) : vehicle.status === 'sold' ? (
+            <span style={{
+              position: 'absolute', top: '12px', left: '12px',
+              background: '#7f7f7f', color: '#fff', fontSize: '0.625rem',
+              fontWeight: 600, padding: '5px 12px', borderRadius: '999px',
+              textTransform: 'uppercase', letterSpacing: '0.08em',
+              zIndex: 2,
+            }}>Sold Out</span>
+          ) : vehicle.tags[0] ? (
             <span style={{
               position: 'absolute', top: '12px', left: '12px',
               background: '#E10613', color: '#fff', fontSize: '0.625rem',
@@ -40,7 +56,7 @@ export default function VehicleCard({ vehicle, index = 0 }: VehicleCardProps) {
               textTransform: 'uppercase', letterSpacing: '0.08em',
               zIndex: 2,
             }}>{vehicle.tags[0]}</span>
-          )}
+          ) : null}
           {/* Savings Badge */}
           {vehicle.originalPrice && (
             <div style={{

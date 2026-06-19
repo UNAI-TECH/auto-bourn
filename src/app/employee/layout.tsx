@@ -7,7 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Employee } from '@/types/database';
-import { LayoutDashboard, Car, Upload, LogOut, Menu, X, Bell, FileText, AlertCircle, Clock, CheckCircle, PhoneCall } from 'lucide-react';
+import { LayoutDashboard, Car, Upload, LogOut, Menu, X, Bell, FileText, AlertCircle, Clock, CheckCircle, PhoneCall, Bookmark } from 'lucide-react';
 
 const EmpContext = createContext<{ employee: Employee | null; darkMode: boolean; onReportSubmitted: () => void }>({ employee: null, darkMode: false, onReportSubmitted: () => {} });
 export const useEmpContext = () => useContext(EmpContext);
@@ -19,6 +19,7 @@ const navItems = [
   { href: '/employee/customer-details', label: 'Customer Details', icon: FileText },
   { href: '/employee/crm', label: 'My Leads (CRM)', icon: PhoneCall },
   { href: '/employee/test-drives', label: 'Test Drives', icon: Clock },
+  { href: '/employee/bookings', label: 'Reservations', icon: Bookmark },
 ];
 
 export default function EmployeeLayout({ children }: { children: React.ReactNode }) {

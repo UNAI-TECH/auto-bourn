@@ -14,7 +14,7 @@ export async function fetchDbVehicles(forceRefresh = false): Promise<Vehicle[]> 
       return cachedVehicles;
     }
 
-    const res = await fetch('/api/cars?limit=100');
+    const res = await fetch('/api/cars?limit=100&status=available_or_reserved');
     if (!res.ok) throw new Error('Failed to fetch vehicles');
     const data = await res.json();
     const cars = data.cars || [];
@@ -58,6 +58,7 @@ export async function fetchDbVehicles(forceRefresh = false): Promise<Vehicle[]> 
         features: car.features || [],
         description: car.description || '',
         employee: car.employee ? { name: car.employee.name, employee_id: car.employee.employee_id } : undefined,
+        status: car.status,
       };
     });
 
@@ -121,6 +122,7 @@ export async function fetchDbVehicleById(id: string, forceRefresh = false): Prom
       features: car.features || [],
       description: car.description || '',
       employee: car.employee ? { name: car.employee.name, employee_id: car.employee.employee_id } : undefined,
+      status: car.status,
     };
 
     cachedVehicleById[id] = { data: mapped, timestamp: now };

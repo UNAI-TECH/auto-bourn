@@ -31,6 +31,7 @@ export interface Vehicle {
     name: string;
     employee_id: string;
   };
+  status?: 'available' | 'sold' | 'reserved';
 }
 
 export interface Brand {
