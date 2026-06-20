@@ -26,7 +26,7 @@ export default function VehicleCard({ vehicle, index = 0 }: VehicleCardProps) {
             alt={`${vehicle.brand} ${vehicle.model} ${vehicle.variant}`}
             fill
             style={{
-              objectFit: 'cover',
+              objectFit: 'contain',
               transition: 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
             }}
             className="vehicle-card-img"

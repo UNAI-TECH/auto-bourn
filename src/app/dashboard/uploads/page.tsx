@@ -102,7 +102,7 @@ export default function UploadsPage() {
 .up-card{background:var(--db-sf);border:1px solid var(--db-bd);border-radius:14px;display:flex;overflow:hidden;transition:all .2s}
 .up-card:hover{border-color:var(--db-gold);box-shadow:0 4px 20px var(--db-gg)}
 .up-thumb{width:120px;min-height:100px;background:var(--db-sf2);flex-shrink:0;overflow:hidden}
-.up-thumb img{width:100%;height:100%;object-fit:cover}
+.up-thumb img{width:100%;height:100%;object-fit:contain}
 .up-no-img{display:flex;align-items:center;justify-content:center;height:100%;color:var(--db-tx3)}
 .up-body{flex:1;padding:1rem 1.25rem;display:flex;flex-direction:column;gap:.5rem}
 .up-main{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import Link from 'next/link';
 import { useEmpContext } from '../layout';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Edit, Trash2, Check, AlertCircle, X, Eye, Upload, Image as ImageIcon, Loader2 } from 'lucide-react';
@@ -577,12 +578,18 @@ export default function MyCarsPage() {
             filtered.length === 0 ? <p className="db-empty-full">No cars found</p> :
             filtered.map(car => (
               <motion.div key={car.id} className="car-card" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                <div className="car-thumb">
-                  {car.thumbnail ? <img src={car.thumbnail} alt={`${car.brand} ${car.model}`} /> : <div className="car-no-img">No Image</div>}
-                  <div className="car-badges"><span className={`car-status-badge ${car.status}`}>{car.status}</span></div>
-                </div>
+                <Link href={`/vehicle/${car.id}`} style={{ display: 'block', color: 'inherit', textDecoration: 'none' }}>
+                  <div className="car-thumb">
+                    {car.thumbnail ? <img src={car.thumbnail} alt={`${car.brand} ${car.model}`} /> : <div className="car-no-img">No Image</div>}
+                    <div className="car-badges"><span className={`car-status-badge ${car.status}`}>{car.status}</span></div>
+                  </div>
+                </Link>
                 <div className="car-info">
-                  <h3>{car.brand} {car.model}</h3>
+                  <h3>
+                    <Link href={`/vehicle/${car.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                      {car.brand} {car.model}
+                    </Link>
+                  </h3>
                   <p className="car-variant">{car.variant} · {car.year}</p>
                   <p className="car-price">{formatPrice(car.price)}</p>
                   <div className="car-meta"><span>{car.fuel_type}</span><span>·</span><span>{car.transmission}</span><span>·</span><span>{car.km_driven?.toLocaleString()} km</span></div>
@@ -739,7 +746,7 @@ export default function MyCarsPage() {
 .upl-thumb-box img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 .upl-dropzone {
   border: 2px dashed var(--db-bd);
@@ -777,7 +784,7 @@ export default function MyCarsPage() {
 .upl-preview-item img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 .upl-preview-item button {
   position: absolute;
@@ -835,7 +842,7 @@ export default function MyCarsPage() {
 .car-card{background:var(--db-sf);border:1px solid var(--db-bd);border-radius:24px;overflow:hidden;box-shadow:var(--card-shadow);transition:all .25s ease-in-out}
 .car-card:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(0,0,0,0.08)}
 .car-thumb{position:relative;height:190px;background:var(--db-sf2);overflow:hidden}
-.car-thumb img{width:100%;height:100%;object-fit:cover}
+.car-thumb img{width:100%;height:100%;object-fit:contain}
 .car-no-img{display:flex;align-items:center;justify-content:center;height:100%;color:var(--db-tx3);font-size:.875rem;font-weight:600}
 .car-badges{position:absolute;top:12px;left:12px;display:flex;gap:6px}
 .car-status-badge{padding:.3rem .75rem;border-radius:20px;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;box-shadow:0 2px 6px rgba(0,0,0,0.05)}
@@ -844,6 +851,7 @@ export default function MyCarsPage() {
 .car-status-badge.reserved{background:rgba(245,158,11,.15);color:#f59e0b;border:1px solid rgba(245,158,11,.1)}
 .car-info{padding:1.25rem}
 .car-info h3{font-family:'Outfit',sans-serif;font-size:1.15rem;font-weight:700;margin:0 0 .25rem;color:var(--db-tx)}
+.car-info h3:hover{color:var(--db-gold);text-decoration:underline}
 .car-variant{color:var(--db-tx2);font-size:.8125rem;margin:0 0 .5rem}
 .car-price{font-family:'Outfit',sans-serif;font-size:1.35rem;font-weight:800;color:var(--db-gold);margin:0 0 .5rem;letter-spacing:-0.01em}
 .car-meta{display:flex;gap:.35rem;color:var(--db-tx3);font-size:.75rem;flex-wrap:wrap;margin-bottom:.35rem;font-weight:500}

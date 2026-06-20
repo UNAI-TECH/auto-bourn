@@ -805,7 +805,7 @@ export default function EmployeeDashboard() {
 .recent-car-thumb img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 .no-img {
   display: flex;

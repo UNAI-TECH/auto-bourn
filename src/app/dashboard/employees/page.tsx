@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UserPlus, Search, MoreVertical, X, Shield, Ban, RotateCcw, Trash2, Key, Check, AlertCircle, Copy, CheckCheck } from 'lucide-react';
+import { UserPlus, Search, MoreVertical, X, Shield, Ban, RotateCcw, Trash2, Key, Check, AlertCircle, Copy, CheckCheck, Mail, PhoneCall, CalendarClock, Upload, ShoppingCart, TrendingUp } from 'lucide-react';
+import Image from 'next/image';
 import { formatDate, timeAgo, generateEmployeeId } from '@/lib/utils';
 import type { Employee } from '@/types/database';
 import ConfirmModal from '@/components/ConfirmModal';
@@ -28,7 +29,17 @@ export default function EmployeesPage() {
   const [submitting, setSubmitting] = useState(false);
   const [credentials, setCredentials] = useState<CredentialsModal | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
+
+  // Employee Detail Modal State
+  const [selectedEmployee, setSelectedEmployee] = useState<any | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [modalLoading, setModalLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'profile' | 'cars'>('profile');
+  const [employeeCars, setEmployeeCars] = useState<any[]>([]);
 
   useEffect(() => { fetchEmployees(); }, []);
 
@@ -57,14 +68,81 @@ export default function EmployeesPage() {
     setTimeout(() => setCopied(null), 2000);
   };
 
+  const handleEmployeeClick = async (emp: any) => {
+    setModalLoading(true);
+    setShowModal(true);
+    setSelectedEmployee(emp);
+    setEmployeeCars([]);
+    setActiveTab('profile');
+
+    try {
+      const { data: cars } = await supabase
+        .from('cars')
+        .select('*')
+        .eq('employee_id', emp.id)
+        .order('created_at', { ascending: false });
+
+      if (cars) {
+        setEmployeeCars(cars);
+      }
+    } catch (err) {
+      console.error('Error fetching employee details:', err);
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  const handlePhotoClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAvatarFile(file);
+      setAvatarPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const closeAddModal = () => {
+    setShowAdd(false);
+    setAvatarFile(null);
+    setAvatarPreview(null);
+    setForm({ name: '', email: '', phone: '', password: '', employee_id: generateEmployeeId() });
+  };
+
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     try {
+      let uploadedAvatarUrl = '';
+      if (avatarFile) {
+        const fileExt = avatarFile.name.split('.').pop();
+        const fileName = `avatar-${form.employee_id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const filePath = `avatars/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('car-images')
+          .upload(filePath, avatarFile);
+
+        if (uploadError) {
+          throw new Error(`Avatar upload failed: ${uploadError.message}`);
+        }
+
+        const { data } = supabase.storage
+          .from('car-images')
+          .getPublicUrl(filePath);
+
+        uploadedAvatarUrl = data.publicUrl;
+      }
+
       const res = await fetch('/api/employees', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          avatar_url: uploadedAvatarUrl || null
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -77,6 +155,8 @@ export default function EmployeesPage() {
         password: form.password,
       });
       setShowAdd(false);
+      setAvatarFile(null);
+      setAvatarPreview(null);
       setForm({ name: '', email: '', phone: '', password: '', employee_id: generateEmployeeId() });
       fetchEmployees();
     } catch (err: unknown) {
@@ -147,7 +227,7 @@ export default function EmployeesPage() {
             ) : filtered.map(emp => (
               <tr key={emp.id}>
                 <td>
-                  <div className="emp-user">
+                  <div className="emp-user" onClick={() => handleEmployeeClick(emp)}>
                     <div className="emp-avatar">{emp.name.charAt(0)}</div>
                     <div><span className="emp-name">{emp.name}</span><span className="emp-email">{emp.email}</span></div>
                   </div>
@@ -182,20 +262,134 @@ export default function EmployeesPage() {
       {/* Add Modal */}
       <AnimatePresence>
         {showAdd && (
-          <motion.div className="emp-modal-bg" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAdd(false)}>
-            <motion.div className="emp-modal" initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} onClick={e => e.stopPropagation()}>
-              <div className="emp-modal-head"><h2>Add Employee</h2><button onClick={() => setShowAdd(false)}><X size={20} /></button></div>
-              <form onSubmit={handleAdd} className="emp-form">
-                <div className="emp-field"><label>Employee ID</label><input value={form.employee_id} onChange={e => setForm({ ...form, employee_id: e.target.value })} required /><button type="button" className="emp-regen" onClick={() => setForm({ ...form, employee_id: generateEmployeeId() })}>
-                  <RotateCcw size={14} /></button></div>
-                <div className="emp-field"><label>Full Name</label><input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required placeholder="Employee name" /></div>
-                <div className="emp-field"><label>Email</label><input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} required placeholder="employee@autobourn.com" /></div>
-                <div className="emp-field"><label>Phone</label><input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="+91 XXXXXXXXXX" /></div>
-                <div className="emp-field"><label>Password</label><input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} required placeholder="Min 6 characters" minLength={6} /></div>
-                <button type="submit" className="db-btn-gold emp-submit" disabled={submitting}>{submitting ? 'Adding...' : 'Add Employee'}</button>
+          <div className="modal-backdrop" onClick={closeAddModal}>
+            <motion.div
+              className="inspo-card-modal"
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button className="inspo-modal-close" onClick={closeAddModal}>
+                <X size={20} />
+              </button>
+
+              <div className="inspo-card-header">
+                <h2 className="inspo-card-title">Add New Employee</h2>
+                <p className="inspo-card-subtitle">Create a new employee profile to grant system access.</p>
+              </div>
+
+              <div className="inspo-photo-section">
+                <div className="inspo-photo-upload" onClick={handlePhotoClick}>
+                  {avatarPreview ? (
+                    <div className="inspo-photo-preview-container">
+                      <Image src={avatarPreview} alt="Preview" fill className="inspo-photo-preview" />
+                      <div className="inspo-photo-overlay">
+                        <span>Change</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <Upload size={20} />
+                      <span>Upload Photo</span>
+                      <span className="inspo-photo-subtext">JPG, PNG (max 5MB)</span>
+                    </>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                />
+              </div>
+
+              <form onSubmit={handleAdd} className="inspo-form">
+                <div className="inspo-grid">
+                  <div className="inspo-field full-width">
+                    <label>Full Name <span className="required">*</span></label>
+                    <input
+                      value={form.name}
+                      onChange={e => setForm({ ...form, name: e.target.value })}
+                      required
+                      placeholder="Employee name"
+                    />
+                  </div>
+
+                  <div className="inspo-field">
+                    <label>Email Address <span className="required">*</span></label>
+                    <input
+                      type="email"
+                      value={form.email}
+                      onChange={e => setForm({ ...form, email: e.target.value })}
+                      required
+                      placeholder="employee@autobourn.com"
+                    />
+                  </div>
+
+                  <div className="inspo-field">
+                    <label>Phone Number</label>
+                    <input
+                      value={form.phone}
+                      onChange={e => setForm({ ...form, phone: e.target.value })}
+                      placeholder="+91 XXXXXXXXXX"
+                    />
+                  </div>
+
+                  <div className="inspo-field">
+                    <label>Employee ID <span className="required">*</span></label>
+                    <div className="inspo-input-btn-wrap">
+                      <input
+                        value={form.employee_id}
+                        onChange={e => setForm({ ...form, employee_id: e.target.value })}
+                        required
+                        placeholder="Employee ID"
+                      />
+                      <button
+                        type="button"
+                        className="inspo-regen-btn"
+                        onClick={() => setForm({ ...form, employee_id: generateEmployeeId() })}
+                        title="Regenerate ID"
+                      >
+                        <RotateCcw size={15} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="inspo-field">
+                    <label>Password <span className="required">*</span></label>
+                    <input
+                      type="password"
+                      value={form.password}
+                      onChange={e => setForm({ ...form, password: e.target.value })}
+                      required
+                      placeholder="Min 6 characters"
+                      minLength={6}
+                    />
+                  </div>
+                </div>
+
+                <div className="inspo-form-footer">
+                  <button
+                    type="button"
+                    className="inspo-btn-cancel"
+                    onClick={closeAddModal}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="inspo-btn-submit"
+                    disabled={submitting}
+                  >
+                    {submitting ? 'Adding...' : 'Add Employee'}
+                  </button>
+                </div>
               </form>
             </motion.div>
-          </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
@@ -264,6 +458,199 @@ export default function EmployeesPage() {
         )}
       </AnimatePresence>
 
+      {/* Employee Detail Modal */}
+      <AnimatePresence>
+        {showModal && (
+          <div className="modal-backdrop" onClick={() => setShowModal(false)}>
+            <motion.div
+              className="modal-card"
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button className="modal-close" onClick={() => setShowModal(false)}>
+                <X size={20} />
+              </button>
+
+              {modalLoading ? (
+                <div className="modal-loader">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                    className="modal-spinner"
+                  />
+                </div>
+              ) : selectedEmployee ? (
+                <div className="modal-grid">
+                  <div className="modal-left-col">
+                    <div className="founder-card-wrap">
+                      <div className="founder-card-photo-container">
+                        <Image
+                          src={selectedEmployee.avatar_url || '/employee_avatar.png'}
+                          alt={selectedEmployee.name}
+                          fill
+                          style={{ objectFit: 'cover' }}
+                          sizes="280px"
+                        />
+                        <span className={`status-badge ${selectedEmployee.status}`}>
+                          {selectedEmployee.status}
+                        </span>
+                      </div>
+                      <div className="founder-card-info">
+                        <h3 className="founder-card-name">
+                          {selectedEmployee.name}
+                        </h3>
+                        <p className="founder-card-role">
+                          {selectedEmployee.role === 'admin' ? 'Administrator' : 'Sales Executive'}
+                        </p>
+                        <span className="founder-card-id">{selectedEmployee.employee_id}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="modal-right-col">
+                    <div className="modal-tabs">
+                      <button
+                        className={`modal-tab-btn ${activeTab === 'profile' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('profile')}
+                      >
+                        Profile & Stats
+                      </button>
+                      <button
+                        className={`modal-tab-btn ${activeTab === 'cars' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('cars')}
+                      >
+                        Managed Cars ({employeeCars.length})
+                      </button>
+                    </div>
+
+                    <div className="modal-body-scroll">
+                      {activeTab === 'profile' ? (
+                        <>
+                          <div className="modal-details-grid">
+                            <div className="modal-detail-item">
+                              <Mail size={16} />
+                              <div>
+                                <label>Email Address</label>
+                                <a href={`mailto:${selectedEmployee.email}`}>{selectedEmployee.email}</a>
+                              </div>
+                            </div>
+                            <div className="modal-detail-item">
+                              <PhoneCall size={16} />
+                              <div>
+                                <label>Phone Number</label>
+                                <span>{selectedEmployee.phone || 'N/A'}</span>
+                              </div>
+                            </div>
+                            <div className="modal-detail-item">
+                              <CalendarClock size={16} />
+                              <div>
+                                <label>Joined Date</label>
+                                <span>{new Date(selectedEmployee.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="modal-stats">
+                            <h4 className="modal-stats-title">Performance Metrics</h4>
+                            <div className="modal-stats-grid">
+                              <div className="modal-stat-box">
+                                <Upload size={18} />
+                                <span className="modal-stat-num">{selectedEmployee.total_uploads || 0}</span>
+                                <span className="modal-stat-lbl">Cars Uploaded</span>
+                              </div>
+                              <div className="modal-stat-box">
+                                <ShoppingCart size={18} />
+                                <span className="modal-stat-num">{selectedEmployee.total_sold || 0}</span>
+                                <span className="modal-stat-lbl">Cars Sold</span>
+                              </div>
+                              <div className="modal-stat-box">
+                                <TrendingUp size={18} />
+                                <span className="modal-stat-num">
+                                  {selectedEmployee.total_uploads > 0
+                                    ? `${Math.round((selectedEmployee.total_sold / selectedEmployee.total_uploads) * 100)}%`
+                                    : '0%'}
+                                </span>
+                                <span className="modal-stat-lbl">Conversion Rate</span>
+                              </div>
+                            </div>
+
+                            {selectedEmployee.last_upload && (
+                              <div className="modal-last-upload">
+                                Last uploaded car on:{' '}
+                                <strong>
+                                  {new Date(selectedEmployee.last_upload).toLocaleDateString('en-IN', {
+                                    day: 'numeric',
+                                    month: 'short',
+                                    year: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}
+                                </strong>
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="modal-cars-list">
+                          {employeeCars.length === 0 ? (
+                            <p className="modal-no-cars">No cars uploaded by this employee yet.</p>
+                          ) : (
+                            <div className="modal-cars-grid">
+                              {employeeCars.map((car) => (
+                                <div key={car.id} className="modal-car-card">
+                                  <div className="modal-car-thumb-wrap">
+                                    {car.thumbnail ? (
+                                      <Image
+                                        src={car.thumbnail}
+                                        alt={`${car.brand} ${car.model}`}
+                                        width={180}
+                                        height={110}
+                                        className="modal-car-thumb"
+                                      />
+                                    ) : (
+                                      <div className="modal-car-thumb-placeholder">No Image</div>
+                                    )}
+                                    <span className={`car-status-badge ${car.status}`}>
+                                      {car.status}
+                                    </span>
+                                  </div>
+                                  <div className="modal-car-info">
+                                    <h5 className="modal-car-title" title={`${car.brand} ${car.model}`}>
+                                      {car.brand} {car.model}
+                                    </h5>
+                                    <div className="modal-car-meta">
+                                      <span>{car.year}</span>
+                                      <span className="meta-dot">•</span>
+                                      <span>{car.fuel_type || car.transmission}</span>
+                                    </div>
+                                    <div className="modal-car-price">
+                                      {new Intl.NumberFormat('en-IN', {
+                                        style: 'currency',
+                                        currency: 'INR',
+                                        maximumFractionDigits: 0,
+                                      }).format(car.price)}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="modal-error">Failed to load employee details.</div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <ConfirmModal
         isOpen={!!deleteTargetId}
         title="Remove Employee"
@@ -293,13 +680,14 @@ export default function EmployeesPage() {
 .emp-tabs{display:flex;gap:4px;background:var(--db-sf);border:1px solid var(--db-bd);border-radius:10px;padding:4px}
 .emp-tab{background:0;border:0;padding:.5rem 1rem;border-radius:8px;color:var(--db-tx2);font-size:.8125rem;cursor:pointer;transition:all .2s;font-family:inherit}
 .emp-tab.active{background:var(--db-gd);color:var(--db-gold);font-weight:600}
-.emp-table-wrap{background:var(--db-sf);border:1px solid var(--db-bd);border-radius:14px;overflow-x:auto}
+.emp-table-wrap{background:var(--db-sf);border:1px solid var(--db-bd);border-radius:14px;overflow-x:auto;min-height:280px}
 .emp-table{width:100%;border-collapse:collapse;font-size:.875rem}
 .emp-table th{text-align:left;padding:.875rem 1rem;color:var(--db-tx3);font-weight:500;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--db-bd)}
 .emp-table td{padding:.875rem 1rem;border-bottom:1px solid var(--db-bd);vertical-align:middle}
 .emp-table tr:last-child td{border-bottom:0}
 .emp-table tr:hover{background:var(--db-sf2)}
-.emp-user{display:flex;align-items:center;gap:.75rem}
+.emp-user{display:flex;align-items:center;gap:.75rem;cursor:pointer;user-select:none}
+.emp-user:hover .emp-name{color:var(--db-gold);text-decoration:underline}
 .emp-avatar{width:36px;height:36px;border-radius:10px;background:var(--db-gd);color:var(--db-gold);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.875rem;flex-shrink:0}
 .emp-name{display:block;font-weight:600;color:var(--db-tx)}
 .emp-email{display:block;font-size:.75rem;color:var(--db-tx3)}
@@ -354,6 +742,742 @@ export default function EmployeesPage() {
 .cred-close{width:100%;padding:.75rem;background:var(--db-sf2);border:1px solid var(--db-bd);border-radius:10px;color:var(--db-tx2);font-size:.875rem;cursor:pointer;font-family:inherit;transition:all .2s}
 .cred-close:hover{background:var(--db-bd)}
 @media(max-width:768px){.emp-filters{flex-direction:column}.emp-tabs{flex-wrap:wrap}}
+
+/* Modal Styles */
+:global(.modal-backdrop) {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1.5rem;
+}
+
+:global(.modal-card) {
+  background: var(--db-sf);
+  border: 1px solid var(--db-bd);
+  border-radius: 24px;
+  width: 100%;
+  max-width: 900px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.2);
+  position: relative;
+  overflow: hidden;
+  padding: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+}
+
+:global(.modal-grid) {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 2.5rem;
+  flex: 1;
+  min-height: 0;
+  align-items: stretch;
+}
+
+@media (max-width: 768px) {
+  :global(.modal-grid) {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  :global(.modal-card) {
+    max-width: 580px;
+    padding: 1.75rem;
+  }
+}
+
+:global(.modal-left-col) {
+  flex-shrink: 0;
+}
+
+:global(.founder-card-wrap) {
+  background: var(--db-sf2);
+  border: 1px solid var(--db-bd);
+  border-radius: 24px;
+  padding: 1rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+}
+
+:global(.founder-card-photo-container) {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4/5;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--db-bd);
+  background: var(--db-sf2);
+}
+
+:global(.founder-card-photo-container) :global(.status-badge) {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 99px;
+  border: 2px solid var(--db-sf2);
+  color: #fff;
+  z-index: 10;
+}
+
+:global(.founder-card-photo-container) :global(.status-badge.active) {
+  background: var(--db-gn);
+}
+
+:global(.founder-card-photo-container) :global(.status-badge.suspended) {
+  background: var(--db-rd);
+}
+
+:global(.founder-card-photo-container) :global(.status-badge.inactive) {
+  background: var(--db-tx3);
+}
+
+:global(.founder-card-info) {
+  margin-top: 1.25rem;
+  padding: 0 0.25rem;
+}
+
+:global(.founder-card-name) {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--db-tx);
+  margin: 0 0 0.25rem 0;
+}
+
+:global(.founder-card-role) {
+  font-size: 0.75rem;
+  color: #E10613;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 0 0 0.5rem 0;
+}
+
+:global(.founder-card-id) {
+  font-size: 0.75rem;
+  color: var(--db-tx3);
+  display: block;
+  font-family: monospace;
+}
+
+:global(.modal-right-col) {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+:global(.modal-body-scroll) {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  margin-top: 0.5rem;
+  padding-right: 4px;
+}
+
+:global(.modal-body-scroll)::-webkit-scrollbar {
+  width: 6px;
+}
+
+:global(.modal-body-scroll)::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+:global(.modal-body-scroll)::-webkit-scrollbar-thumb {
+  background: var(--db-bd);
+  border-radius: 99px;
+}
+
+:global(.modal-tabs) {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--db-bd);
+  margin-bottom: 1.5rem;
+  padding-bottom: 2px;
+}
+
+:global(.modal-tab-btn) {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--db-tx3);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+:global(.modal-tab-btn):hover {
+  color: var(--db-tx);
+}
+
+:global(.modal-tab-btn.active) {
+  color: var(--db-gold);
+  border-bottom-color: var(--db-gold);
+}
+
+:global(.modal-cars-list) {
+  padding-bottom: 1rem;
+}
+
+:global(.modal-no-cars) {
+  text-align: center;
+  color: var(--db-tx3);
+  font-size: 0.875rem;
+  padding: 2rem 0;
+}
+
+:global(.modal-cars-grid) {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 480px) {
+  :global(.modal-cars-grid) {
+    grid-template-columns: 1fr;
+  }
+}
+
+:global(.modal-car-card) {
+  background: var(--db-sf2);
+  border: 1px solid var(--db-bd);
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+:global(.modal-car-thumb-wrap) {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/10;
+  background: #eee;
+  overflow: hidden;
+}
+
+:global(.modal-car-thumb) {
+  object-fit: contain;
+  width: 100%;
+  height: 100%;
+}
+
+:global(.modal-car-thumb-placeholder) {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: var(--db-tx3);
+}
+
+:global(.car-status-badge) {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #fff;
+  letter-spacing: 0.03em;
+}
+
+:global(.car-status-badge.available) {
+  background: #22c55e;
+}
+
+:global(.car-status-badge.sold) {
+  background: #ef4444;
+}
+
+:global(.car-status-badge.reserved) {
+  background: #f59e0b;
+}
+
+:global(.modal-car-info) {
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+:global(.modal-car-title) {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--db-tx);
+  margin: 0 0 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:global(.modal-car-meta) {
+  font-size: 0.75rem;
+  color: var(--db-tx3);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+:global(.meta-dot) {
+  font-size: 0.5rem;
+}
+
+:global(.modal-car-price) {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--db-gold);
+  margin-top: auto;
+}
+
+:global(.modal-close) {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  background: none;
+  border: none;
+  color: var(--db-tx2);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  display: flex;
+  transition: all 0.2s;
+  z-index: 20;
+}
+
+:global(.modal-close):hover {
+  background: var(--db-gd);
+  color: var(--db-gold);
+}
+
+:global(.modal-loader) {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 250px;
+}
+
+:global(.modal-spinner) {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--db-gd);
+  border-top-color: var(--db-gold);
+  border-radius: 50%;
+}
+
+:global(.modal-details-grid) {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  background: var(--db-sf2);
+  border-radius: 16px;
+  margin-bottom: 2rem;
+  border: 1px solid var(--db-bd);
+  width: 100%;
+}
+
+:global(.modal-detail-item) {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  color: var(--db-tx2);
+}
+
+:global(.modal-detail-item) svg {
+  color: var(--db-gold);
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+:global(.modal-detail-item) label {
+  display: block;
+  font-size: 0.6875rem;
+  color: var(--db-tx3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.125rem;
+}
+
+:global(.modal-detail-item) span, :global(.modal-detail-item) a {
+  font-size: 0.9375rem;
+  color: var(--db-tx);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+:global(.modal-detail-item) a:hover {
+  color: var(--db-gold);
+}
+
+:global(.modal-stats) {
+  width: 100%;
+}
+
+:global(.modal-stats-title) {
+  font-size: 0.8125rem;
+  color: var(--db-tx3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 1rem;
+  font-weight: 600;
+}
+
+:global(.modal-stats-grid) {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  width: 100%;
+}
+
+:global(.modal-stat-box) {
+  background: var(--db-sf);
+  border: 1px solid var(--db-bd);
+  border-radius: 12px;
+  padding: 1rem 0.5rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+:global(.modal-stat-box) svg {
+  color: var(--db-gold);
+  margin-bottom: 0.5rem;
+}
+
+:global(.modal-stat-num) {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--db-tx);
+  font-family: 'Outfit', sans-serif;
+  line-height: 1.2;
+}
+
+:global(.modal-stat-lbl) {
+  font-size: 0.6875rem;
+  color: var(--db-tx3);
+  margin-top: 0.125rem;
+}
+
+:global(.modal-last-upload) {
+  font-size: 0.75rem;
+  color: var(--db-tx3);
+  text-align: center;
+  margin-top: 1rem;
+}
+
+:global(.modal-error) {
+  text-align: center;
+  color: var(--db-rd);
+  font-weight: 500;
+  padding: 2rem 0;
+}
+
+/* Inspo Card Modal Styles (Red & White Theme) */
+/* Inspo Card Modal Styles (Red & White Theme) - Made Global */
+:global(.inspo-card-modal) {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-top: 5px solid #E10613; /* Premium Red bar at the top */
+  border-radius: 24px;
+  width: 100%;
+  max-width: 600px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  position: relative;
+  overflow: hidden;
+  padding: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  color: #1e293b;
+  font-family: inherit;
+}
+
+:global(.inspo-modal-close) {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  display: flex;
+  transition: all 0.2s;
+  z-index: 20;
+}
+
+:global(.inspo-modal-close):hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+:global(.inspo-card-header) {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+:global(.inspo-card-title) {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 0.5rem 0;
+}
+
+:global(.inspo-card-subtitle) {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0;
+}
+
+:global(.inspo-photo-section) {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+:global(.inspo-photo-preview-container) {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+:global(.inspo-photo-preview) {
+  object-fit: cover;
+}
+
+:global(.inspo-photo-overlay) {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 50%;
+}
+
+:global(.inspo-photo-upload:hover .inspo-photo-overlay) {
+  opacity: 1;
+}
+
+:global(.inspo-photo-upload) {
+  width: 110px;
+  height: 110px;
+  border: 2px dashed #cbd5e1;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: #f8fafc;
+  color: #64748b;
+  transition: all 0.2s;
+  padding: 10px;
+}
+
+:global(.inspo-photo-upload):hover {
+  border-color: #E10613;
+  color: #E10613;
+  background: #fff5f5;
+}
+
+:global(.inspo-photo-upload) svg {
+  margin-bottom: 0.25rem;
+}
+
+:global(.inspo-photo-upload) span {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+:global(.inspo-photo-subtext) {
+  font-size: 0.625rem !important;
+  color: #94a3b8;
+  margin-top: 2px;
+  font-weight: 400 !important;
+}
+
+:global(.inspo-form) {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+:global(.inspo-grid) {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+}
+
+:global(.inspo-field) {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+:global(.inspo-field.full-width) {
+  grid-column: span 2;
+}
+
+@media (max-width: 640px) {
+  :global(.inspo-grid) {
+    grid-template-columns: 1fr;
+  }
+  :global(.inspo-field.full-width) {
+    grid-column: span 1;
+  }
+}
+
+:global(.inspo-field) label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+:global(.inspo-field) label .required {
+  color: #E10613;
+}
+
+:global(.inspo-field) input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  color: #0f172a;
+  font-size: 0.875rem;
+  font-family: inherit;
+  outline: 0;
+  transition: all 0.2s;
+}
+
+:global(.inspo-field) input:focus {
+  border-color: #E10613;
+  box-shadow: 0 0 0 3px rgba(225, 6, 19, 0.1);
+}
+
+:global(.inspo-field) input::placeholder {
+  color: #94a3b8;
+}
+
+:global(.inspo-input-btn-wrap) {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+:global(.inspo-input-btn-wrap) input {
+  padding-right: 2.75rem;
+}
+
+:global(.inspo-regen-btn) {
+  position: absolute;
+  right: 8px;
+  background: #f1f5f9;
+  border: 0;
+  color: #475569;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+:global(.inspo-regen-btn):hover {
+  background: #e2e8f0;
+  color: #E10613;
+}
+
+:global(.inspo-form-footer) {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #e2e8f0;
+  gap: 1rem;
+}
+
+:global(.inspo-btn-cancel) {
+  padding: 0.75rem 1.5rem;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  color: #475569;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+:global(.inspo-btn-cancel):hover {
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+
+:global(.inspo-btn-submit) {
+  padding: 0.75rem 2rem;
+  background: linear-gradient(135deg, #e10613, #c70511);
+  border: 0;
+  border-radius: 10px;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  box-shadow: 0 4px 12px rgba(225, 6, 19, 0.2);
+}
+
+:global(.inspo-btn-submit):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(225, 6, 19, 0.3);
+}
+
+:global(.inspo-btn-submit):active {
+  transform: translateY(0);
+}
+
+:global(.inspo-btn-submit):disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
       `}</style>
     </div>
   );

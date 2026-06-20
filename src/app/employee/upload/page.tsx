@@ -543,7 +543,7 @@ export default function UploadCarPage() {
 .upl-thumb-box img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 .upl-dropzone {
   border: 2px dashed var(--db-bd);
@@ -585,7 +585,7 @@ export default function UploadCarPage() {
 .upl-preview-item img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 .upl-preview-item button {
   position: absolute;

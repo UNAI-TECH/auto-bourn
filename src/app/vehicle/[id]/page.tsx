@@ -163,8 +163,8 @@ export default function VehicleDetailPage() {
             onClick={() => setLightbox(false)}
             style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'zoom-out' }}
           >
-            <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} exit={{ scale: 0.8 }} style={{ width: '90vw', maxWidth: '1000px', aspectRatio: '16/10', position: 'relative', borderRadius: '16px', overflow: 'hidden' }}>
-              <Image src={vehicle.images[activeImg]} alt={vehicle.model} fill style={{ objectFit: 'cover' }} sizes="90vw" />
+            <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} exit={{ scale: 0.8 }} style={{ width: '90vw', maxWidth: '1000px', aspectRatio: '16/10', position: 'relative', borderRadius: '16px', overflow: 'hidden', background: '#000' }}>
+              <Image src={vehicle.images[activeImg]} alt={vehicle.model} fill style={{ objectFit: 'contain' }} sizes="90vw" />
             </motion.div>
             <button onClick={(e) => { e.stopPropagation(); setLightbox(false); }} style={{ position: 'absolute', top: '2rem', right: '2rem', background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', fontSize: '1.5rem', width: '48px', height: '48px', borderRadius: '50%', cursor: 'pointer', backdropFilter: 'blur(10px)' }}>✕</button>
           </motion.div>
@@ -186,8 +186,8 @@ export default function VehicleDetailPage() {
           <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 'clamp(2rem, 4vw, 4rem)', alignItems: 'start' }} className="vehicle-detail-grid">
             {/* Gallery */}
             <motion.div initial={{ opacity: 0, x: -40 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }}>
-              <div onClick={() => setLightbox(true)} style={{ borderRadius: '20px', overflow: 'hidden', aspectRatio: '16/10', position: 'relative', marginBottom: '1rem', cursor: 'zoom-in' }}>
-                <Image src={vehicle.images[activeImg]} alt={`${vehicle.brand} ${vehicle.model}`} fill style={{ objectFit: 'cover', transition: 'transform 0.5s ease' }} priority sizes="(max-width: 768px) 100vw, 60vw" />
+              <div onClick={() => setLightbox(true)} style={{ borderRadius: '20px', overflow: 'hidden', aspectRatio: '16/10', position: 'relative', marginBottom: '1rem', cursor: 'zoom-in', background: '#FAFAFA', border: '1px solid #ECECEC' }}>
+                <Image src={vehicle.images[activeImg]} alt={`${vehicle.brand} ${vehicle.model}`} fill style={{ objectFit: 'contain', transition: 'transform 0.5s ease' }} priority sizes="(max-width: 768px) 100vw, 60vw" />
                 {vehicle.tags[0] && (
                   <span style={{ position: 'absolute', top: '16px', left: '16px', background: '#E10613', color: '#fff', fontSize: '0.6875rem', fontWeight: 600, padding: '6px 14px', borderRadius: '999px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{vehicle.tags[0]}</span>
                 )}
@@ -199,8 +199,8 @@ export default function VehicleDetailPage() {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
                 {vehicle.images.map((img, i) => (
-                  <div key={i} onClick={() => setActiveImg(i)} style={{ borderRadius: '12px', aspectRatio: '16/10', position: 'relative', overflow: 'hidden', cursor: 'pointer', border: i === activeImg ? '2px solid #E10613' : '2px solid transparent', transition: 'all 0.3s ease', opacity: i === activeImg ? 1 : 0.7 }}>
-                    <Image src={img} alt={`View ${i + 1}`} fill style={{ objectFit: 'cover' }} sizes="200px" />
+                  <div key={i} onClick={() => setActiveImg(i)} style={{ borderRadius: '12px', aspectRatio: '16/10', position: 'relative', overflow: 'hidden', cursor: 'pointer', border: i === activeImg ? '2px solid #E10613' : '2px solid transparent', transition: 'all 0.3s ease', opacity: i === activeImg ? 1 : 0.7, background: '#FAFAFA' }}>
+                    <Image src={img} alt={`View ${i + 1}`} fill style={{ objectFit: 'contain' }} sizes="200px" />
                   </div>
                 ))}
               </div>
@@ -331,8 +331,8 @@ export default function VehicleDetailPage() {
                 <motion.div key={v.id} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}>
                   <Link href={`/vehicle/${v.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                     <div className="card" style={{ cursor: 'pointer' }}>
-                      <div style={{ aspectRatio: '16/10', position: 'relative', overflow: 'hidden' }}>
-                        <Image src={v.images[0]} alt={`${v.brand} ${v.model}`} fill style={{ objectFit: 'cover', transition: 'transform 0.6s ease' }} className="vehicle-card-img" sizes="400px" />
+                      <div style={{ aspectRatio: '16/10', position: 'relative', overflow: 'hidden', background: '#F5F5F5' }}>
+                        <Image src={v.images[0]} alt={`${v.brand} ${v.model}`} fill style={{ objectFit: 'contain', transition: 'transform 0.6s ease' }} className="vehicle-card-img" sizes="400px" />
                       </div>
                       <div style={{ padding: '1.25rem 1.5rem' }}>
                         <p style={{ fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#E10613', marginBottom: '0.25rem' }}>{v.brand}</p>

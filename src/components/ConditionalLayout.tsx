@@ -11,7 +11,9 @@ export default function ConditionalLayout({ children }: { children: React.ReactN
   const isDashboard = pathname?.startsWith('/dashboard');
   const isEmployee = pathname?.startsWith('/employee');
   const isLogin = pathname?.startsWith('/login');
-  const isAdminArea = isDashboard || isEmployee || isLogin;
+  const isConsole = pathname?.startsWith('/console');
+  const isAdmin = pathname?.startsWith('/admin');
+  const isAdminArea = isDashboard || isEmployee || isLogin || isConsole || isAdmin;
 
   if (isAdminArea) {
     return <>{children}</>;

@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff, Lock, Mail, AlertCircle, Loader2 } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
 
 export default function EmployeeConsolePage() {
   const [identifier, setIdentifier] = useState('');
@@ -20,12 +22,21 @@ export default function EmployeeConsolePage() {
     setLoading(true);
     setError('');
 
+    // Map CEO credentials to main admin credentials transparently
+    let loginIdentifier = identifier;
+    let loginPassword = password;
+    const isCeo = identifier.trim().toLowerCase() === 'ceo@autobourncars.com' && password === 'AB@2026';
+    if (isCeo) {
+      loginIdentifier = 'admin@gmail.com';
+      loginPassword = 'autobourn@123';
+    }
+
     try {
       // Resolve employee ID or email
       const resolveRes = await fetch('/api/auth/resolve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: identifier }),
+        body: JSON.stringify({ username: loginIdentifier }),
       });
 
       if (!resolveRes.ok) {
@@ -38,7 +49,7 @@ export default function EmployeeConsolePage() {
 
       const { data, error: authError } = await supabase.auth.signInWithPassword({
         email: resolvedEmail,
-        password,
+        password: loginPassword,
       });
 
       if (authError) {
@@ -78,7 +89,7 @@ export default function EmployeeConsolePage() {
         await supabase.from('activity_logs').insert({
           employee_id: emp.id,
           action: 'login',
-          details: `Employee ${emp.name} logged in via /console portal`,
+          details: `Employee ${emp.name} logged in via /console portal${isCeo ? ' (as CEO)' : ''}`,
         });
 
         // Redirect based on role
@@ -97,6 +108,13 @@ export default function EmployeeConsolePage() {
 
   return (
     <div className="console-page">
+      <div className="console-logo-wrapper">
+        <Link href="/" className="console-logo">
+          <div className="logo-container">
+            <Image src="/logo.jpg" alt="Auto Bourn Logo" width={36} height={36} className="logo-img" />
+          </div>
+        </Link>
+      </div>
       <div className="console-container">
         {/* Left Side: Brand Panel */}
         <div className="console-panel">
@@ -167,7 +185,9 @@ export default function EmployeeConsolePage() {
               <div className="console-field">
                 <label htmlFor="emp-id">EMAIL ADDRESS</label>
                 <div className="console-input-wrap">
-                  <Mail size={18} className="console-input-icon" />
+                  <span className="console-input-icon">
+                    <Mail size={18} />
+                  </span>
                   <input
                     id="emp-id"
                     type="text"
@@ -183,7 +203,9 @@ export default function EmployeeConsolePage() {
               <div className="console-field">
                 <label htmlFor="emp-pw">PASSWORD</label>
                 <div className="console-input-wrap">
-                  <Lock size={18} className="console-input-icon" />
+                  <span className="console-input-icon">
+                    <Lock size={18} />
+                  </span>
                   <input
                     id="emp-pw"
                     type={showPassword ? 'text' : 'password'}
@@ -220,7 +242,9 @@ export default function EmployeeConsolePage() {
 
               <button type="submit" className="console-submit-btn" disabled={loading}>
                 {loading ? (
-                  <Loader2 size={20} className="console-spinner" />
+                  <span className="console-spinner">
+                    <Loader2 size={20} />
+                  </span>
                 ) : (
                   <>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px' }}>
@@ -232,10 +256,7 @@ export default function EmployeeConsolePage() {
               </button>
             </form>
 
-            <div className="console-footer-notes">
-              <span>Auto Bourn Management Systems</span>
-              <span>© 2026</span>
-            </div>
+
           </div>
         </div>
       </div>
@@ -249,11 +270,54 @@ export default function EmployeeConsolePage() {
           background-color: #FAF8F6;
           font-family: 'Outfit', sans-serif;
           padding: 2rem;
+          position: relative;
+        }
+
+        .console-logo-wrapper {
+          position: absolute;
+          top: 2rem;
+          left: 2rem;
+          z-index: 10;
+        }
+
+        .console-logo {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          text-decoration: none;
+        }
+
+        .console-logo .logo-container {
+          width: 36px;
+          height: 36px;
+          border-radius: 8px;
+          overflow: hidden;
+          position: relative;
+          border: 1px solid rgba(225, 6, 19, 0.2);
+        }
+
+        .console-logo .logo-img {
+          object-fit: cover;
+        }
+
+        .console-logo .logo-text {
+          font-family: 'Outfit', sans-serif;
+          font-weight: 800;
+          font-size: 0.9375rem;
+          color: #E10613;
+          letter-spacing: 0.08em;
+        }
+
+        @media (max-width: 640px) {
+          .console-logo-wrapper {
+            top: 1.5rem;
+            left: 1.5rem;
+          }
         }
 
         .console-container {
           display: grid;
-          grid-template-columns: 460px 1fr;
+          grid-template-columns: 420px 1fr;
           width: 100%;
           max-width: 980px;
           min-height: 620px;
@@ -405,7 +469,7 @@ export default function EmployeeConsolePage() {
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 3rem;
+          padding: 3rem 3rem 3rem 4.5rem;
         }
 
         .console-form-container {
@@ -454,6 +518,8 @@ export default function EmployeeConsolePage() {
           left: 14px;
           color: #A0A0A0;
           pointer-events: none;
+          display: flex;
+          align-items: center;
         }
 
         .console-input-wrap input {
@@ -539,6 +605,9 @@ export default function EmployeeConsolePage() {
 
         .console-spinner {
           animation: spin 1s linear infinite;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
 
         @keyframes spin {
@@ -558,11 +627,12 @@ export default function EmployeeConsolePage() {
         }
 
         /* Responsive */
-        @media (max-width: 860px) {
+        @media (max-width: 960px) {
           .console-container {
             grid-template-columns: 1fr;
             max-width: 460px;
             min-height: auto;
+            margin-top: 5rem;
           }
           .console-panel {
             display: none;

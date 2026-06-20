@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Filter, Edit, Trash2, Eye, Star, Check, AlertCircle, X, ChevronLeft, ChevronRight, Upload } from 'lucide-react';
 import { formatPrice, formatDate, timeAgo } from '@/lib/utils';
@@ -10,13 +12,17 @@ import ConfirmModal from '@/components/ConfirmModal';
 
 const PAGE_SIZE = 12;
 
-export default function CarsPage() {
+function CarsPageContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const brandParam = searchParams.get('brand') || '';
+
   const [cars, setCars] = useState<Car[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [brandFilter, setBrandFilter] = useState('');
+  const [brandFilter, setBrandFilter] = useState(brandParam);
   const [brands, setBrands] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -57,6 +63,10 @@ export default function CarsPage() {
 
   // Reset to page 0 whenever filters change
   useEffect(() => { setPage(0); }, [search, statusFilter, brandFilter]);
+
+  useEffect(() => {
+    setBrandFilter(brandParam);
+  }, [brandParam]);
 
   useEffect(() => {
     const fetchBrands = async () => {
@@ -213,7 +223,14 @@ export default function CarsPage() {
             </select>
           </div>
           <div className="car-select-wrap">
-            <select value={brandFilter} onChange={e => setBrandFilter(e.target.value)}>
+            <select value={brandFilter} onChange={e => {
+              const val = e.target.value;
+              setBrandFilter(val);
+              const params = new URLSearchParams(window.location.search);
+              if (val) params.set('brand', val);
+              else params.delete('brand');
+              router.push(`/dashboard/cars?${params.toString()}`);
+            }}>
               <option value="">All Brands</option>{brands.map(b => <option key={b} value={b}>{b}</option>)}
             </select>
           </div>
@@ -225,15 +242,21 @@ export default function CarsPage() {
         cars.length === 0 ? <p className="db-empty-full">No cars found</p> :
         cars.map(car => (
           <motion.div key={car.id} className="car-card" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-            <div className="car-thumb">
-              {car.thumbnail ? <img src={car.thumbnail} alt={`${car.brand} ${car.model}`} /> : <div className="car-no-img">No Image</div>}
-              <div className="car-badges">
-                <span className={`car-status-badge ${car.status}`}>{car.status}</span>
-                {car.featured && <span className="car-feat"><Star size={12} /></span>}
+            <Link href={`/vehicle/${car.id}`} style={{ display: 'block', color: 'inherit', textDecoration: 'none' }}>
+              <div className="car-thumb">
+                {car.thumbnail ? <img src={car.thumbnail} alt={`${car.brand} ${car.model}`} /> : <div className="car-no-img">No Image</div>}
+                <div className="car-badges">
+                  <span className={`car-status-badge ${car.status}`}>{car.status}</span>
+                  {car.featured && <span className="car-feat"><Star size={12} /></span>}
+                </div>
               </div>
-            </div>
+            </Link>
             <div className="car-info">
-              <h3>{car.brand} {car.model}</h3>
+              <h3>
+                <Link href={`/vehicle/${car.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>
+                  {car.brand} {car.model}
+                </Link>
+              </h3>
               <p className="car-variant">{car.variant} · {car.year}</p>
               <p className="car-price">{formatPrice(car.price)}</p>
               <div className="car-meta">
@@ -385,7 +408,7 @@ export default function CarsPage() {
 .car-card{background:var(--db-sf);border:1px solid var(--db-bd);border-radius:14px;overflow:hidden;transition:all .2s}
 .car-card:hover{border-color:var(--db-gold);box-shadow:0 4px 20px var(--db-gg)}
 .car-thumb{position:relative;height:180px;background:var(--db-sf2);overflow:hidden}
-.car-thumb img{width:100%;height:100%;object-fit:cover}
+.car-thumb img{width:100%;height:100%;object-fit:contain}
 .car-no-img{display:flex;align-items:center;justify-content:center;height:100%;color:var(--db-tx3);font-size:.875rem}
 .car-badges{position:absolute;top:8px;left:8px;display:flex;gap:6px}
 .car-status-badge{padding:.25rem .75rem;border-radius:20px;font-size:.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
@@ -395,6 +418,7 @@ export default function CarsPage() {
 .car-feat{background:rgba(225,6,19,.15);color:#e10613;padding:.25rem;border-radius:6px;display:flex}
 .car-info{padding:1rem}
 .car-info h3{font-family:'Outfit',sans-serif;font-size:1.0625rem;font-weight:600;margin:0 0 .25rem}
+.car-info h3:hover{color:var(--db-gold);text-decoration:underline}
 .car-variant{color:var(--db-tx2);font-size:.8125rem;margin:0 0 .5rem}
 .car-price{font-family:'Outfit',sans-serif;font-size:1.25rem;font-weight:700;color:var(--db-gold);margin:0 0 .5rem}
 .car-meta{display:flex;gap:.35rem;color:var(--db-tx3);font-size:.75rem;flex-wrap:wrap;margin-bottom:.35rem}
@@ -420,6 +444,28 @@ export default function CarsPage() {
 @media(max-width:640px){.car-grid{grid-template-columns:1fr}.car-edit-form{grid-template-columns:1fr}}
       `}</style>
     </div>
+  );
+}
+
+export default function CarsPage() {
+  return (
+    <Suspense fallback={
+      <div className="db-page">
+        <div className="db-page-header">
+          <div>
+            <h1 className="db-page-title">Car Management</h1>
+            <p className="db-page-sub">Loading inventory...</p>
+          </div>
+        </div>
+        <div className="car-grid">
+          {Array(6).fill(0).map((_, i) => (
+            <div key={i} className="car-skel" />
+          ))}
+        </div>
+      </div>
+    }>
+      <CarsPageContent />
+    </Suspense>
   );
 }
 

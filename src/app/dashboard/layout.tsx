@@ -165,7 +165,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 .db-spinner{width:40px;height:40px;border:3px solid rgba(225,6,19,.15);border-top-color:#e10613;border-radius:50%}
 .db-root{display:flex;min-height:100vh;font-family:'Outfit',sans-serif}
 .db-dark{--db-bg:#0a0a0a;--db-sf:#121212;--db-sf2:#1a1a1a;--db-bd:rgba(255,255,255,.08);--db-tx:#fff;--db-tx2:rgba(255,255,255,.6);--db-tx3:rgba(255,255,255,.35);--db-gold:#e10613;--db-gd:rgba(225,6,19,.12);--db-gg:rgba(225,6,19,.25);--db-gn:#22c55e;--db-rd:#ef4444;--db-bl:#3b82f6}
-.db-light{--db-bg:#fafafa;--db-sf:#ffffff;--db-sf2:#f5f5f5;--db-bd:rgba(0,0,0,.08);--db-tx:#2a2a2a;--db-tx2:rgba(42,42,42,.7);--db-tx3:rgba(42,42,42,.4);--db-gold:#e10613;--db-gd:rgba(225,6,19,.08);--db-gg:rgba(225,6,19,.15);--db-gn:#16a34a;--db-rd:#e10613;--db-bl:#2563eb}
+.db-light{--db-bg:#fafafa;--db-sf:#ffffff;--db-sf2:#f5f5f5;--db-bd:rgba(0,0,0,.1);--db-tx:#000000;--db-tx2:#1a1a1a;--db-tx3:#555555;--db-gold:#e10613;--db-gd:rgba(225,6,19,.08);--db-gg:rgba(225,6,19,.15);--db-gn:#16a34a;--db-rd:#e10613;--db-bl:#2563eb}
 .db-root{background:var(--db-bg);color:var(--db-tx)}
 .db-sidebar{width:260px;background:var(--db-sf);border-right:1px solid var(--db-bd);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50;transition:width .3s ease}
 .db-sidebar.collapsed{width:72px}
