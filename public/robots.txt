@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard/
+Disallow: /employee/
+Disallow: /admin/
+Disallow: /adin/
+Disallow: /console/
+Disallow: /api/
+Disallow: /login/
+
+Sitemap: https://www.autobourncars.com/sitemap.xml
