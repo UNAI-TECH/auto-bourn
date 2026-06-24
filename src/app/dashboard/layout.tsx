@@ -10,7 +10,7 @@ import type { Employee } from '@/types/database';
 import {
   LayoutDashboard, Users, Car, ClipboardList, Activity,
   LogOut, Menu, X, ChevronRight, Moon, Sun, Bell, Search,
-  Users2, CalendarClock, BarChart3, PhoneCall, Bookmark
+  Users2, CalendarClock, BarChart3, PhoneCall, Bookmark, Mail
 } from 'lucide-react';
 
 interface DashboardContextType {
@@ -53,6 +53,45 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [contactMessagesOpen, setContactMessagesOpen] = useState(false);
+  const [contactMessages, setContactMessages] = useState<any[]>([]);
+  const [unreadContactsCount, setUnreadContactsCount] = useState(0);
+  const [loadingContacts, setLoadingContacts] = useState(false);
+
+  const fetchContactMessages = async () => {
+    setLoadingContacts(true);
+    const { data, error } = await supabase
+      .from('leads')
+      .select('*, customer_notes(note)')
+      .ilike('interested_car', 'Get In Touch%')
+      .order('created_at', { ascending: false });
+    
+    if (!error && data) {
+      const mapped = data.map((m: any) => ({
+        ...m,
+        notes: m.customer_notes?.[0]?.note || 'No message provided.'
+      }));
+      setContactMessages(mapped);
+      const unread = mapped.filter((m: any) => m.lead_status === 'new').length;
+      setUnreadContactsCount(unread);
+    }
+    setLoadingContacts(false);
+  };
+
+  const markContactStatus = async (leadId: string, newStatus: string) => {
+    const { error } = await supabase
+      .from('leads')
+      .update({ lead_status: newStatus })
+      .eq('id', leadId);
+    
+    if (error) {
+      alert('Failed to update status: ' + error.message);
+    } else {
+      setContactMessages(prev => prev.map(m => m.id === leadId ? { ...m, lead_status: newStatus } : m));
+      const updatedMessages = contactMessages.map(m => m.id === leadId ? { ...m, lead_status: newStatus } : m);
+      setUnreadContactsCount(updatedMessages.filter(m => m.lead_status === 'new').length);
+    }
+  };
 
   const router = useRouter();
   const pathname = usePathname();
@@ -72,6 +111,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       .select('id', { count: 'exact', head: true })
       .eq('read', false);
     setUnreadNotifications(notifCount || 0);
+
+    // 3. Fetch unread contact messages count
+    const { data: contactsData } = await supabase
+      .from('leads')
+      .select('lead_status')
+      .ilike('interested_car', 'Get In Touch%');
+    const unreadContacts = contactsData?.filter((m: any) => m.lead_status === 'new').length || 0;
+    setUnreadContactsCount(unreadContacts);
   };
 
   const fetchNotifications = async () => {
@@ -184,10 +231,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
              <div className="db-topbar-r">
               <button 
                 onClick={() => {
-                  setNotifOpen(true);
-                  markNotificationsRead();
+                  setContactMessagesOpen(true);
+                  fetchNotifications();
                 }} 
                 className="db-icon-btn" 
+                title="Notifications & Messages"
                 style={{ 
                   position: 'relative', 
                   display: 'flex', 
@@ -196,10 +244,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   color: 'var(--db-tx2)', 
                   background: 'none', 
                   border: 'none', 
-                  cursor: 'pointer' 
+                  cursor: 'pointer',
+                  marginRight: '0.75rem'
                 }}
               >
-                <Bell size={18} />
+                <Mail size={18} />
                 {unreadNotifications > 0 && (
                   <span className="db-dot" style={{ position: 'absolute', top: 6, right: 6, minWidth: 14, height: 14, fontSize: '.55rem', fontWeight: 800, background: '#E10613', color: '#fff', borderRadius: '99px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 3px' }}>
                     {unreadNotifications}
@@ -279,100 +328,176 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 @media(max-width:768px){.db-sidebar{transform:translateX(-100%);width:280px}.db-sidebar.mobile-open{transform:translateX(0)}.db-mob-close{display:flex}.db-overlay{display:block}.db-main,.db-main.expanded{margin-left:0!important}.db-search{display:none}.db-topbar{padding:0 1rem}.db-content{padding:1rem}}
       `}</style>
 
-      {/* NOTIFICATIONS MODAL */}
+      {/* UNIFIED INBOX/NOTIFICATIONS DRAWER */}
       <AnimatePresence>
-        {notifOpen && (
-          <div 
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'rgba(0, 0, 0, 0.5)',
-              backdropFilter: 'blur(5px)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 1000,
-              padding: '1.5rem',
-            }}
-            onClick={() => setNotifOpen(false)}
-          >
+        {contactMessagesOpen && (
+          <>
+            {/* Backdrop */}
             <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setContactMessagesOpen(false)}
               style={{
-                background: 'var(--db-sf, #ffffff)',
-                border: '1px solid var(--db-bd, rgba(0, 0, 0, 0.1))',
-                borderRadius: '20px',
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(0, 0, 0, 0.4)',
+                backdropFilter: 'blur(4px)',
+                zIndex: 1000,
+              }}
+            />
+            {/* Drawer */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              style={{
+                position: 'fixed',
+                top: 0,
+                right: 0,
+                bottom: 0,
                 width: '100%',
-                maxWidth: '450px',
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
-                padding: '1.5rem',
+                maxWidth: '420px',
+                background: 'var(--db-sf, #ffffff)',
+                borderLeft: '1px solid var(--db-bd)',
+                boxShadow: '-10px 0 40px rgba(0, 0, 0, 0.12)',
+                zIndex: 1001,
                 display: 'flex',
                 flexDirection: 'column',
-                maxHeight: '80vh',
+                boxSizing: 'border-box',
+                fontFamily: "'Outfit', sans-serif"
               }}
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ duration: 0.2 }}
-              onClick={e => e.stopPropagation()}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--db-bd)', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
+              {/* Header */}
+              <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--db-bd)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0, color: 'var(--db-tx)' }}>Notifications</h3>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--db-tx3)', margin: '2px 0 0' }}>Recent system updates and alerts</p>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--db-tx)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Mail size={20} style={{ color: '#E10613' }} /> Inbox & Alerts
+                  </h3>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--db-tx3)', margin: '4px 0 0' }}>All system notifications and client messages</p>
                 </div>
-                <Bell size={20} style={{ color: '#E10613' }} />
-              </div>
-              <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '0.75rem', paddingRight: '4px' }}>
-                {notifications.length === 0 ? (
-                  <p style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--db-tx3)', fontSize: '0.875rem', margin: 0 }}>No new notifications</p>
-                ) : (
-                  notifications.map(n => (
-                    <div 
-                      key={n.id} 
-                      style={{ 
-                        padding: '1rem', 
-                        border: '1.5px solid var(--db-bd)', 
-                        borderRadius: '12px', 
-                        background: n.read ? 'var(--db-sf2)' : 'rgba(225, 6, 19, 0.03)',
-                        borderColor: n.read ? 'var(--db-bd)' : 'rgba(225, 6, 19, 0.15)',
-                        position: 'relative'
-                      }}
-                    >
-                      {!n.read && (
-                        <div style={{ position: 'absolute', top: '12px', right: '12px', width: '6px', height: '6px', borderRadius: '50%', background: '#E10613' }} />
-                      )}
-                      <strong style={{ fontSize: '.875rem', color: 'var(--db-tx)', display: 'block', marginBottom: '4px', paddingRight: '12px' }}>{n.title}</strong>
-                      <p style={{ fontSize: '.8125rem', color: 'var(--db-tx2)', margin: 0, lineHeight: 1.4 }}>{n.message}</p>
-                      <span style={{ fontSize: '.6875rem', color: 'var(--db-tx3)', display: 'block', marginTop: '6px' }}>
-                        {new Date(n.created_at).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
-              <div style={{ display: 'flex', marginTop: '1.25rem', borderTop: '1px solid var(--db-bd)', paddingTop: '0.75rem' }}>
                 <button 
-                  onClick={() => setNotifOpen(false)} 
-                  style={{ 
-                    flex: 1, 
-                    padding: '0.625rem', 
-                    background: 'var(--db-sf2)', 
-                    border: '1px solid var(--db-bd)', 
-                    borderRadius: '10px', 
-                    color: 'var(--db-tx)', 
-                    fontSize: '0.875rem', 
-                    fontWeight: 600, 
-                    cursor: 'pointer' 
-                  }}
+                  onClick={() => setContactMessagesOpen(false)} 
+                  style={{ background: 'none', border: 'none', color: 'var(--db-tx2)', cursor: 'pointer', display: 'flex', padding: '4px', borderRadius: '50%' }}
                 >
-                  Close
+                  <X size={20} />
                 </button>
               </div>
+
+              {/* Toolbar */}
+              {notifications.length > 0 && (
+                <div style={{ padding: '0.75rem 1.5rem', borderBottom: '1px solid var(--db-bd)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--db-sf2)' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--db-tx2)' }}>
+                    {unreadNotifications} unread notification{unreadNotifications !== 1 && 's'}
+                  </span>
+                  <button 
+                    onClick={markNotificationsRead} 
+                    style={{ background: 'none', border: 'none', color: 'var(--db-gold, #c5a880)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                  >
+                    Mark all as read
+                  </button>
+                </div>
+              )}
+
+              {/* Notifications List */}
+              <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {notifications.length === 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', opacity: 0.7, padding: '2rem' }}>
+                    <Mail size={40} style={{ color: 'var(--db-tx3)', marginBottom: '1rem' }} />
+                    <p style={{ fontSize: '0.875rem', color: 'var(--db-tx3)', margin: 0, textAlign: 'center' }}>No notifications or messages yet</p>
+                  </div>
+                ) : (
+                  notifications.map((n: any) => {
+                    const isNew = !n.read;
+                    const hasLink = !!(n.metadata?.lead_id || n.metadata?.booking_id || n.metadata?.test_drive_id);
+                    
+                    return (
+                      <div 
+                        key={n.id}
+                        onClick={async () => {
+                          if (!n.read) {
+                            await supabase.from('notifications').update({ read: true }).eq('id', n.id);
+                            setNotifications(prev => prev.map(item => item.id === n.id ? { ...item, read: true } : item));
+                            setUnreadNotifications(prev => Math.max(0, prev - 1));
+                          }
+                          
+                          if (n.metadata?.lead_id) {
+                            setContactMessagesOpen(false);
+                            const isEmployee = pathname.startsWith('/employee');
+                            router.push(isEmployee ? `/employee/crm/leads/${n.metadata.lead_id}` : `/dashboard/crm/leads/${n.metadata.lead_id}`);
+                          } else if (n.metadata?.booking_id) {
+                            setContactMessagesOpen(false);
+                            const isEmployee = pathname.startsWith('/employee');
+                            router.push(isEmployee ? `/employee/bookings` : `/dashboard/bookings`);
+                          }
+                        }}
+                        style={{
+                          padding: '1.25rem',
+                          background: isNew ? 'rgba(225, 6, 19, 0.02)' : 'var(--db-sf2)',
+                          border: isNew ? '1.5px solid rgba(225, 6, 19, 0.15)' : '1px solid var(--db-bd)',
+                          borderRadius: '16px',
+                          cursor: hasLink ? 'pointer' : 'default',
+                          position: 'relative',
+                          transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                          boxShadow: isNew ? '0 4px 20px rgba(225, 6, 19, 0.03)' : 'none',
+                        }}
+                        onMouseEnter={e => {
+                          if (hasLink) {
+                            e.currentTarget.style.transform = 'translateY(-2px)';
+                            e.currentTarget.style.borderColor = '#E10613';
+                            e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.06)';
+                          }
+                        }}
+                        onMouseLeave={e => {
+                          if (hasLink) {
+                            e.currentTarget.style.transform = 'none';
+                            e.currentTarget.style.borderColor = isNew ? 'rgba(225, 6, 19, 0.15)' : 'var(--db-bd)';
+                            e.currentTarget.style.boxShadow = isNew ? '0 4px 20px rgba(225, 6, 19, 0.03)' : 'none';
+                          }
+                        }}
+                      >
+                        {isNew && (
+                          <span style={{ position: 'absolute', top: '16px', right: '16px', width: '8px', height: '8px', borderRadius: '50%', background: '#E10613', boxShadow: '0 0 10px #E10613' }} />
+                        )}
+
+                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                          <div style={{ fontSize: '1.25rem', marginTop: '2px' }}>
+                            {n.type.includes('message') ? '✉️' : n.type.includes('booking') ? '🔑' : n.type.includes('drive') ? '📅' : '🔔'}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <strong style={{ fontSize: '0.875rem', color: 'var(--db-tx)', display: 'block', marginBottom: '4px', fontWeight: 700, paddingRight: '12px' }}>
+                              {n.title}
+                            </strong>
+                            <p style={{ fontSize: '0.8125rem', color: 'var(--db-tx2)', margin: 0, lineHeight: 1.4, fontWeight: 500 }}>
+                              {n.message}
+                            </p>
+                            
+                            {n.metadata?.notes && (
+                              <div style={{ fontSize: '0.75rem', color: 'var(--db-tx2)', background: 'rgba(0,0,0,0.03)', padding: '0.5rem 0.75rem', borderRadius: '8px', marginTop: '0.5rem', whiteSpace: 'pre-line', border: '1px solid var(--db-bd)' }}>
+                                "{n.metadata.notes}"
+                              </div>
+                            )}
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.75rem' }}>
+                              <span style={{ fontSize: '0.6875rem', color: 'var(--db-tx3)', fontWeight: 600 }}>
+                                {new Date(n.created_at).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
+                              </span>
+                              {hasLink && (
+                                <span style={{ fontSize: '0.6875rem', color: 'var(--db-gold, #c5a880)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '2px' }}>
+                                  View Details →
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             </motion.div>
-          </div>
+          </>
         )}
       </AnimatePresence>
     </DashboardContext.Provider>

@@ -49,8 +49,37 @@ export default function CRMOverviewPage() {
   // Filter & dropdown state
   const [filterStatus, setFilterStatus] = useState<string>('All');
   const [showFilterDropdown, setShowFilterDropdown] = useState<boolean>(false);
+  const [loadingLeads, setLoadingLeads] = useState<boolean>(false);
 
   const supabase = createClient();
+
+  const fetchFilteredLeads = useCallback(async (status: string) => {
+    setLoadingLeads(true);
+    try {
+      let query = supabase
+        .from('leads')
+        .select('*, assigned_employee:employees!assigned_to(name, employee_id)')
+        .order('created_at', { ascending: false })
+        .limit(20);
+      
+      if (status !== 'All') {
+        query = query.eq('lead_status', status.toLowerCase());
+      }
+      
+      const { data } = await query;
+      if (data) {
+        setRecentLeads(data as Lead[]);
+      }
+    } catch (err) {
+      console.error('Error fetching filtered leads:', err);
+    } finally {
+      setLoadingLeads(false);
+    }
+  }, [supabase]);
+
+  useEffect(() => {
+    fetchFilteredLeads(filterStatus);
+  }, [filterStatus, fetchFilteredLeads]);
 
   const loadData = useCallback(async () => {
     try {
@@ -69,7 +98,6 @@ export default function CRMOverviewPage() {
         { count: countContacted },
         { count: countNegotiation },
         { count: countLost },
-        { data: recent },
         { data: upcoming },
       ] = await Promise.all([
         supabase.from('leads').select('id', { count: 'exact', head: true }),
@@ -81,7 +109,6 @@ export default function CRMOverviewPage() {
         supabase.from('leads').select('id', { count: 'exact', head: true }).eq('lead_status', 'contacted'),
         supabase.from('leads').select('id', { count: 'exact', head: true }).eq('lead_status', 'negotiation'),
         supabase.from('leads').select('id', { count: 'exact', head: true }).eq('lead_status', 'lost'),
-        supabase.from('leads').select('*, assigned_employee:employees!assigned_to(name, employee_id)').order('created_at', { ascending: false }).limit(20),
         supabase.from('follow_ups').select('*, lead:leads!lead_id(customer_name, phone, interested_car), employee:employees!employee_id(name)').eq('status', 'pending').gte('scheduled_at', now.toISOString()).order('scheduled_at').limit(15),
       ]);
 
@@ -111,7 +138,6 @@ export default function CRMOverviewPage() {
         lost: countLost || 0
       });
 
-      setRecentLeads((recent || []) as Lead[]);
       setUpcomingFollowUps((upcoming || []) as FollowUp[]);
       setLoading(false);
     } catch (e) {
@@ -148,9 +174,7 @@ export default function CRMOverviewPage() {
     document.body.removeChild(link);
   };
 
-  const filteredLeads = filterStatus === 'All'
-    ? recentLeads
-    : recentLeads.filter(l => l.lead_status.toLowerCase() === filterStatus.toLowerCase());
+  const filteredLeads = recentLeads;
 
   const statsMeta = [
     { label: 'Total Leads', value: stats.totalLeads.toLocaleString(), icon: Users2, color: 'var(--db-bl)', change: stats.totalLeadsChange, trend: 'up' },

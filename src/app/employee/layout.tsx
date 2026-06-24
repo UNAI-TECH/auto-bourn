@@ -7,7 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Employee } from '@/types/database';
-import { LayoutDashboard, Car, Upload, LogOut, Menu, X, Bell, FileText, AlertCircle, Clock, CheckCircle, PhoneCall, Bookmark } from 'lucide-react';
+import { LayoutDashboard, Car, Upload, LogOut, Menu, X, Bell, FileText, AlertCircle, Clock, CheckCircle, PhoneCall, Bookmark, Mail } from 'lucide-react';
 
 const EmpContext = createContext<{ employee: Employee | null; darkMode: boolean; onReportSubmitted: () => void }>({ employee: null, darkMode: false, onReportSubmitted: () => {} });
 export const useEmpContext = () => useContext(EmpContext);
@@ -36,6 +36,47 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
   const [notifications, setNotifications] = useState<any[]>([]);
   const [notifOpen, setNotifOpen] = useState(false);
   const [logoutWarning, setLogoutWarning] = useState(false);
+
+  // Contact Messages states
+  const [contactMessagesOpen, setContactMessagesOpen] = useState(false);
+  const [contactMessages, setContactMessages] = useState<any[]>([]);
+  const [unreadContactsCount, setUnreadContactsCount] = useState(0);
+  const [loadingContacts, setLoadingContacts] = useState(false);
+
+  const fetchContactMessages = async () => {
+    setLoadingContacts(true);
+    const { data, error } = await supabase
+      .from('leads')
+      .select('*, customer_notes(note)')
+      .ilike('interested_car', 'Get In Touch%')
+      .order('created_at', { ascending: false });
+    
+    if (!error && data) {
+      const mapped = data.map((m: any) => ({
+        ...m,
+        notes: m.customer_notes?.[0]?.note || 'No message provided.'
+      }));
+      setContactMessages(mapped);
+      const unread = mapped.filter((m: any) => m.lead_status === 'new').length;
+      setUnreadContactsCount(unread);
+    }
+    setLoadingContacts(false);
+  };
+
+  const markContactStatus = async (leadId: string, newStatus: string) => {
+    const { error } = await supabase
+      .from('leads')
+      .update({ lead_status: newStatus })
+      .eq('id', leadId);
+    
+    if (error) {
+      alert('Failed to update status: ' + error.message);
+    } else {
+      setContactMessages(prev => prev.map(m => m.id === leadId ? { ...m, lead_status: newStatus } : m));
+      const updatedMessages = contactMessages.map(m => m.id === leadId ? { ...m, lead_status: newStatus } : m);
+      setUnreadContactsCount(updatedMessages.filter(m => m.lead_status === 'new').length);
+    }
+  };
 
   const router = useRouter();
   const pathname = usePathname();
@@ -66,6 +107,15 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
     setNotifications(data || []);
   };
 
+  const fetchUnreadContactsCountOnly = async () => {
+    const { data: contactsData } = await supabase
+      .from('leads')
+      .select('lead_status')
+      .ilike('interested_car', 'Get In Touch%');
+    const unreadContacts = contactsData?.filter((m: any) => m.lead_status === 'new').length || 0;
+    setUnreadContactsCount(unreadContacts);
+  };
+
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -75,9 +125,14 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
       setEmployee(data);
       await checkTodayReport(data.id);
       await fetchNotifications(data.id);
+      await fetchUnreadContactsCountOnly();
       setLoading(false);
     };
     getUser();
+    const interval = setInterval(() => {
+      fetchUnreadContactsCountOnly();
+    }, 60000);
+    return () => clearInterval(interval);
   }, []);
 
   // 1-hour reminder notification check (runs every minute)
@@ -243,9 +298,14 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
 
             <div className="saas-topbar-actions">
 
-              <button className="saas-action-btn notif-wrap" title="Notifications" onClick={() => { setNotifOpen(true); markNotificationsRead(); }}>
-                <Bell size={18} />
-                {notifications.length > 0 && <span className="saas-dot notif-count">{notifications.length}</span>}
+              <button 
+                className="saas-action-btn notif-wrap" 
+                title="Notifications & Messages" 
+                onClick={() => { setContactMessagesOpen(true); fetchNotifications(); }}
+                style={{ marginRight: '0.75rem' }}
+              >
+                <Mail size={18} />
+                {unreadNotifications > 0 && <span className="saas-dot notif-count" style={{ background: '#E10613', color: '#fff' }}>{unreadNotifications}</span>}
               </button>
 
               {/* Submit Report Button */}
@@ -382,37 +442,176 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
           )}
         </AnimatePresence>
 
-        {/* NOTIFICATIONS MODAL */}
+        {/* UNIFIED INBOX/NOTIFICATIONS DRAWER */}
         <AnimatePresence>
-          {notifOpen && (
-            <motion.div className="rp-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setNotifOpen(false)}>
-              <motion.div className="rp-modal" initial={{ scale: 0.93, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.93, opacity: 0 }} onClick={e => e.stopPropagation()}>
-                <div className="rp-modal-head">
+          {contactMessagesOpen && (
+            <>
+              {/* Backdrop */}
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setContactMessagesOpen(false)}
+                style={{
+                  position: 'fixed',
+                  inset: 0,
+                  background: 'rgba(0, 0, 0, 0.4)',
+                  backdropFilter: 'blur(4px)',
+                  zIndex: 1000,
+                }}
+              />
+              {/* Drawer */}
+              <motion.div
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  right: 0,
+                  bottom: 0,
+                  width: '100%',
+                  maxWidth: '420px',
+                  background: 'var(--db-sf, #ffffff)',
+                  borderLeft: '1px solid var(--db-bd)',
+                  boxShadow: '-10px 0 40px rgba(0, 0, 0, 0.12)',
+                  zIndex: 1001,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  boxSizing: 'border-box',
+                  fontFamily: "'Outfit', sans-serif"
+                }}
+              >
+                {/* Header */}
+                <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--db-bd)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <h2>Notifications</h2>
-                    <p>Recent updates and alerts from the console</p>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--db-tx)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Mail size={20} style={{ color: '#E10613' }} /> Inbox & Alerts
+                    </h3>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--db-tx3)', margin: '4px 0 0' }}>All system notifications and client messages</p>
                   </div>
-                  <Bell size={24} color="#E10613" />
+                  <button 
+                    onClick={() => setContactMessagesOpen(false)} 
+                    style={{ background: 'none', border: 'none', color: 'var(--db-tx2)', cursor: 'pointer', display: 'flex', padding: '4px', borderRadius: '50%' }}
+                  >
+                    <X size={20} />
+                  </button>
                 </div>
-                <div className="rp-body" style={{ maxHeight: '350px', overflowY: 'auto' }}>
+
+                {/* Toolbar */}
+                {notifications.length > 0 && (
+                  <div style={{ padding: '0.75rem 1.5rem', borderBottom: '1px solid var(--db-bd)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--db-sf2)' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--db-tx2)' }}>
+                      {unreadNotifications} unread notification{unreadNotifications !== 1 && 's'}
+                    </span>
+                    <button 
+                      onClick={markNotificationsRead} 
+                      style={{ background: 'none', border: 'none', color: 'var(--db-gold, #c5a880)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                    >
+                      Mark all as read
+                    </button>
+                  </div>
+                )}
+
+                {/* Notifications List */}
+                <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   {notifications.length === 0 ? (
-                    <p className="notif-empty" style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--db-tx3)' }}>No new notifications</p>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                      {notifications.map(n => (
-                        <div className="notif-item" key={n.id} style={{ padding: '1rem', border: '1px solid var(--db-bd)', borderRadius: '12px', background: 'var(--db-sf2)' }}>
-                          <strong style={{ fontSize: '.875rem', color: 'var(--db-tx)', display: 'block', marginBottom: '4px' }}>{n.title}</strong>
-                          <p style={{ fontSize: '.8125rem', color: 'var(--db-tx2)', margin: 0, lineHeight: 1.4 }}>{n.message}</p>
-                        </div>
-                      ))}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', opacity: 0.7, padding: '2rem' }}>
+                      <Mail size={40} style={{ color: 'var(--db-tx3)', marginBottom: '1rem' }} />
+                      <p style={{ fontSize: '0.875rem', color: 'var(--db-tx3)', margin: 0, textAlign: 'center' }}>No notifications or messages yet</p>
                     </div>
+                  ) : (
+                    notifications.map((n: any) => {
+                      const isNew = !n.read;
+                      const hasLink = !!(n.metadata?.lead_id || n.metadata?.booking_id || n.metadata?.test_drive_id);
+                      
+                      return (
+                        <div 
+                          key={n.id}
+                          onClick={async () => {
+                            if (!n.read) {
+                              await supabase.from('notifications').update({ read: true }).eq('id', n.id);
+                              setNotifications(prev => prev.map(item => item.id === n.id ? { ...item, read: true } : item));
+                              setUnreadNotifications(prev => Math.max(0, prev - 1));
+                            }
+                            
+                            if (n.metadata?.lead_id) {
+                              setContactMessagesOpen(false);
+                              const isEmployee = pathname.startsWith('/employee');
+                              router.push(isEmployee ? `/employee/crm/leads/${n.metadata.lead_id}` : `/dashboard/crm/leads/${n.metadata.lead_id}`);
+                            } else if (n.metadata?.booking_id) {
+                              setContactMessagesOpen(false);
+                              const isEmployee = pathname.startsWith('/employee');
+                              router.push(isEmployee ? `/employee/bookings` : `/dashboard/bookings`);
+                            }
+                          }}
+                          style={{
+                            padding: '1.25rem',
+                            background: isNew ? 'rgba(225, 6, 19, 0.02)' : 'var(--db-sf2)',
+                            border: isNew ? '1.5px solid rgba(225, 6, 19, 0.15)' : '1px solid var(--db-bd)',
+                            borderRadius: '16px',
+                            cursor: hasLink ? 'pointer' : 'default',
+                            position: 'relative',
+                            transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                            boxShadow: isNew ? '0 4px 20px rgba(225, 6, 19, 0.03)' : 'none',
+                          }}
+                          onMouseEnter={e => {
+                            if (hasLink) {
+                              e.currentTarget.style.transform = 'translateY(-2px)';
+                              e.currentTarget.style.borderColor = '#E10613';
+                              e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.06)';
+                            }
+                          }}
+                          onMouseLeave={e => {
+                            if (hasLink) {
+                              e.currentTarget.style.transform = 'none';
+                              e.currentTarget.style.borderColor = isNew ? 'rgba(225, 6, 19, 0.15)' : 'var(--db-bd)';
+                              e.currentTarget.style.boxShadow = isNew ? '0 4px 20px rgba(225, 6, 19, 0.03)' : 'none';
+                            }
+                          }}
+                        >
+                          {isNew && (
+                            <span style={{ position: 'absolute', top: '16px', right: '16px', width: '8px', height: '8px', borderRadius: '50%', background: '#E10613', boxShadow: '0 0 10px #E10613' }} />
+                          )}
+
+                          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                            <div style={{ fontSize: '1.25rem', marginTop: '2px' }}>
+                              {n.type.includes('message') ? '✉️' : n.type.includes('booking') ? '🔑' : n.type.includes('drive') ? '📅' : '🔔'}
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <strong style={{ fontSize: '0.875rem', color: 'var(--db-tx)', display: 'block', marginBottom: '4px', fontWeight: 700, paddingRight: '12px' }}>
+                                {n.title}
+                              </strong>
+                              <p style={{ fontSize: '0.8125rem', color: 'var(--db-tx2)', margin: 0, lineHeight: 1.4, fontWeight: 500 }}>
+                                {n.message}
+                              </p>
+                              
+                              {n.metadata?.notes && (
+                                <div style={{ fontSize: '0.75rem', color: 'var(--db-tx2)', background: 'rgba(0,0,0,0.03)', padding: '0.5rem 0.75rem', borderRadius: '8px', marginTop: '0.5rem', whiteSpace: 'pre-line', border: '1px solid var(--db-bd)' }}>
+                                  "{n.metadata.notes}"
+                                </div>
+                              )}
+
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.75rem' }}>
+                                <span style={{ fontSize: '0.6875rem', color: 'var(--db-tx3)', fontWeight: 600 }}>
+                                  {new Date(n.created_at).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
+                                </span>
+                                {hasLink && (
+                                  <span style={{ fontSize: '0.6875rem', color: 'var(--db-gold, #c5a880)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '2px' }}>
+                                    View Details →
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
                   )}
                 </div>
-                <div className="rp-actions">
-                  <button className="rp-cancel" onClick={() => setNotifOpen(false)} style={{ flex: 1 }}>Close</button>
-                </div>
               </motion.div>
-            </motion.div>
+            </>
           )}
         </AnimatePresence>
       </div>

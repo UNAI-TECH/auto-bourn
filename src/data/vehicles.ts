@@ -342,67 +342,256 @@ export const vehicles: Vehicle[] = [
 export const testimonials: Testimonial[] = [
   {
     id: '1',
-    name: 'Rajesh Kumar',
-    role: 'Tech Entrepreneur',
+    name: 'Dr. Madhu Sachin',
+    role: 'Verified Google Reviewer',
     avatar: '/testimonials/avatar1.jpg',
-    content: 'Auto Bourn redefined my car buying experience. The GLE 300d I purchased was in impeccable condition, and the entire process felt like visiting a luxury boutique, not a dealership.',
+    content: 'U will find lot of showroom like this but nothing compared to AUTO BOURN. When u buy 2nd hand luxury car, u have lot of questions and enquiry, but people here NIRMAL and PRASANNA will guide u and help u to select suitable car. Even post sales support is excellent.',
     rating: 5,
-    vehicle: 'Mercedes-Benz GLE 300d'
+    vehicle: 'Exceptional Service'
   },
   {
     id: '2',
-    name: 'Priya Sharma',
-    role: 'Creative Director',
+    name: 'SELVA KUMAR',
+    role: 'Verified Google Reviewer',
     avatar: '/testimonials/avatar2.jpg',
-    content: 'The attention to detail at Auto Bourn is remarkable. Every vehicle is presented museum-quality, and the team\'s knowledge of luxury cars is unmatched.',
+    content: 'Great used car dealer and great owner Prasanna. A professional team will select the best option for you according to your taste and budget. I took an AUDI A3, which is in amazing condition. Enjoying my dream car from Autobourn.',
     rating: 5,
-    vehicle: 'BMW X5 xDrive30d'
+    vehicle: 'Audi A3'
   },
   {
     id: '3',
-    name: 'Arjun Mehta',
-    role: 'Investment Banker',
+    name: 'Raja Christopher',
+    role: 'Verified Google Reviewer',
     avatar: '/testimonials/avatar3.jpg',
-    content: 'Finding a certified pre-owned luxury SUV with warranty was my priority. Auto Bourn delivered beyond expectations — transparent pricing, immaculate vehicle, seamless finance.',
+    content: 'Recently, we bought BMW X5 from Autobourn in a good deal. It was really an amazing experience with the whole team Prasanna, Gowtham and special mention to Raghav who kept us updated on the progress everyday until the delivery.',
     rating: 5,
-    vehicle: 'Audi Q7 55 TFSI'
+    vehicle: 'BMW X5'
   },
   {
     id: '4',
-    name: 'Ananya Desai',
-    role: 'Fashion Designer',
+    name: 'Haran Pramoth',
+    role: 'Verified Google Reviewer',
     avatar: '/testimonials/avatar4.jpg',
-    content: 'I sold my Range Rover through Auto Bourn and the valuation was the best in the market. Professional, transparent, and incredibly efficient.',
+    content: 'I took a BMW 3 series, which is in amazing condition. Enjoying my dream car from Autobourn. They do service also with their well trained technicians. I have never seen such after sale support.',
     rating: 5,
-    vehicle: 'Land Rover Defender 110'
+    vehicle: 'BMW 3 Series'
   },
   {
     id: '5',
-    name: 'Vikram Malhotra',
-    role: 'Real Estate Developer',
+    name: 'NITHISH KANNA K P',
+    role: 'Verified Google Reviewer',
     avatar: '/testimonials/avatar1.jpg',
-    content: 'Purchasing my Audi A8 L from Auto Bourn was a breeze. Extremely professional staff, transparent history reports, and seamless delivery. Highly recommended for luxury car enthusiasts.',
+    content: 'We just bought a car before a week. They handled it very professionally and the process was so easy with them, as they explained it very clearly. We are so satisfied by their service provided and their product too.',
     rating: 5,
-    vehicle: 'Audi A8 L'
+    vehicle: '5-Star Experience'
   },
   {
     id: '6',
-    name: 'Dr. Sandeep Sen',
-    role: 'Cardiologist',
+    name: 'Joseph Arun',
+    role: 'Verified Google Reviewer',
     avatar: '/testimonials/avatar2.jpg',
-    content: 'The team at Auto Bourn went above and beyond to source the exact Mercedes-Benz E-Class configuration I wanted. The car drives like it just rolled out of the showroom.',
+    content: 'Buying your dream car surely adds enjoyment and fulfillment to your life. I am writing this review after 10 months I bought my car from Auto Bourn. I wanted to use the car, experience it, and write a review. Best decision.',
     rating: 5,
-    vehicle: 'Mercedes-Benz E-Class'
+    vehicle: 'Premium Quality'
   },
   {
     id: '7',
-    name: 'Kavita Rao',
-    role: 'Executive VP',
+    name: 'Hari Arun',
+    role: 'Verified Google Reviewer',
     avatar: '/testimonials/avatar3.jpg',
-    content: 'Auto Bourn makes luxury vehicle acquisition a seamless pleasure. Excellent finance assistance, zero-hassle documentation, and pristine-condition inventory.',
+    content: 'AUTO BOURN Pre owned car situated at Velachery. Good car collection and reasonable price, very supportive staff. The car was in excellent condition. Thank you Mr. Prasanna for making the process smooth and easy.',
     rating: 5,
-    vehicle: 'BMW 5 Series'
+    vehicle: 'Velachery Showroom'
   },
+  {
+    id: '8',
+    name: 'Gokul Raj',
+    role: 'Verified Google Reviewer',
+    avatar: '/testimonials/avatar4.jpg',
+    content: 'Really satisfied with the purchase! I nearly took a month to write this review as to experience the driving and feel of the car as I was out of town during the purchase of the car, but it didn\'t disappoint.',
+    rating: 5,
+    vehicle: 'Highly Satisfied'
+  },
+  {
+    id: '9',
+    name: 'Rajah',
+    role: 'Verified Google Reviewer',
+    avatar: '/testimonials/avatar1.jpg',
+    content: 'I had a fantastic experience at the car showroom! They have an impressive range of luxury options to choose from, making it easy to find the perfect fit. The process was smooth and efficient, and the delivery was surprisingly fast.',
+    rating: 5,
+    vehicle: 'Fast Delivery'
+  },
+  {
+    id: '10',
+    name: 'DR VISHNU',
+    role: 'Verified Google Reviewer',
+    avatar: '/testimonials/avatar2.jpg',
+    content: 'Very happy with Auto Bourn Cars. I think one of the best premium used car dealers in Velachery Chennai. Staffs and showroom also very good. Best collection of cars. Thank you Auto Bourn Cars.',
+    rating: 5,
+    vehicle: 'Premium Dealer'
+  },
+  {
+    id: '11',
+    name: 'Shankar Subramanian',
+    role: 'Verified Google Reviewer',
+    avatar: '/testimonials/avatar3.jpg',
+    content: 'I had a fantastic experience with Autobourn. They had wide ranges of Luxury vehicles. The approach is very easy and they clearly explained each and every thing.',
+    rating: 5,
+    vehicle: 'Wide Selection'
+  },
+  {
+    id: '12',
+    name: 'Naveen Kumar',
+    role: 'Verified Google Reviewer',
+    avatar: '/testimonials/avatar4.jpg',
+    content: 'First to Say, Thank you so much for the perfect guidance of Mr. Prasanna who helped us get the Vento model. The car looks nice, and the way of welcoming was so warm.',
+    rating: 5,
+    vehicle: 'VW Vento'
+  },
+  {
+    id: '13',
+    name: 'Robin Fernando',
+    role: 'Verified Google Reviewer',
+    avatar: '/testimonials/avatar1.jpg',
+    content: 'I have taken 2013 VW Vento 1.6 High Line - awesome car, around I have driven 150,000 km with no issue yet. Thank you Prasanna, Auto Bourn.',
+    rating: 5,
+    vehicle: 'VW Vento'
+  },
+  {
+    id: '14',
+    name: 'Anand Kumar',
+    role: 'Verified Google Reviewer',
+    avatar: '/testimonials/avatar2.jpg',
+    content: 'Recently purchased a car in Auto bourn. Nirmal was coordinating well and made my purchase hassle free. Got a good deal on my purchase. Really recommend for used cars. Keep up the good service.',
+    rating: 5,
+    vehicle: 'Hassle-Free Deal'
+  },
+  {
+    id: '15',
+    name: 'DR Builders',
+    role: 'Verified Google Reviewer',
+    avatar: '/testimonials/avatar3.jpg',
+    content: 'I truly appreciate the time and effort you and your team put into ensuring that the entire process went smoothly. Your attention to detail and willingness to address all my questions and concerns made me feel confident.',
+    rating: 5,
+    vehicle: 'Smooth Delivery'
+  },
+  {
+    id: '16',
+    name: 'Ravan Tr',
+    role: 'Verified Google Reviewer',
+    avatar: '/testimonials/avatar4.jpg',
+    content: 'Good hospitality!! Well maintained cars!! Cars are at reasonable price!! Highly reasonable price was offered by Auto Bourn!! Kindly and genuine vehicle evaluation and customer service. We were fully satisfied.',
+    rating: 5,
+    vehicle: 'Reasonable Pricing'
+  },
+  {
+    id: '17',
+    name: 'Dileepan Nithyanandan',
+    role: 'Verified Google Reviewer',
+    avatar: '/testimonials/avatar1.jpg',
+    content: 'I had a nice experience with Auto Bourn. Right from choosing the vehicle to delivering the vehicle they took utmost care. Their professionalism is outstanding and I recommend Auto Bourn without a thought.',
+    rating: 5,
+    vehicle: 'Utmost Care'
+  },
+  {
+    id: '18',
+    name: 'Alan Boris',
+    role: 'Verified Google Reviewer',
+    avatar: '/testimonials/avatar2.jpg',
+    content: 'Excellent service was provided for buying my Honda Civic. Trustworthy and very friendly staff. Perfect destination for buying and selling cars. Loved it.',
+    rating: 5,
+    vehicle: 'Honda Civic'
+  },
+  {
+    id: '19',
+    name: 'Saravana Kumar Varadharaj',
+    role: 'Verified Google Reviewer',
+    avatar: '/testimonials/avatar3.jpg',
+    content: 'We purchased a used car from AutoBourn and the entire experience was first rate - the service, the vehicles, the value and the follow through all exceeded our expectations. I would recommend them.',
+    rating: 5,
+    vehicle: 'First Rate Value'
+  },
+  {
+    id: '20',
+    name: 'P. Pari Pari',
+    role: 'Verified Google Reviewer',
+    avatar: '/testimonials/avatar4.jpg',
+    content: 'Excellent service where we can purchase luxury cars at an affordable price. They give end to end support. They make us feel so excited and super happy when delivering the car.',
+    rating: 5,
+    vehicle: 'Affordable Luxury'
+  },
+  {
+    id: '21',
+    name: 'Asraf Abbas',
+    role: 'Verified Google Reviewer',
+    avatar: '/testimonials/avatar1.jpg',
+    content: 'Auto Bourn is one of the best showrooms for used cars. You will get a good collection of cars at the best price and quality.',
+    rating: 5,
+    vehicle: 'Highly Trusted'
+  },
+  {
+    id: '22',
+    name: 'Vinay Sharma',
+    role: 'Verified Google Reviewer',
+    avatar: '/testimonials/avatar2.jpg',
+    content: 'Got my brand new A3 from them. It\'s been more than 3 months and it\'s running good. I\'ll recommend all my friends.',
+    rating: 5,
+    vehicle: 'Audi A3'
+  },
+  {
+    id: '23',
+    name: 'Suhasini Saravanan',
+    role: 'Verified Google Reviewer',
+    avatar: '/testimonials/avatar3.jpg',
+    content: 'We can rely on them completely when we want to go for pre owned cars. Had a great experience and our search hunt completed with them.',
+    rating: 5,
+    vehicle: 'Highly Reliable'
+  },
+  {
+    id: '24',
+    name: 'Ragul Ram S',
+    role: 'Verified Google Reviewer',
+    avatar: '/testimonials/avatar4.jpg',
+    content: 'Very supportive team right from the selection till delivery. Very happy with the quality of the car and also the price quoted was also on the right margin.',
+    rating: 5,
+    vehicle: 'Quality Cars'
+  },
+  {
+    id: '25',
+    name: 'Amsa Devarani',
+    role: 'Verified Google Reviewer',
+    avatar: '/testimonials/avatar1.jpg',
+    content: 'The employee really took a lot of initiative to reduce the work procedure. They took care of insurance and other paperwork. Excellent staff. I had a great experience in this place.',
+    rating: 5,
+    vehicle: 'Great Support'
+  },
+  {
+    id: '26',
+    name: 'Dharani Kumar Parthiban',
+    role: 'Verified Google Reviewer',
+    avatar: '/testimonials/avatar2.jpg',
+    content: 'Very good customer service by Ms. Pratheeba. She was excellent in answering all our queries.',
+    rating: 5,
+    vehicle: 'Customer First'
+  },
+  {
+    id: '27',
+    name: 'Sivson Wilson',
+    role: 'Verified Google Reviewer',
+    avatar: '/testimonials/avatar3.jpg',
+    content: 'Excellent response and very good customer satisfaction from owner and workers.',
+    rating: 5,
+    vehicle: 'Customer Delight'
+  },
+  {
+    id: '28',
+    name: 'PARTHA BANIK',
+    role: 'Verified Google Reviewer',
+    avatar: '/testimonials/avatar4.jpg',
+    content: 'Professional team, efficient and transparent - what else do you need!!',
+    rating: 5,
+    vehicle: 'Transparent Deal'
+  }
 ];
 
 export const statistics = [

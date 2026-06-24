@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 
 /* ── SVG Contact Icons ── */
@@ -33,6 +34,58 @@ function ContactIcon({ type }: { type: string }) {
 }
 
 export default function ContactPage() {
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [interest, setInterest] = useState('Select');
+  const [message, setMessage] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !phone.trim()) {
+      alert('Name and Phone are required.');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const response = await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customer_name: name,
+          phone: phone,
+          email: email || null,
+          source: 'website',
+          interested_car: interest !== 'Select' ? `Get In Touch: ${interest}` : 'Get In Touch Message',
+          lead_status: 'new',
+          notes: `Interest: ${interest}\nMessage: ${message || 'No message provided.'}`,
+        }),
+      });
+
+      const resData = await response.json();
+
+      if (!response.ok || resData.error) {
+        console.error('Error submitting contact form:', resData.error);
+        alert('There was a problem sending your message: ' + (resData.error || 'Server error'));
+      } else {
+        setSuccess(true);
+        setName('');
+        setPhone('');
+        setEmail('');
+        setInterest('Select');
+        setMessage('');
+        setTimeout(() => setSuccess(false), 5000);
+      }
+    } catch (err: any) {
+      console.error('Unexpected error in contact submission:', err);
+      alert('An unexpected error occurred: ' + err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '0.875rem 1rem', border: '1px solid #ECECEC', borderRadius: '10px',
     background: '#FAFAFA', fontSize: '0.9375rem', color: '#2A2A2A', fontFamily: 'var(--font-secondary)',
@@ -83,30 +136,45 @@ export default function ContactPage() {
             <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
               <div style={{ background: '#FAFAFA', borderRadius: '20px', padding: 'clamp(2rem, 3vw, 2.5rem)', border: '1px solid #ECECEC' }}>
                 <h2 style={{ fontFamily: 'var(--font-primary)', fontSize: '1.25rem', fontWeight: 700, color: '#2A2A2A', marginBottom: '1.5rem' }}>Send a Message</h2>
-                <form style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {success ? (
+                    <div style={{ padding: '1rem', background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', borderRadius: '10px', textAlign: 'center', fontWeight: 600 }}>
+                      ✓ Message sent successfully! Our team will contact you shortly.
+                    </div>
+                  ) : null}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                     <div>
                       <label style={{ fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#8A8A8A', display: 'block', marginBottom: '0.5rem' }}>Name *</label>
-                      <input type="text" placeholder="Your name" style={inputStyle} />
+                      <input required type="text" placeholder="Your name" style={inputStyle} value={name} onChange={e => setName(e.target.value)} />
                     </div>
                     <div>
                       <label style={{ fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#8A8A8A', display: 'block', marginBottom: '0.5rem' }}>Phone *</label>
-                      <input type="tel" placeholder="+91" style={inputStyle} />
+                      <input required type="tel" placeholder="+91" style={inputStyle} value={phone} onChange={e => setPhone(e.target.value)} />
                     </div>
                   </div>
                   <div>
                     <label style={{ fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#8A8A8A', display: 'block', marginBottom: '0.5rem' }}>Email</label>
-                    <input type="email" placeholder="your@email.com" style={inputStyle} />
+                    <input type="email" placeholder="your@email.com" style={inputStyle} value={email} onChange={e => setEmail(e.target.value)} />
                   </div>
                   <div>
                     <label style={{ fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#8A8A8A', display: 'block', marginBottom: '0.5rem' }}>Interest</label>
-                    <select style={inputStyle}><option>Select</option><option>Buy a Vehicle</option><option>Sell a Vehicle</option><option>Finance</option><option>Insurance</option><option>Test Drive</option><option>General Inquiry</option></select>
+                    <select style={inputStyle} value={interest} onChange={e => setInterest(e.target.value)}>
+                      <option>Select</option>
+                      <option>Buy a Vehicle</option>
+                      <option>Sell a Vehicle</option>
+                      <option>Finance</option>
+                      <option>Insurance</option>
+                      <option>Test Drive</option>
+                      <option>General Inquiry</option>
+                    </select>
                   </div>
                   <div>
                     <label style={{ fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#8A8A8A', display: 'block', marginBottom: '0.5rem' }}>Message</label>
-                    <textarea rows={4} placeholder="How can we help?" style={{ ...inputStyle, resize: 'vertical' }} />
+                    <textarea rows={4} placeholder="How can we help?" style={{ ...inputStyle, resize: 'vertical' }} value={message} onChange={e => setMessage(e.target.value)} />
                   </div>
-                  <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%' }}>Send Message</button>
+                  <button type="submit" disabled={submitting} className="btn btn-primary btn-lg" style={{ width: '100%', opacity: submitting ? 0.7 : 1 }}>
+                    {submitting ? 'Sending...' : 'Send Message'}
+                  </button>
                 </form>
               </div>
             </motion.div>

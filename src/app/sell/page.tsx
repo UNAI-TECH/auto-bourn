@@ -417,24 +417,33 @@ Registration State: ${form.registrationState || 'N/A'}
 Color: ${form.color || 'N/A'}
 Additional Details: ${form.additionalDetails || 'None'}`;
 
-      const { error } = await supabase.from('leads').insert({
-        customer_name: form.fullName,
-        phone: form.phone,
-        whatsapp: form.preferredContact === 'WhatsApp' ? form.phone : null,
-        email: form.email,
-        city: form.city,
-        state: form.registrationState || null,
-        source: 'website',
-        interested_car: `${form.brand} ${form.model} (${form.year})`,
-        preferred_brand: form.brand,
-        budget: form.expectedPrice ? parseInt(form.expectedPrice) : null,
-        lead_status: 'new',
-        notes: notes,
+      const cleanPriceStr = form.expectedPrice.replace(/[^0-9]/g, '');
+      const expectedPriceVal = cleanPriceStr ? parseInt(cleanPriceStr) : null;
+
+      const response = await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customer_name: form.fullName,
+          phone: form.phone,
+          whatsapp: form.phone || null,
+          email: form.email,
+          city: form.city,
+          state: form.registrationState || null,
+          source: 'website',
+          interested_car: `${form.brand} ${form.model} (${form.year})`,
+          preferred_brand: form.brand,
+          budget: expectedPriceVal,
+          lead_status: 'new',
+          notes: notes,
+        }),
       });
 
-      if (error) {
-        console.error('Error inserting lead to Supabase:', error);
-        alert('There was an issue submitting your details: ' + error.message);
+      const resData = await response.json();
+
+      if (!response.ok || resData.error) {
+        console.error('Error inserting lead to Supabase:', resData.error);
+        alert('There was an issue submitting your details: ' + (resData.error || 'Server error'));
       } else {
         const waText = `Hi Auto Bourn, I want to sell my car:
 *Brand:* ${form.brand}
@@ -447,7 +456,7 @@ Additional Details: ${form.additionalDetails || 'None'}`;
 *Ownership:* ${form.ownership}
 *Registration:* ${form.registrationState || 'N/A'}
 *Color:* ${form.color || 'N/A'}
-*Expected Price:* ${form.expectedPrice ? '₹' + parseInt(form.expectedPrice).toLocaleString('en-IN') : 'N/A'}
+*Expected Price:* ${expectedPriceVal ? '₹' + expectedPriceVal.toLocaleString('en-IN') : 'N/A'}
 ${form.additionalDetails ? `*Additional Notes:* ${form.additionalDetails}` : ''}
 
 *Contact Details:*
@@ -460,7 +469,7 @@ ${form.additionalDetails ? `*Additional Notes:* ${form.additionalDetails}` : ''}
         const waUrl = `https://wa.me/919176777222?text=${encodeURIComponent(waText)}`;
         
         alert('Your vehicle listing has been submitted successfully to our CRM. You will now be redirected to WhatsApp to complete your submission.');
-        window.open(waUrl, '_blank');
+        window.location.href = waUrl;
       }
     } catch (err: any) {
       console.error('Unexpected error submitting lead:', err);
