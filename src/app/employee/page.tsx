@@ -6,7 +6,8 @@ import { useEmpContext } from './layout';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Car, ShoppingCart, Clock, Upload, TrendingUp, Check, 
-  ChevronRight, Calendar, User, FileText, ArrowRight, Eye, ClipboardList
+  ChevronRight, Calendar, User, FileText, ArrowRight, Eye, ClipboardList,
+  PhoneCall, Bookmark
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -19,7 +20,7 @@ export default function EmployeeDashboard() {
   const [recentCars, setRecentCars] = useState<CarType[]>([]);
   const [allCars, setAllCars] = useState<CarType[]>([]);
   const [allLogs, setAllLogs] = useState<ActivityLog[]>([]);
-  const [reportPeriod, setReportPeriod] = useState<'day' | 'week' | 'year'>('day');
+  const [reportPeriod, setReportPeriod] = useState<'day' | 'week' | 'month'>('day');
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
@@ -67,7 +68,7 @@ export default function EmployeeDashboard() {
   }, [employee]);
 
   // Generate Report for selected period dynamically (100% real, no mock)
-  const generatePeriodReport = (period: 'day' | 'week' | 'year') => {
+  const generatePeriodReport = (period: 'day' | 'week' | 'month') => {
     const now = new Date();
     
     // Filter data based on period
@@ -81,7 +82,7 @@ export default function EmployeeDashboard() {
         sunday.setHours(0, 0, 0, 0);
         return carDate >= sunday;
       } else {
-        return carDate.getFullYear() === now.getFullYear();
+        return carDate.getMonth() === now.getMonth() && carDate.getFullYear() === now.getFullYear();
       }
     });
 
@@ -95,7 +96,7 @@ export default function EmployeeDashboard() {
         sunday.setHours(0, 0, 0, 0);
         return logDate >= sunday;
       } else {
-        return logDate.getFullYear() === now.getFullYear();
+        return logDate.getMonth() === now.getMonth() && logDate.getFullYear() === now.getFullYear();
       }
     });
 
@@ -118,8 +119,9 @@ export default function EmployeeDashboard() {
       sunday.setDate(now.getDate() - now.getDay());
       dateStr = `${sunday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
     } else {
-      periodLabel = `Year ${now.getFullYear()}`;
-      dateStr = `Jan 1, ${now.getFullYear()} - Dec 31, ${now.getFullYear()}`;
+      periodLabel = 'This Month';
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+      dateStr = `${firstDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
     }
 
     // Summary text
@@ -272,14 +274,19 @@ export default function EmployeeDashboard() {
                 <span>Customer Details Form</span>
                 <ArrowRight size={14} className="arrow" />
               </Link>
-              <Link href="/employee/upload" className="shortcut-btn secondary">
-                <Upload size={16} />
-                <span>Upload New Car</span>
+              <Link href="/employee/crm" className="shortcut-btn secondary">
+                <PhoneCall size={16} />
+                <span>My Leads (CRM)</span>
                 <ArrowRight size={14} className="arrow" />
               </Link>
-              <Link href="/employee/cars" className="shortcut-btn secondary">
-                <Car size={16} />
-                <span>Manage My Cars</span>
+              <Link href="/employee/test-drives" className="shortcut-btn secondary">
+                <Clock size={16} />
+                <span>Test Drives</span>
+                <ArrowRight size={14} className="arrow" />
+              </Link>
+              <Link href="/employee/bookings" className="shortcut-btn secondary">
+                <Bookmark size={16} />
+                <span>Reservations</span>
                 <ArrowRight size={14} className="arrow" />
               </Link>
             </div>
@@ -359,7 +366,7 @@ export default function EmployeeDashboard() {
               <ClipboardList size={18} style={{ color: '#E10613' }} />
             </div>
 
-            {/* Day Week Year Button Toggles */}
+            {/* Day Week Month Button Toggles */}
             <div className="report-period-tabs">
               <button 
                 className={reportPeriod === 'day' ? 'active' : ''} 
@@ -374,10 +381,10 @@ export default function EmployeeDashboard() {
                 Week
               </button>
               <button 
-                className={reportPeriod === 'year' ? 'active' : ''} 
-                onClick={() => setReportPeriod('year')}
+                className={reportPeriod === 'month' ? 'active' : ''} 
+                onClick={() => setReportPeriod('month')}
               >
-                Year
+                Month
               </button>
             </div>
 
@@ -406,16 +413,6 @@ export default function EmployeeDashboard() {
                   <span className="metric-lbl">Deletes</span>
                 </div>
               </div>
-
-              {/* Dynamic Narrative Summary */}
-              <div className="report-narrative">
-                <p>{currentReport.details}</p>
-              </div>
-
-              {/* Copy Action button */}
-              <button className="copy-report-btn" onClick={handleCopyReport}>
-                {copied ? 'Copied to Clipboard!' : 'Copy Report Summary'}
-              </button>
             </div>
           </div>
 

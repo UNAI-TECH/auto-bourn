@@ -236,6 +236,21 @@ export default function MyCarsPage() {
 
   useEffect(() => { if (employee) fetchCars(); }, [employee]);
 
+  useEffect(() => {
+    if (!employee) return;
+    const handleFocus = () => {
+      supabase
+        .from('cars')
+        .select('*, employee:employees!employee_id(name, employee_id)')
+        .order('created_at', { ascending: false })
+        .then(({ data }) => {
+          if (data) setCars(data);
+        });
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [employee, supabase]);
+
   const fetchCars = async () => {
     if (!employee) return;
     const { data } = await supabase
@@ -379,7 +394,7 @@ export default function MyCarsPage() {
         // INLINE EDIT FORM
         <div>
           <div className="db-page-header">
-            <div>
+            <div className="db-page-title-container">
               <h1 className="db-page-title">Edit Car</h1>
               <p className="db-page-sub">Update vehicle details and gallery images for {editCar.brand} {editCar.model}</p>
             </div>
@@ -556,9 +571,9 @@ export default function MyCarsPage() {
         // NORMAL LIST VIEW
         <>
           <div className="db-page-header">
-            <div>
+            <div className="db-page-title-container">
               <h1 className="db-page-title">{statusFilter === 'my' ? 'My Cars' : 'All Listings'}</h1>
-              <p className="db-page-sub">{filtered.length} listings</p>
+              <p className="db-page-sub">Manage your uploaded vehicle listings in the inventory ({filtered.length} total)</p>
             </div>
           </div>
 

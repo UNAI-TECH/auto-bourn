@@ -218,7 +218,7 @@ export default function HomePage() {
                           alt={`${v.brand} ${v.model} ${v.variant}`}
                           fill
                           style={{
-                            objectFit: 'cover',
+                            objectFit: 'contain',
                             transition: 'transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
                           }}
                           className="vehicle-card-img"

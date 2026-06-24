@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Car, Users, TrendingUp, ShoppingCart, Upload, Calendar, Award, BarChart3, X, Mail, PhoneCall, CalendarClock } from 'lucide-react';
+import { Car, Users, TrendingUp, ShoppingCart, Upload, Calendar, Award, BarChart3, X, Mail, PhoneCall, CalendarClock, CheckCircle2, XCircle } from 'lucide-react';
 import Image from 'next/image';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import type { PieLabelRenderProps } from 'recharts';
@@ -154,28 +154,35 @@ export default function DashboardOverview() {
 
   const fetchAll = async () => {
     const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-    const weekStart = new Date(now.getTime() - 7 * 86400000).toISOString();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const todayStr = now.toISOString().split('T')[0];
 
-    const [carsRes, empRes, todayRes, weekRes, monthRes] = await Promise.all([
+    const [
+      carsRes,
+      activeEmpRes,
+      leadsRes,
+      presentRes,
+      testDrivesRes
+    ] = await Promise.all([
       supabase.from('cars').select('status', { count: 'exact' }),
-      supabase.from('employees').select('id', { count: 'exact' }).eq('role', 'employee'),
-      supabase.from('cars').select('id', { count: 'exact' }).gte('created_at', todayStart),
-      supabase.from('cars').select('id', { count: 'exact' }).gte('created_at', weekStart),
-      supabase.from('cars').select('id', { count: 'exact' }).gte('created_at', monthStart),
+      supabase.from('employees').select('id', { count: 'exact' }).eq('role', 'employee').eq('status', 'active'),
+      supabase.from('leads').select('id', { count: 'exact' }),
+      supabase.from('daily_reports').select('id', { count: 'exact' }).eq('report_date', todayStr),
+      supabase.from('test_drives').select('id', { count: 'exact' }),
     ]);
 
     const cars = carsRes.data || [];
+    const totalActiveEmployees = activeEmpRes.count || 0;
+    const presentCount = presentRes.count || 0;
+
     setStats({
       total_cars: carsRes.count || 0,
       total_sold: cars.filter(c => c.status === 'sold').length,
       total_available: cars.filter(c => c.status === 'available').length,
       total_reserved: cars.filter(c => c.status === 'reserved').length,
-      total_employees: empRes.count || 0,
-      uploads_today: todayRes.count || 0,
-      uploads_this_week: weekRes.count || 0,
-      uploads_this_month: monthRes.count || 0,
+      enquiries: leadsRes.count || 0,
+      present: presentCount,
+      absent: Math.max(0, totalActiveEmployees - presentCount),
+      test_drives: testDrivesRes.count || 0,
     });
 
     // Upload activity (last 14 days)
@@ -220,14 +227,14 @@ export default function DashboardOverview() {
   };
 
   const statCards = stats ? [
-    { label: 'Total Cars', value: stats.total_cars, icon: Car, color: BRAND_RED },
-    { label: 'Available', value: stats.total_available, icon: TrendingUp, color: '#22c55e' },
-    { label: 'Sold', value: stats.total_sold, icon: ShoppingCart, color: '#ef4444' },
-    { label: 'Employees', value: stats.total_employees, icon: Users, color: '#3b82f6' },
-    { label: 'Today', value: stats.uploads_today, icon: Upload, color: '#a855f7' },
-    { label: 'This Week', value: stats.uploads_this_week, icon: Calendar, color: '#f59e0b' },
-    { label: 'This Month', value: stats.uploads_this_month, icon: BarChart3, color: '#06b6d4' },
-    { label: 'Reserved', value: stats.total_reserved, icon: Award, color: '#ec4899' },
+    { label: 'Total Cars', value: stats.total_cars, icon: Car, color: BRAND_RED, link: '/dashboard/cars' },
+    { label: 'Available', value: stats.total_available, icon: TrendingUp, color: '#22c55e', link: '/dashboard/cars?status=available' },
+    { label: 'Sold', value: stats.total_sold, icon: ShoppingCart, color: '#ef4444', link: '/dashboard/cars?status=sold' },
+    { label: 'Reserved', value: stats.total_reserved, icon: Award, color: '#ec4899', link: '/dashboard/cars?status=reserved' },
+    { label: 'Enquiry', value: stats.enquiries, icon: PhoneCall, color: '#3b82f6', link: '/dashboard/crm/leads' },
+    { label: 'Present', value: stats.present, icon: CheckCircle2, color: '#22c55e', link: '/dashboard/reports' },
+    { label: 'Absent', value: stats.absent, icon: XCircle, color: '#f59e0b', link: '/dashboard/reports' },
+    { label: 'Test Drive', value: stats.test_drives, icon: CalendarClock, color: '#06b6d4', link: '/dashboard/test-drives' },
   ] : [];
 
   const pieData = stats ? [
@@ -255,7 +262,7 @@ export default function DashboardOverview() {
       <div className="db-grid-4">
         {statCards.map((card, i) => (
           <motion.div key={card.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-            <div className="db-stat-card">
+            <div className="db-stat-card" onClick={() => router.push(card.link)}>
               <div className="db-stat-icon" style={{ background: `${card.color}15`, color: card.color }}><card.icon size={20} /></div>
               <div className="db-stat-info">
                 <span className="db-stat-val">{card.value}</span>
@@ -527,8 +534,9 @@ export default function DashboardOverview() {
 .db-page-sub{color:var(--db-tx2);font-size:.875rem;margin-top:.25rem}
 .db-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
 .db-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem}
-.db-stat-card{background:var(--db-sf);border:1px solid var(--db-bd);border-radius:14px;padding:1.25rem;display:flex;align-items:center;gap:1rem;transition:all .2s}
-.db-stat-card:hover{border-color:var(--db-gold);box-shadow:0 4px 20px var(--db-gg)}
+.db-stat-card{background:var(--db-sf);border:1px solid var(--db-bd);border-radius:14px;padding:1.25rem;display:flex;align-items:center;gap:1rem;transition:all .2s;cursor:pointer;user-select:none}
+.db-stat-card:hover{border-color:var(--db-gold);box-shadow:0 4px 20px var(--db-gg);transform:translateY(-2px)}
+.db-stat-card:active{transform:translateY(0)}
 .db-stat-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .db-stat-val{font-size:1.5rem;font-weight:700;font-family:'Outfit',sans-serif;display:block;line-height:1.2}
 .db-stat-lbl{font-size:.75rem;color:var(--db-tx3);text-transform:uppercase;letter-spacing:.05em}

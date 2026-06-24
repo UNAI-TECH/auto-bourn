@@ -14,12 +14,22 @@ export async function fetchDbVehicles(forceRefresh = false): Promise<Vehicle[]> 
       return cachedVehicles;
     }
 
-    const res = await fetch('/api/cars?limit=100&status=available_or_reserved');
-    if (!res.ok) throw new Error('Failed to fetch vehicles');
-    const data = await res.json();
-    const cars = data.cars || [];
+    const isPlaceholder = !process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL.includes('placeholder');
+    if (isPlaceholder) {
+      return [];
+    }
 
-    const mapped = cars.map((car: any) => {
+    const supabase = createClient();
+    const { data: cars, error } = await supabase
+      .from('cars')
+      .select('*, car_images(image_url, display_order), employee:employees!employee_id(name, employee_id)')
+      .in('status', ['available', 'reserved'])
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    const carsList = cars || [];
+
+    const mapped = carsList.map((car: any) => {
       const rawImages = car.car_images && car.car_images.length > 0
         ? car.car_images.sort((a: any, b: any) => a.display_order - b.display_order).map((img: any) => img.image_url)
         : [];
@@ -78,11 +88,19 @@ export async function fetchDbVehicleById(id: string, forceRefresh = false): Prom
       return cachedVehicleById[id].data;
     }
 
-    const res = await fetch(`/api/cars?id=${encodeURIComponent(id)}`);
-    if (!res.ok) throw new Error('Failed to fetch vehicle');
-    const data = await res.json();
-    const car = data.car;
-    if (!car) return null;
+    const isPlaceholder = !process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL.includes('placeholder');
+    if (isPlaceholder) {
+      return null;
+    }
+
+    const supabase = createClient();
+    const { data: car, error } = await supabase
+      .from('cars')
+      .select('*, car_images(image_url, display_order), employee:employees!employee_id(name, employee_id)')
+      .eq('id', id)
+      .single();
+
+    if (error || !car) return null;
 
     const rawImages = car.car_images && car.car_images.length > 0
       ? car.car_images.sort((a: any, b: any) => a.display_order - b.display_order).map((img: any) => img.image_url)

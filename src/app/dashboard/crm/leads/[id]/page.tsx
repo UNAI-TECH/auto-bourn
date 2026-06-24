@@ -386,9 +386,62 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
 .crm-info-row:last-child{border-bottom:none}
 .crm-info-row span:first-child{color:var(--db-tx3)}
 .crm-info-row span:last-child{color:var(--db-tx);font-weight:500;text-align:right;max-width:60%}
-.crm-tabs{display:flex;gap:4px;background:var(--db-sf);border:1px solid var(--db-bd);border-radius:12px;padding:4px;margin-bottom:1rem;flex-wrap:wrap}
-.crm-tab{flex:1;padding:.5rem;border:none;border-radius:8px;font-size:.8125rem;font-family:inherit;cursor:pointer;background:0;color:var(--db-tx2);font-weight:500;transition:all .2s;min-width:80px}
-.crm-tab.active{background:var(--db-gd);color:var(--db-gold);font-weight:700}
+.crm-tabs {
+  display: flex;
+  gap: 1.5rem;
+  border-bottom: 1px solid var(--db-bd);
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+.crm-tab {
+  padding: 0.625rem 0.25rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  cursor: pointer;
+  background: none;
+  color: var(--db-tx2);
+  font-weight: 600;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.crm-tab:hover {
+  color: var(--db-tx);
+}
+.crm-tab.active {
+  color: var(--db-gold);
+  border-bottom-color: var(--db-gold);
+}
+.emp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.emp-field label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--db-tx3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.emp-field input, .emp-field select {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  background: var(--db-sf);
+  border: 1px solid var(--db-bd);
+  border-radius: 8px;
+  color: var(--db-tx);
+  font-size: 0.8125rem;
+  outline: none;
+  transition: all 0.2s;
+}
+.emp-field input:focus, .emp-field select:focus {
+  border-color: var(--db-gold);
+  box-shadow: 0 0 0 2px rgba(225, 6, 19, 0.1);
+}
 .crm-action-btn{display:flex;align-items:center;gap:.375rem;padding:.5rem .875rem;border-radius:9px;font-size:.8125rem;font-weight:600;text-decoration:none;border:1px solid var(--db-bd);color:var(--db-tx2);transition:all .2s;background:var(--db-sf)}
 .crm-action-btn:hover,.crm-action-btn.call:hover{border-color:#3b82f6;color:#3b82f6}
 .crm-action-btn.wa:hover{border-color:#22c55e;color:#22c55e}
@@ -402,7 +455,20 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
 .crm-fu-status.completed{background:rgba(34,197,94,.12);color:#22c55e;border-color:rgba(34,197,94,.3)}
 .crm-fu-status.pending{background:rgba(245,158,11,.12);color:#f59e0b;border-color:rgba(245,158,11,.3)}
 .crm-fu-status.missed{background:rgba(225,6,19,.12);color:#E10613;border-color:rgba(225,6,19,.3)}
-.crm-note-input{width:100%;padding:.75rem;background:var(--db-sf2);border:1px solid var(--db-bd);border-radius:10px;color:var(--db-tx);font-family:inherit;font-size:.875rem;resize:none;outline:none}
+.crm-note-input {
+  width: 100%;
+  padding: 0.75rem;
+  background: var(--db-sf2);
+  border: 1px solid var(--db-bd);
+  border-radius: 10px;
+  color: var(--db-tx);
+  font-family: inherit;
+  font-size: 0.875rem;
+  resize: vertical;
+  min-height: 80px;
+  outline: none;
+  transition: border-color 0.2s;
+}
 .crm-note-input:focus{border-color:var(--db-gold)}
 .crm-note-item{padding:.875rem;background:var(--db-sf2);border-radius:10px;margin-bottom:.5rem;border-left:3px solid #6366f1}
 .crm-card-btn{width:28px;height:28px;background:var(--db-sf);border:1px solid var(--db-bd);border-radius:7px;display:flex;align-items:center;justify-content:center;color:var(--db-tx3);cursor:pointer;transition:all .2s;flex-shrink:0}

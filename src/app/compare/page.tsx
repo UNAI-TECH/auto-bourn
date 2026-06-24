@@ -69,13 +69,13 @@ function CompareContent() {
                         <div style={{
                           width: '100%', aspectRatio: '16/10', borderRadius: '16px',
                           overflow: 'hidden', position: 'relative', marginBottom: '1rem',
-                          border: '1px solid #ECECEC',
+                          border: '1px solid #ECECEC', background: '#F5F5F5',
                         }}>
                           <Image
                             src={v.images[0]}
                             alt={`${v.brand} ${v.model}`}
                             fill
-                            style={{ objectFit: 'cover' }}
+                            style={{ objectFit: 'contain' }}
                             sizes="300px"
                           />
                         </div>

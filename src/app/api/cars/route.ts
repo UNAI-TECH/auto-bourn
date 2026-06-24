@@ -13,6 +13,20 @@ export async function GET(request: NextRequest) {
     const id = searchParams.get('id');
 
     if (id) {
+      // Increment views count
+      const { data: currentCar } = await supabase
+        .from('cars')
+        .select('views')
+        .eq('id', id)
+        .single();
+      
+      if (currentCar) {
+        await supabase
+          .from('cars')
+          .update({ views: (currentCar.views || 0) + 1 })
+          .eq('id', id);
+      }
+
       const { data: car, error } = await supabase
         .from('cars')
         .select('*, car_images(image_url, display_order), employee:employees!employee_id(name, employee_id)')
@@ -24,7 +38,7 @@ export async function GET(request: NextRequest) {
       }
       return NextResponse.json({ car }, {
         headers: {
-          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=30'
+          'Cache-Control': 'no-store, max-age=0, must-revalidate'
         }
       });
     }

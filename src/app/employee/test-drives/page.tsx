@@ -135,14 +135,10 @@ export default function EmployeeTestDrivesPage() {
 
   return (
     <div style={{ padding: 0 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '.75rem' }}>
-        <div>
-          <h1 style={{ fontFamily: "'Outfit',sans-serif", fontSize: '1.375rem', fontWeight: 800, margin: 0 }}>
-            Test Drive Bookings
-          </h1>
-          <p style={{ color: 'var(--emp-tx2)', fontSize: '.8125rem', margin: '.25rem 0 0' }}>
-            View and manage customer test drive requests from the website
-          </p>
+      <div className="db-page-header">
+        <div className="db-page-title-container">
+          <h1 className="db-page-title">Test Drives</h1>
+          <p className="db-page-sub">View and manage customer test drive requests from the website</p>
         </div>
       </div>
 
@@ -214,6 +210,7 @@ export default function EmployeeTestDrivesPage() {
             const statusStyle = getStatusColor(req.status);
             const isAssignedToMe = employee && req.employee_id === employee.id;
             const isUnassigned = !req.employee_id;
+            const leftIndicatorColor = statusStyle.color;
 
             return (
               <motion.div
@@ -222,32 +219,44 @@ export default function EmployeeTestDrivesPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.02 }}
                 style={{
-                  background: 'var(--emp-sf)',
-                  border: '1px solid var(--emp-bd)',
-                  borderRadius: '14px',
-                  padding: '1.25rem',
+                  background: 'var(--db-sf, #ffffff)',
+                  border: '1.5px solid var(--db-bd, rgba(0,0,0,0.08))',
+                  borderRadius: '16px',
+                  padding: '1.25rem 1.5rem',
                   display: 'grid',
-                  gridTemplateColumns: '1.2fr 1fr 1fr',
-                  gap: '1.25rem',
+                  gridTemplateColumns: '1.2fr 1fr 1.2fr',
+                  gap: '1.5rem',
                   alignItems: 'center',
-                  transition: 'all 0.2s',
-                  boxShadow: isAssignedToMe ? '0 4px 12px rgba(225, 6, 19, 0.03)' : 'none',
-                  borderColor: isAssignedToMe ? 'rgba(225, 6, 19, 0.2)' : 'var(--emp-bd)',
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.02)',
+                  position: 'relative',
+                  overflow: 'hidden'
                 }}
+                whileHover={{ y: -2, boxShadow: '0 8px 24px rgba(0,0,0,0.06)', borderColor: '#E10613' }}
                 className="emp-td-card"
               >
+                {/* Left status indicator */}
+                <div style={{
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: '4px',
+                  background: leftIndicatorColor
+                }} />
+
                 {/* Contact details */}
                 <div>
-                  <h3 style={{ fontSize: '0.9375rem', fontWeight: 700, margin: '0 0 0.35rem', color: 'var(--emp-tx)' }}>
+                  <h3 style={{ fontSize: '0.975rem', fontWeight: 700, margin: '0 0 0.35rem', color: 'var(--db-tx, #000000)' }}>
                     {req.lead?.customer_name || 'Anonymous User'}
                   </h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', fontSize: '0.75rem', color: 'var(--emp-tx2)' }}>
-                    <a href={`tel:${req.lead?.phone}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', textDecoration: 'none', color: 'inherit' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', fontSize: '0.8125rem', color: 'var(--db-tx2, #555555)' }}>
+                    <a href={`tel:${req.lead?.phone}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', textDecoration: 'none', color: 'inherit', fontWeight: 600 }}>
                       <Phone size={12} style={{ color: '#3b82f6' }} /> {req.lead?.phone || '—'}
                     </a>
                     {req.lead?.email && (
                       <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Mail size={12} style={{ color: 'var(--emp-tx3)' }} /> {req.lead.email}
+                        <Mail size={12} style={{ color: 'var(--db-tx3, #777777)' }} /> {req.lead.email}
                       </span>
                     )}
                   </div>
@@ -255,21 +264,21 @@ export default function EmployeeTestDrivesPage() {
 
                 {/* Booking details */}
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '0.2rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '0.25rem' }}>
                     <Car size={14} style={{ color: '#E10613' }} />
-                    <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--emp-tx)' }}>
+                    <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--db-tx, #000000)' }}>
                       {req.car_name}
                     </span>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: 'var(--emp-tx2)' }}>
-                    <Calendar size={12} style={{ color: 'var(--emp-tx3)' }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8125rem', color: 'var(--db-tx2, #555555)' }}>
+                    <Calendar size={12} style={{ color: 'var(--db-tx3, #777777)' }} />
                     <span>{new Date(req.scheduled_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</span>
                   </div>
                 </div>
 
                 {/* Assignment & Actions */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                     <span
                       style={{
                         background: statusStyle.bg,
@@ -285,11 +294,11 @@ export default function EmployeeTestDrivesPage() {
                       {req.status}
                     </span>
                     {req.employee ? (
-                      <span style={{ fontSize: '0.75rem', color: 'var(--emp-tx2)' }}>
+                      <span style={{ fontSize: '0.8125rem', color: 'var(--db-tx2, #555555)', fontWeight: 600 }}>
                         👤 {isAssignedToMe ? 'Assigned to You' : req.employee.name}
                       </span>
                     ) : (
-                      <span style={{ fontSize: '0.75rem', color: '#ff9800', fontWeight: 600 }}>
+                      <span style={{ fontSize: '0.8125rem', color: '#ff9800', fontWeight: 600 }}>
                         ⚠️ Unassigned
                       </span>
                     )}

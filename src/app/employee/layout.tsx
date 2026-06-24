@@ -17,14 +17,11 @@ const navItems = [
   { href: '/employee/upload', label: 'Upload Car', icon: Upload },
   { href: '/employee/cars', label: 'My Cars', icon: Car },
   { href: '/employee/customer-details', label: 'Customer Details', icon: FileText },
-  { href: '/employee/crm', label: 'My Leads (CRM)', icon: PhoneCall },
-  { href: '/employee/test-drives', label: 'Test Drives', icon: Clock },
-  { href: '/employee/bookings', label: 'Reservations', icon: Bookmark },
 ];
 
 export default function EmployeeLayout({ children }: { children: React.ReactNode }) {
   const [employee, setEmployee] = useState<Employee | null>(null);
-  const [darkMode, setDarkMode] = useState(false);
+  const darkMode = false;
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -246,29 +243,9 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
 
             <div className="saas-topbar-actions">
 
-              <button className="saas-action-btn notif-wrap" title="Notifications" onClick={() => { setNotifOpen(!notifOpen); if (!notifOpen) markNotificationsRead(); }}>
+              <button className="saas-action-btn notif-wrap" title="Notifications" onClick={() => { setNotifOpen(true); markNotificationsRead(); }}>
                 <Bell size={18} />
                 {notifications.length > 0 && <span className="saas-dot notif-count">{notifications.length}</span>}
-                <AnimatePresence>
-                  {notifOpen && (
-                    <motion.div className="notif-dropdown" initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
-                      <div className="notif-header">
-                        <span>Notifications</span>
-                        <Bell size={14} />
-                      </div>
-                      {notifications.length === 0 ? (
-                        <p className="notif-empty">No new notifications</p>
-                      ) : (
-                        notifications.map(n => (
-                          <div className="notif-item" key={n.id}>
-                            <strong>{n.title}</strong>
-                            <p>{n.message}</p>
-                          </div>
-                        ))
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </button>
 
               {/* Submit Report Button */}
@@ -399,6 +376,40 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
                   <button className="rp-submit" onClick={() => { setLogoutWarning(false); setReportModalOpen(true); }}>
                     Submit Report Now
                   </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* NOTIFICATIONS MODAL */}
+        <AnimatePresence>
+          {notifOpen && (
+            <motion.div className="rp-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setNotifOpen(false)}>
+              <motion.div className="rp-modal" initial={{ scale: 0.93, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.93, opacity: 0 }} onClick={e => e.stopPropagation()}>
+                <div className="rp-modal-head">
+                  <div>
+                    <h2>Notifications</h2>
+                    <p>Recent updates and alerts from the console</p>
+                  </div>
+                  <Bell size={24} color="#E10613" />
+                </div>
+                <div className="rp-body" style={{ maxHeight: '350px', overflowY: 'auto' }}>
+                  {notifications.length === 0 ? (
+                    <p className="notif-empty" style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--db-tx3)' }}>No new notifications</p>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      {notifications.map(n => (
+                        <div className="notif-item" key={n.id} style={{ padding: '1rem', border: '1px solid var(--db-bd)', borderRadius: '12px', background: 'var(--db-sf2)' }}>
+                          <strong style={{ fontSize: '.875rem', color: 'var(--db-tx)', display: 'block', marginBottom: '4px' }}>{n.title}</strong>
+                          <p style={{ fontSize: '.8125rem', color: 'var(--db-tx2)', margin: 0, lineHeight: 1.4 }}>{n.message}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="rp-actions">
+                  <button className="rp-cancel" onClick={() => setNotifOpen(false)} style={{ flex: 1 }}>Close</button>
                 </div>
               </motion.div>
             </motion.div>
@@ -1002,6 +1013,39 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
   .saas-content {
     padding: 1.5rem 1rem;
   }
+}
+
+/* Page Header Standard Styling */
+.db-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 2rem !important;
+  padding-bottom: 1.25rem;
+  border-bottom: 1.5px solid var(--db-bd);
+  flex-wrap: wrap;
+  gap: 1.25rem;
+}
+.db-page-title-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.db-page-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--db-tx);
+  margin: 0;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+.db-page-sub {
+  font-size: 0.9rem;
+  color: var(--db-tx2);
+  margin: 0;
+  line-height: 1.5;
+  font-weight: 500;
 }
       `}</style>
     </EmpContext.Provider>

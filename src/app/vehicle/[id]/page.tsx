@@ -123,6 +123,13 @@ export default function VehicleDetailPage() {
         const allDb = await fetchDbVehicles();
         const sim = allDb.filter(v => v.id !== data.id && v.bodyType === data.bodyType).slice(0, 3);
         setSimilar(sim);
+
+        // Increment views count asynchronously
+        fetch('/api/cars/views', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: params.id })
+        }).catch(err => console.error('Failed to increment views:', err));
       }
       setLoading(false);
     }

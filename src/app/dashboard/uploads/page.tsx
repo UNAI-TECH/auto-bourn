@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { motion } from 'framer-motion';
-import { Upload, Image, Calendar, Clock, User, Search } from 'lucide-react';
+import { Upload, Image as ImageIcon, Calendar, Clock, User, Search, ArrowUpRight } from 'lucide-react';
 import { formatDateTime, timeAgo } from '@/lib/utils';
 
 interface UploadRecord {
@@ -43,7 +44,7 @@ export default function UploadsPage() {
       setLoading(false);
     };
     fetch();
-  }, []);
+  }, [supabase]);
 
   const filtered = uploads.filter(u =>
     u.brand.toLowerCase().includes(search.toLowerCase()) ||
@@ -59,61 +60,296 @@ export default function UploadsPage() {
   return (
     <div className="db-page">
       <div className="db-page-header">
-        <div><h1 className="db-page-title">Upload Tracking</h1><p className="db-page-sub">Track every upload with details</p></div>
+        <div>
+          <h1 className="db-page-title">Upload Tracking</h1>
+          <p className="db-page-sub">Track and audit vehicle listings submitted by employees</p>
+        </div>
       </div>
 
       <div className="car-filters" style={{ marginBottom: '1.5rem' }}>
-        <div className="db-search-inline"><Search size={16} /><input placeholder="Search by brand, model, employee..." value={search} onChange={e => setSearch(e.target.value)} /></div>
+        <div className="db-search-inline">
+          <Search size={16} />
+          <input 
+            placeholder="Search by brand, model, employee..." 
+            value={search} 
+            onChange={e => setSearch(e.target.value)} 
+          />
+        </div>
       </div>
 
       <div className="up-list">
-        {loading ? Array(5).fill(0).map((_, i) => <div key={i} className="up-skel" />) :
-        filtered.length === 0 ? <p className="db-empty-full">No upload records found</p> :
-        filtered.map((u, i) => (
-          <motion.div key={u.id} className="up-card" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
-            <div className="up-thumb">
-              {u.thumbnail ? <img src={u.thumbnail} alt="" /> : <div className="up-no-img"><Upload size={20} /></div>}
-            </div>
-            <div className="up-body">
-              <div className="up-main">
-                <h3>{u.brand} {u.model}</h3>
-                <p className="up-variant">{u.variant}</p>
-                <span className={`car-status-badge ${u.status}`}>{u.status}</span>
-              </div>
-              <div className="up-detail">
-                <p className="up-log">
-                  <User size={13} /> <strong>{u.employee?.name || 'Unknown'}</strong> uploaded <strong>{u.brand} {u.model}</strong> on {formatDateTime(u.created_at)} with <strong>{u.image_count} images</strong>.
-                </p>
-                <div className="up-meta-row">
-                  <span><Calendar size={13} /> {daysAgo(u.created_at)}</span>
-                  <span><Clock size={13} /> {timeAgo(u.created_at)}</span>
-                  <span><Image size={13} /> {u.image_count} images</span>
-                  {u.sold_at && <span>Sold: {formatDateTime(u.sold_at)}</span>}
-                  {u.updated_at !== u.created_at && <span>Updated: {formatDateTime(u.updated_at)}</span>}
+        {loading ? (
+          Array(5).fill(0).map((_, i) => <div key={i} className="up-skel" />)
+        ) : filtered.length === 0 ? (
+          <p className="db-empty-full">No upload records found</p>
+        ) : (
+          filtered.map((u, i) => (
+            <motion.div 
+              key={u.id} 
+              initial={{ opacity: 0, y: 10 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              transition={{ delay: i * 0.03 }}
+            >
+              <Link href={`/vehicle/${u.id}`} className="up-card">
+                <div className="up-thumb">
+                  {u.thumbnail ? (
+                    <img src={u.thumbnail} alt={`${u.brand} ${u.model}`} />
+                  ) : (
+                    <div className="up-no-img">
+                      <Upload size={24} />
+                    </div>
+                  )}
                 </div>
-              </div>
-            </div>
-          </motion.div>
-        ))}
+                <div className="up-body">
+                  <div className="up-main-header">
+                    <div className="up-title-block">
+                      <h3>{u.brand} {u.model}</h3>
+                      <p className="up-variant">{u.variant}</p>
+                    </div>
+                    <div className="up-badge-container" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <span className={`up-status-badge ${u.status}`}>{u.status}</span>
+                      <div className="up-redirect-arrow">
+                        <ArrowUpRight size={18} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="up-details-middle">
+                    <div className="up-user-info">
+                      <User size={14} />
+                      <span>
+                        Uploaded by <strong>{u.employee?.name || 'Unknown'}</strong> ({u.employee?.employee_id || 'N/A'})
+                      </span>
+                    </div>
+
+                    <div className="up-meta-grid">
+                      <div className="up-meta-item">
+                        <Calendar size={13} />
+                        <span>{daysAgo(u.created_at)}</span>
+                      </div>
+                      <div className="up-meta-item">
+                        <Clock size={13} />
+                        <span>{timeAgo(u.created_at)}</span>
+                      </div>
+                      <div className="up-meta-item">
+                        <ImageIcon size={13} />
+                        <span>{u.image_count} images</span>
+                      </div>
+                      {u.sold_at && (
+                        <div className="up-meta-item" style={{ borderColor: 'rgba(239, 68, 68, 0.2)', background: 'rgba(239, 68, 68, 0.02)' }}>
+                          <span style={{ color: '#ef4444' }}>Sold: {formatDateTime(u.sold_at)}</span>
+                        </div>
+                      )}
+                      {u.updated_at !== u.created_at && (
+                        <div className="up-meta-item">
+                          <span>Updated: {formatDateTime(u.updated_at)}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            </motion.div>
+          ))
+        )}
       </div>
 
-      <style jsx>{`
-.up-list{display:flex;flex-direction:column;gap:.75rem}
-.up-card{background:var(--db-sf);border:1px solid var(--db-bd);border-radius:14px;display:flex;overflow:hidden;transition:all .2s}
-.up-card:hover{border-color:var(--db-gold);box-shadow:0 4px 20px var(--db-gg)}
-.up-thumb{width:120px;min-height:100px;background:var(--db-sf2);flex-shrink:0;overflow:hidden}
-.up-thumb img{width:100%;height:100%;object-fit:contain}
-.up-no-img{display:flex;align-items:center;justify-content:center;height:100%;color:var(--db-tx3)}
-.up-body{flex:1;padding:1rem 1.25rem;display:flex;flex-direction:column;gap:.5rem}
-.up-main{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap}
-.up-main h3{font-family:'Outfit',sans-serif;font-size:1rem;font-weight:600;margin:0}
-.up-variant{color:var(--db-tx2);font-size:.8125rem;margin:0}
-.up-log{font-size:.8125rem;color:var(--db-tx2);line-height:1.6;margin:0}
-.up-log strong{color:var(--db-tx);font-weight:600}
-.up-meta-row{display:flex;flex-wrap:wrap;gap:.75rem;font-size:.75rem;color:var(--db-tx3)}
-.up-meta-row span{display:flex;align-items:center;gap:4px}
-.up-skel{height:100px;background:var(--db-sf);border:1px solid var(--db-bd);border-radius:14px;animation:pulse 1.5s infinite}
-@media(max-width:640px){.up-card{flex-direction:column}.up-thumb{width:100%;height:140px}}
+      <style jsx global>{`
+        .up-list {
+          display: flex;
+          flex-direction: column;
+          gap: 1.25rem;
+        }
+        .db-page-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 2rem;
+          padding-bottom: 1rem;
+          border-bottom: 1px solid var(--db-bd, rgba(255, 255, 255, 0.08));
+        }
+        .db-page-title {
+          font-family: 'Outfit', sans-serif;
+          font-size: 1.75rem;
+          font-weight: 700;
+          color: var(--db-tx, #f4f4f5);
+          margin: 0 0 0.5rem 0;
+          letter-spacing: -0.02em;
+        }
+        .db-page-sub {
+          font-size: 0.875rem;
+          color: var(--db-tx3, #71717a);
+          margin: 0;
+          line-height: 1.5;
+        }
+        .up-card {
+          background: var(--db-sf, #121214);
+          border: 1px solid var(--db-bd, rgba(255, 255, 255, 0.08));
+          border-radius: 16px;
+          display: flex;
+          overflow: hidden;
+          text-decoration: none;
+          color: inherit;
+          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+          position: relative;
+        }
+        .up-card:hover {
+          border-color: var(--db-gold, #c5a880);
+          background: rgba(255, 255, 255, 0.02);
+          transform: translateY(-2px);
+          box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3), 0 0 20px rgba(197, 168, 128, 0.08);
+        }
+        .up-thumb {
+          width: 240px;
+          min-height: 150px;
+          background: var(--db-sf2, #18181c);
+          flex-shrink: 0;
+          position: relative;
+          overflow: hidden;
+        }
+        .up-thumb img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: transform 0.5s ease;
+        }
+        .up-card:hover .up-thumb img {
+          transform: scale(1.05);
+        }
+        .up-no-img {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 100%;
+          color: var(--db-tx3, #71717a);
+          background: var(--db-sf2);
+        }
+        .up-body {
+          flex: 1;
+          padding: 1.25rem 1.5rem;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          gap: 0.75rem;
+        }
+        .up-main-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 1rem;
+        }
+        .up-title-block h3 {
+          font-family: 'Outfit', sans-serif;
+          font-size: 1.2rem;
+          font-weight: 600;
+          margin: 0 0 0.25rem 0;
+          color: var(--db-tx, #f4f4f5);
+          transition: color 0.2s;
+        }
+        .up-card:hover .up-title-block h3 {
+          color: var(--db-gold, #c5a880);
+        }
+        .up-variant {
+          color: var(--db-tx2, #a1a1aa);
+          font-size: 0.875rem;
+          margin: 0;
+        }
+        .up-status-badge {
+          font-size: 0.75rem;
+          font-weight: 600;
+          padding: 0.25rem 0.75rem;
+          border-radius: 9999px;
+          text-transform: capitalize;
+          letter-spacing: 0.05em;
+        }
+        .up-status-badge.available {
+          background: rgba(16, 185, 129, 0.1);
+          color: #10b981;
+          border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+        .up-status-badge.reserved {
+          background: rgba(245, 158, 11, 0.1);
+          color: #f59e0b;
+          border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+        .up-status-badge.sold {
+          background: rgba(239, 68, 68, 0.1);
+          color: #ef4444;
+          border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+        .up-redirect-arrow {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.06);
+          color: var(--db-tx3);
+          transition: all 0.3s;
+        }
+        .up-card:hover .up-redirect-arrow {
+          background: var(--db-gold, #c5a880);
+          color: #121214;
+          border-color: var(--db-gold);
+          transform: translate(2px, -2px);
+        }
+        .up-details-middle {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+        .up-user-info {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.85rem;
+          color: var(--db-tx2, #a1a1aa);
+        }
+        .up-user-info strong {
+          color: var(--db-tx, #f4f4f5);
+        }
+        .up-meta-grid {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 1rem;
+          margin-top: 0.25rem;
+        }
+        .up-meta-item {
+          display: flex;
+          align-items: center;
+          gap: 0.35rem;
+          font-size: 0.75rem;
+          color: var(--db-tx3, #71717a);
+          background: rgba(255, 255, 255, 0.02);
+          padding: 0.25rem 0.6rem;
+          border-radius: 6px;
+          border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        .up-skel {
+          height: 160px;
+          background: var(--db-sf, #121214);
+          border: 1px solid var(--db-bd, rgba(255, 255, 255, 0.08));
+          border-radius: 16px;
+          animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+        @media (max-width: 768px) {
+          .up-card {
+            flex-direction: column;
+          }
+          .up-thumb {
+            width: 100%;
+            height: 180px;
+          }
+          .up-body {
+            padding: 1.25rem 1rem;
+          }
+        }
       `}</style>
     </div>
   );

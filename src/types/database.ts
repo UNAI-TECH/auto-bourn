@@ -79,10 +79,10 @@ export interface DashboardStats {
   total_sold: number;
   total_available: number;
   total_reserved: number;
-  total_employees: number;
-  uploads_today: number;
-  uploads_this_week: number;
-  uploads_this_month: number;
+  enquiries: number;
+  present: number;
+  absent: number;
+  test_drives: number;
 }
 
 export interface EmployeePerformance {

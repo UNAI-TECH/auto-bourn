@@ -318,7 +318,12 @@ export default function UploadCarPage() {
 
   return (
     <div className="db-page">
-      <div className="db-page-header"><div><h1 className="db-page-title">Upload Car</h1><p className="db-page-sub">Add a new vehicle to the inventory</p></div></div>
+      <div className="db-page-header">
+        <div className="db-page-title-container">
+          <h1 className="db-page-title">Upload Car</h1>
+          <p className="db-page-sub">Add a new vehicle to the inventory</p>
+        </div>
+      </div>
 
       <form onSubmit={handleSubmit} className="upl-form">
         {/* Car Details */}

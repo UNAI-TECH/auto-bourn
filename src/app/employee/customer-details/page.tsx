@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useEmpContext } from '../layout';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  FileText, User, Phone, MessageSquare, Car, DollarSign, 
+  FileText, User, Phone, MessageSquare, Car, IndianRupee, 
   Calendar, Briefcase, Plus, Send, CheckCircle2, ChevronRight, AlertCircle, X
 } from 'lucide-react';
 import Link from 'next/link';
@@ -62,11 +62,11 @@ function CustomSelect({ options, value, onChange, placeholder, disabled = false 
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '0.75rem 1rem',
-          border: isOpen ? '1.5px solid #E10613' : '1.5px solid var(--emp-bd)',
+          border: isOpen ? '1.5px solid #E10613' : '1.5px solid var(--db-bd, rgba(0,0,0,0.15))',
           borderRadius: '10px',
-          background: 'var(--emp-sf2, rgba(255,255,255,0.03))',
+          background: 'var(--db-sf2, #f5f5f5)',
           fontSize: '0.875rem',
-          color: 'var(--emp-tx)',
+          color: 'var(--db-tx, #000000)',
           cursor: disabled ? 'not-allowed' : 'pointer',
           opacity: disabled ? 0.5 : 1,
           outline: 'none',
@@ -84,7 +84,7 @@ function CustomSelect({ options, value, onChange, placeholder, disabled = false 
           height="12"
           viewBox="0 0 24 24"
           fill="none"
-          stroke="var(--emp-tx2, #8A8A8A)"
+          stroke="var(--db-tx2, #8A8A8A)"
           strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -97,7 +97,7 @@ function CustomSelect({ options, value, onChange, placeholder, disabled = false 
           <polyline points="6 9 12 15 18 9" />
         </svg>
       </button>
-
+ 
       <AnimatePresence>
         {isOpen && !disabled && (
           <motion.div
@@ -110,8 +110,8 @@ function CustomSelect({ options, value, onChange, placeholder, disabled = false 
               top: 'calc(100% + 6px)',
               left: 0,
               right: 0,
-              background: 'var(--emp-sf, #FFFFFF)',
-              border: '1.5px solid var(--emp-bd)',
+              background: 'var(--db-sf, #FFFFFF)',
+              border: '1.5px solid var(--db-bd, rgba(0, 0, 0, 0.15))',
               borderRadius: '10px',
               boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
               zIndex: 100,
@@ -138,7 +138,7 @@ function CustomSelect({ options, value, onChange, placeholder, disabled = false 
                     border: 'none',
                     borderRadius: '6px',
                     background: isSelected ? 'rgba(225,6,19,0.08)' : 'transparent',
-                    color: isSelected ? '#E10613' : 'var(--emp-tx)',
+                    color: isSelected ? '#E10613' : 'var(--db-tx, #000000)',
                     fontSize: '0.8125rem',
                     cursor: 'pointer',
                     transition: 'all 0.2s',
@@ -150,14 +150,14 @@ function CustomSelect({ options, value, onChange, placeholder, disabled = false 
                   }}
                   onMouseEnter={(e) => {
                     if (!isSelected) {
-                      e.currentTarget.style.background = 'var(--emp-sf2, rgba(255,255,255,0.03))';
+                      e.currentTarget.style.background = 'var(--db-sf2, #f5f5f5)';
                       e.currentTarget.style.color = '#E10613';
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!isSelected) {
                       e.currentTarget.style.background = 'transparent';
-                      e.currentTarget.style.color = 'var(--emp-tx)';
+                      e.currentTarget.style.color = 'var(--db-tx, #000000)';
                     }
                   }}
                 >
@@ -362,9 +362,11 @@ export default function CustomerDetailsPage() {
 
   return (
     <div className="cust-container">
-      <div style={{ marginBottom: '1.5rem' }}>
-        <h1 className="cust-title">Customer Details Form</h1>
-        <p className="cust-subtitle">Add walk-in lead details directly into the CRM database</p>
+      <div className="db-page-header">
+        <div className="db-page-title-container">
+          <h1 className="db-page-title">Customer Details</h1>
+          <p className="db-page-sub">Add walk-in lead details directly into the CRM database</p>
+        </div>
       </div>
 
       <AnimatePresence mode="wait">
@@ -374,167 +376,168 @@ export default function CustomerDetailsPage() {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
-            className="cust-card"
           >
             {errorMsg && (
-              <div className="error-banner">
+              <div className="error-banner" style={{ marginBottom: '1.5rem' }}>
                 <AlertCircle size={16} />
                 <span>{errorMsg}</span>
               </div>
             )}
 
-            <form onSubmit={handleSubmit}>
-              <div className="form-section-title">1. Contact Details</div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label><User size={14} /> Full Name <span className="req">*</span></label>
-                  <input 
-                    type="text" 
-                    required 
-                    value={form.customer_name}
-                    onChange={e => setForm(f => ({ ...f, customer_name: e.target.value }))}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label><Phone size={14} /> Phone Number <span className="req">*</span></label>
-                  <input 
-                    type="tel" 
-                    required 
-                    value={form.phone}
-                    onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                  />
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <label><MessageSquare size={14} /> WhatsApp Number</label>
-                    <label className="toggle-label">
-                      <input 
-                        type="checkbox" 
-                        checked={form.sameAsPhone}
-                        onChange={e => setForm(f => ({ ...f, sameAsPhone: e.target.checked }))}
-                      /> Same as Phone
-                    </label>
+            <form onSubmit={handleSubmit} className="upl-form">
+              {/* Contact Details */}
+              <div className="upl-section">
+                <h3 className="upl-section-title">1. Contact Details</h3>
+                <div className="upl-grid">
+                  <div className="emp-field">
+                    <label>Full Name *</label>
+                    <input 
+                      type="text" 
+                      required 
+                      value={form.customer_name}
+                      onChange={e => setForm(f => ({ ...f, customer_name: e.target.value }))}
+                    />
                   </div>
-                  <input 
-                    type="tel" 
-                    disabled={form.sameAsPhone}
-                    value={form.sameAsPhone ? form.phone : form.whatsapp}
-                    onChange={e => setForm(f => ({ ...f, whatsapp: e.target.value }))}
-                  />
-                </div>
 
-                <div className="form-group">
-                  <label>Email Address</label>
-                  <input 
-                    type="email" 
-                    value={form.email}
-                    onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                  />
-                </div>
-              </div>
+                  <div className="emp-field">
+                    <label>Phone Number *</label>
+                    <input 
+                      type="tel" 
+                      required 
+                      value={form.phone}
+                      onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                    />
+                  </div>
 
-              <div className="form-section-title" style={{ marginTop: '1.75rem' }}>2. Car Interests & Preference</div>
-              
-              <div className="form-row">
-                <div className="form-group">
-                  <label><Car size={14} /> Interested Car (From Inventory)</label>
-                  <CustomSelect
-                    options={carOptions}
-                    value={form.interested_car_id}
-                    onChange={handleCarChange}
-                    placeholder="Select from here..."
-                    disabled={loadingCars}
-                  />
-                </div>
+                  <div className="emp-field">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label>WhatsApp Number</label>
+                      <label className="toggle-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}>
+                        <input 
+                          type="checkbox" 
+                          checked={form.sameAsPhone}
+                          onChange={e => setForm(f => ({ ...f, sameAsPhone: e.target.checked }))}
+                          style={{ width: 'auto', margin: 0 }}
+                        /> Same as Phone
+                      </label>
+                    </div>
+                    <input 
+                      type="tel" 
+                      disabled={form.sameAsPhone}
+                      value={form.sameAsPhone ? form.phone : form.whatsapp}
+                      onChange={e => setForm(f => ({ ...f, whatsapp: e.target.value }))}
+                    />
+                  </div>
 
-                <div className="form-group">
-                  <label>Or Type Car Name Manually</label>
-                  <input 
-                    type="text" 
-                    value={form.interested_car_manual}
-                    onChange={e => setForm(f => ({ ...f, interested_car_manual: e.target.value, interested_car_id: '' }))}
-                  />
-                </div>
-              </div>
+                  <div className="emp-field">
+                    <label>Email Address</label>
+                    <input 
+                      type="email" 
+                      value={form.email}
+                      onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                    />
+                  </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Preferred Brand</label>
-                  <CustomSelect
-                    options={brandOptions}
-                    value={form.preferred_brand}
-                    onChange={val => setForm(f => ({ ...f, preferred_brand: val }))}
-                    placeholder="Select from here..."
-                  />
-                </div>
+                  <div className="emp-field">
+                    <label>City</label>
+                    <input 
+                      type="text" 
+                      value={form.city}
+                      onChange={e => setForm(f => ({ ...f, city: e.target.value }))}
+                    />
+                  </div>
 
-                <div className="form-group">
-                  <label><DollarSign size={14} /> Budget Range (₹ in Rupees)</label>
-                  <input 
-                    type="number" 
-                    value={form.budget}
-                    onChange={e => setForm(f => ({ ...f, budget: e.target.value }))}
-                  />
-                </div>
-              </div>
+                  <div className="emp-field">
+                    <label>State</label>
+                    <input 
+                      type="text" 
+                      value={form.state}
+                      onChange={e => setForm(f => ({ ...f, state: e.target.value }))}
+                    />
+                  </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label><Calendar size={14} /> Purchase Timeline</label>
-                  <CustomSelect
-                    options={timelineOptions}
-                    value={form.purchase_timeline}
-                    onChange={val => setForm(f => ({ ...f, purchase_timeline: val }))}
-                    placeholder="Select from here..."
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label><Briefcase size={14} /> Customer Occupation</label>
-                  <input 
-                    type="text" 
-                    value={form.occupation}
-                    onChange={e => setForm(f => ({ ...f, occupation: e.target.value }))}
-                  />
+                  <div className="emp-field">
+                    <label>Customer Occupation</label>
+                    <input 
+                      type="text" 
+                      value={form.occupation}
+                      onChange={e => setForm(f => ({ ...f, occupation: e.target.value }))}
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label>City</label>
-                  <input 
-                    type="text" 
-                    value={form.city}
-                    onChange={e => setForm(f => ({ ...f, city: e.target.value }))}
-                  />
-                </div>
+              {/* Car Interests & Preference */}
+              <div className="upl-section">
+                <h3 className="upl-section-title">2. Car Interests & Preference</h3>
+                <div className="upl-grid">
+                  <div className="emp-field">
+                    <label>Interested Car (From Inventory)</label>
+                    <CustomSelect
+                      options={carOptions}
+                      value={form.interested_car_id}
+                      onChange={handleCarChange}
+                      placeholder="Select from here..."
+                      disabled={loadingCars}
+                    />
+                  </div>
 
-                <div className="form-group">
-                  <label>State</label>
-                  <input 
-                    type="text" 
-                    value={form.state}
-                    onChange={e => setForm(f => ({ ...f, state: e.target.value }))}
-                  />
+                  <div className="emp-field">
+                    <label>Or Type Car Name Manually</label>
+                    <input 
+                      type="text" 
+                      value={form.interested_car_manual}
+                      onChange={e => setForm(f => ({ ...f, interested_car_manual: e.target.value, interested_car_id: '' }))}
+                    />
+                  </div>
+
+                  <div className="emp-field">
+                    <label>Preferred Brand</label>
+                    <CustomSelect
+                      options={brandOptions}
+                      value={form.preferred_brand}
+                      onChange={val => setForm(f => ({ ...f, preferred_brand: val }))}
+                      placeholder="Select from here..."
+                    />
+                  </div>
+
+                  <div className="emp-field">
+                    <label>Rupees</label>
+                    <input 
+                      type="number" 
+                      value={form.budget}
+                      onChange={e => setForm(f => ({ ...f, budget: e.target.value }))}
+                    />
+                  </div>
+
+                  <div className="emp-field">
+                    <label>Purchase Timeline</label>
+                    <CustomSelect
+                      options={timelineOptions}
+                      value={form.purchase_timeline}
+                      onChange={val => setForm(f => ({ ...f, purchase_timeline: val }))}
+                      placeholder="Select from here..."
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="form-group" style={{ marginTop: '0.75rem' }}>
-                <label>Requirements & Notes</label>
-                <textarea 
-                  rows={3} 
-                  value={form.notes}
-                  onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                />
+              {/* Requirements & Notes */}
+              <div className="upl-section">
+                <h3 className="upl-section-title">3. Requirements & Notes</h3>
+                <div className="emp-field">
+                  <label>Requirements & Notes</label>
+                  <textarea 
+                    rows={3} 
+                    value={form.notes}
+                    onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                  />
+                </div>
               </div>
 
               <button 
                 type="submit" 
-                className="submit-btn"
+                className="upl-submit"
                 disabled={saving}
               >
                 {saving ? 'Creating Lead...' : 'Submit & Save Lead'}
@@ -587,125 +590,97 @@ export default function CustomerDetailsPage() {
 
       <style jsx>{`
         .cust-container {
-          max-width: 800px;
+          max-width: 900px;
           margin: 0 auto;
         }
-        .cust-title {
-          font-family: 'Outfit', sans-serif;
-          font-size: 1.5rem;
-          font-weight: 800;
-          color: var(--emp-tx);
-          margin: 0;
+        .upl-form {
+          display: flex;
+          flex-direction: column;
+          gap: 1.5rem;
         }
-        .cust-subtitle {
-          font-size: 0.875rem;
-          color: var(--emp-tx2);
-          margin-top: 0.25rem;
-        }
-        .cust-card {
-          background: var(--emp-sf);
-          border: 1px solid var(--emp-bd);
+        .upl-section {
+          background: var(--db-sf);
+          border: 1px solid var(--db-bd);
           border-radius: 16px;
           padding: 1.75rem;
           box-shadow: 0 4px 30px rgba(0,0,0,0.03);
         }
-        .form-section-title {
+        .upl-section-title {
           font-family: 'Outfit', sans-serif;
-          font-size: 0.75rem;
+          font-size: 1.25rem;
           font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.08em;
-          color: var(--db-gold, #c5a880);
-          border-bottom: 1px solid var(--emp-bd);
-          padding-bottom: 0.35rem;
-          margin-bottom: 1.25rem;
+          margin: 0 0 1.5rem;
+          color: #E10613;
+          letter-spacing: -0.01em;
         }
-        .form-row {
+        .upl-grid {
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: repeat(3, 1fr);
           gap: 1.25rem;
-          margin-bottom: 1.25rem;
         }
-        .form-group {
+        .emp-field {
           display: flex;
           flex-direction: column;
-          gap: 0.375rem;
+          gap: 0.5rem;
         }
-        .form-group label {
-          font-size: 0.8125rem;
-          font-weight: 700;
-          color: var(--emp-tx);
-          display: flex;
-          align-items: center;
-          gap: 0.25rem;
-        }
-        .req {
-          color: #E10613;
-          margin-left: 2px;
-        }
-        .toggle-label {
-          font-size: 0.75rem !important;
-          color: var(--emp-tx2) !important;
-          cursor: pointer;
-          user-select: none;
-          display: flex;
-          align-items: center;
-          gap: 4px !important;
-          font-weight: 700 !important;
-        }
-        .toggle-label input {
-          cursor: pointer;
-          margin: 0;
-        }
-        .form-group input, 
-        .form-group select, 
-        .form-group textarea {
-          width: 100%;
-          padding: 0.75rem 1rem;
-          background: var(--emp-sf2, rgba(255,255,255,0.03));
-          border: 1.5px solid var(--emp-bd);
-          border-radius: 10px;
-          color: var(--emp-tx);
-          font-family: inherit;
+        .emp-field label {
+          display: block;
           font-size: 0.875rem;
-          outline: none;
-          transition: all 0.2s;
+          font-weight: 700;
+          color: var(--db-tx);
+          letter-spacing: -0.01em;
+        }
+        .upl-grid input,
+        .emp-field input,
+        .emp-field textarea {
+          width: 100%;
+          padding: 0.85rem 1.1rem;
+          background: var(--db-sf2);
+          border: 1.5px solid var(--db-bd);
+          border-radius: 12px;
+          color: var(--db-tx);
+          font-size: 0.9rem;
+          font-family: inherit;
+          outline: 0;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
           box-sizing: border-box;
         }
-        .form-group input:focus, 
-        .form-group select:focus, 
-        .form-group textarea:focus {
+        .upl-grid input:focus,
+        .emp-field input:focus,
+        .emp-field textarea:focus {
           border-color: #E10613;
-          box-shadow: 0 0 0 3px rgba(225,6,19,0.08);
+          background: var(--db-sf);
+          box-shadow: 0 0 0 3px rgba(225, 6, 19, 0.08);
         }
-        .form-group input:disabled {
+        .upl-grid input:disabled {
           opacity: 0.5;
           cursor: not-allowed;
         }
-        .submit-btn {
+        .upl-submit {
           width: 100%;
-          padding: 0.875rem;
+          padding: 0.95rem;
           margin-top: 1rem;
           background: #E10613;
           color: #fff;
-          border: none;
-          border-radius: 12px;
+          border: 0;
+          border-radius: 14px;
           font-family: 'Outfit', sans-serif;
-          font-size: 0.9375rem;
           font-weight: 700;
+          font-size: 0.95rem;
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
-          transition: all 0.2s;
+          gap: 0.5rem;
+          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .submit-btn:hover:not(:disabled) {
-          transform: translateY(-1px);
-          box-shadow: 0 6px 20px rgba(225,6,19,0.3);
+        .upl-submit:hover:not(:disabled) {
           background: #c70511;
+          transform: translateY(-1px);
+          box-shadow: 0 8px 24px rgba(225, 6, 19, 0.25);
         }
-        .submit-btn:disabled {
-          opacity: 0.6;
+        .upl-submit:disabled {
+          opacity: 0.5;
           cursor: not-allowed;
         }
         .error-banner {
@@ -718,13 +693,12 @@ export default function CustomerDetailsPage() {
           border-radius: 10px;
           padding: 0.75rem 1rem;
           font-size: 0.8125rem;
-          margin-bottom: 1.25rem;
         }
-
+ 
         /* Success State */
         .success-card {
-          background: var(--emp-sf);
-          border: 1px solid var(--emp-bd);
+          background: var(--db-sf);
+          border: 1px solid var(--db-bd);
           border-radius: 16px;
           padding: 2.5rem 2rem;
           text-align: center;
@@ -741,7 +715,7 @@ export default function CustomerDetailsPage() {
           font-family: 'Outfit', sans-serif;
           font-size: 1.375rem;
           font-weight: 800;
-          color: var(--emp-tx);
+          color: var(--db-tx);
           margin: 0 0 0.5rem;
         }
         .success-lead-name {
@@ -752,7 +726,7 @@ export default function CustomerDetailsPage() {
         }
         .success-desc {
           font-size: 0.875rem;
-          color: var(--emp-tx2);
+          color: var(--db-tx2);
           line-height: 1.6;
           margin-bottom: 2rem;
         }
@@ -790,7 +764,7 @@ export default function CustomerDetailsPage() {
         .reset-form-btn {
           background: none;
           border: none;
-          color: var(--emp-tx);
+          color: var(--db-tx);
           font-size: 0.875rem;
           font-weight: 600;
           cursor: pointer;
@@ -811,7 +785,7 @@ export default function CustomerDetailsPage() {
         .crm-nav-link:hover {
           text-decoration: underline;
         }
-
+ 
         @media (max-width: 600px) {
           .form-row {
             grid-template-columns: 1fr;

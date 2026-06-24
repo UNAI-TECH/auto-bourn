@@ -227,27 +227,190 @@ export default function LeadsPage() {
 .crm-view-btn.active,.crm-view-btn:hover{border-color:var(--db-gold);color:var(--db-gold);background:var(--db-gd)}
 .crm-add-btn{display:flex;align-items:center;gap:.375rem;background:linear-gradient(135deg,#E10613,#c70511);color:#fff;border:none;padding:.5rem 1.125rem;border-radius:9px;font-size:.8125rem;font-weight:600;font-family:inherit;cursor:pointer;transition:all .2s}
 .crm-add-btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(225,6,19,.3)}
-.crm-kanban-wrap{overflow-x:auto;padding-bottom:1rem}
-.crm-kanban{display:flex;gap:1rem;min-width:max-content;align-items:flex-start}
-.crm-kanban-col{width:240px;flex-shrink:0;background:var(--db-sf2);border-radius:12px;overflow:hidden;border:1px solid var(--db-bd)}
-.crm-col-head{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-top:3px solid;background:var(--db-sf)}
-.crm-col-badge{font-size:.6875rem;font-weight:700;padding:2px 8px;border-radius:99px}
-.crm-col-body{padding:.5rem;display:flex;flex-direction:column;gap:.5rem;min-height:80px}
-.crm-card{background:var(--db-sf);border:1px solid var(--db-bd);border-radius:10px;padding:.875rem;cursor:grab;transition:all .2s}
-.crm-card:hover{border-color:var(--db-gold);box-shadow:0 4px 16px var(--db-gg)}
-.crm-card:active{cursor:grabbing;opacity:.85;transform:rotate(1deg)}
-.crm-card-btn{width:24px;height:24px;background:var(--db-sf2);border:1px solid var(--db-bd);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--db-tx3);text-decoration:none;transition:all .2s}
-.crm-card-btn:hover{border-color:var(--db-gold);color:var(--db-gold)}
-.crm-list-wrap{display:flex;flex-direction:column;gap:.5rem}
-.crm-list-row{display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;background:var(--db-sf);border:1px solid var(--db-bd);border-radius:12px;transition:all .2s}
-.crm-list-row:hover{border-color:var(--db-gold)}
-.crm-lead-av{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.9rem;flex-shrink:0;font-family:'Outfit',sans-serif}
-.crm-status-badge{font-size:.6875rem;font-weight:600;padding:.25rem .625rem;border-radius:99px;white-space:nowrap;flex-shrink:0}
-.crm-form-modal{max-width:640px;max-height:90vh;overflow-y:auto}
-.crm-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;padding:1.25rem}
-.crm-form-section{grid-column:1/-1;font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--db-tx3);padding:.25rem 0 .125rem;border-bottom:1px solid var(--db-bd);margin-top:.25rem}
-.crm-empty{color:var(--db-tx3);text-align:center;padding:3rem 0;font-size:.9rem}
-.crm-skel{background:var(--db-sf2);border-radius:10px;animation:pulse 1.5s infinite}
+
+/* Horizontal Scrolling Container */
+.crm-kanban-wrap {
+  overflow-x: auto;
+  overflow-y: hidden;
+  width: 100%;
+  max-width: 100%;
+  padding-bottom: 1.5rem;
+  -webkit-overflow-scrolling: touch;
+}
+.crm-kanban-wrap::-webkit-scrollbar {
+  height: 6px;
+}
+.crm-kanban-wrap::-webkit-scrollbar-track {
+  background: transparent;
+}
+.crm-kanban-wrap::-webkit-scrollbar-thumb {
+  background: var(--db-bd);
+  border-radius: 99px;
+}
+
+/* Kanban Row of Columns */
+.crm-kanban {
+  display: flex;
+  gap: 1.25rem;
+  min-width: max-content;
+  align-items: flex-start;
+  padding: 0.25rem 0;
+}
+
+/* Individual Column containing Vertical Scroll */
+.crm-kanban-col {
+  width: 280px;
+  flex-shrink: 0;
+  background: var(--db-sf2);
+  border-radius: 16px;
+  border: 1px solid var(--db-bd);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 250px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+}
+.crm-col-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem 1rem;
+  border-top: 3px solid;
+  background: var(--db-sf);
+  flex-shrink: 0;
+}
+.crm-col-badge {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 99px;
+}
+
+/* Vertical scrolling Column Body */
+.crm-col-body {
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 150px;
+}
+.crm-col-body::-webkit-scrollbar {
+  width: 4px;
+}
+.crm-col-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.crm-col-body::-webkit-scrollbar-thumb {
+  background: var(--db-bd);
+  border-radius: 99px;
+}
+
+/* Cards style */
+.crm-card {
+  background: var(--db-sf);
+  border: 1px solid var(--db-bd);
+  border-radius: 12px;
+  padding: 1rem;
+  cursor: grab;
+  transition: all 0.2s ease-in-out;
+}
+.crm-card:hover {
+  border-color: var(--db-gold);
+  box-shadow: 0 6px 16px rgba(225, 6, 19, 0.04);
+}
+.crm-card:active {
+  cursor: grabbing;
+  opacity: 0.85;
+}
+.crm-card-btn {
+  width: 24px;
+  height: 24px;
+  background: var(--db-sf2);
+  border: 1px solid var(--db-bd);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--db-tx3);
+  text-decoration: none;
+  transition: all 0.2s;
+}
+.crm-card-btn:hover {
+  border-color: var(--db-gold);
+  color: var(--db-gold);
+}
+.crm-list-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.crm-list-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--db-sf);
+  border: 1px solid var(--db-bd);
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+.crm-list-row:hover {
+  border-color: var(--db-gold);
+}
+.crm-lead-av {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  font-family: 'Outfit', sans-serif;
+}
+.crm-status-badge {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 0.25rem 0.625rem;
+  border-radius: 99px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.crm-form-modal {
+  max-width: 640px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.crm-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  padding: 1.25rem;
+}
+.crm-form-section {
+  grid-column: 1/-1;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--db-tx3);
+  padding: 0.25rem 0 0.125rem;
+  border-bottom: 1px solid var(--db-bd);
+  margin-top: 0.25rem;
+}
+.crm-empty {
+  color: var(--db-tx3);
+  text-align: center;
+  padding: 3rem 0;
+  font-size: 0.9rem;
+}
+.crm-skel {
+  background: var(--db-sf2);
+  border-radius: 10px;
+  animation: pulse 1.5s infinite;
+}
       `}</style>
     </div>
   );
