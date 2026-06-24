@@ -153,77 +153,99 @@ export default function DashboardOverview() {
   }, []);
 
   const fetchAll = async () => {
-    const now = new Date();
-    const todayStr = now.toISOString().split('T')[0];
+    try {
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
 
-    const [
-      carsRes,
-      activeEmpRes,
-      leadsRes,
-      presentRes,
-      testDrivesRes
-    ] = await Promise.all([
-      supabase.from('cars').select('status', { count: 'exact' }),
-      supabase.from('employees').select('id', { count: 'exact' }).eq('role', 'employee').eq('status', 'active'),
-      supabase.from('leads').select('id', { count: 'exact' }),
-      supabase.from('daily_reports').select('id', { count: 'exact' }).eq('report_date', todayStr),
-      supabase.from('test_drives').select('id', { count: 'exact' }),
-    ]);
+      const [
+        carsRes,
+        empsRes,
+        leadsRes,
+        presentRes,
+        testDrivesRes
+      ] = await Promise.all([
+        supabase.from('cars').select('employee_id, status, created_at, brand'),
+        supabase.from('employees').select('id, name, status, role'),
+        supabase.from('leads').select('id', { count: 'exact', head: true }),
+        supabase.from('daily_reports').select('id', { count: 'exact', head: true }).eq('report_date', todayStr),
+        supabase.from('test_drives').select('id', { count: 'exact', head: true }),
+      ]);
 
-    const cars = carsRes.data || [];
-    const totalActiveEmployees = activeEmpRes.count || 0;
-    const presentCount = presentRes.count || 0;
+      const cars = carsRes.data || [];
+      const employees = empsRes.data || [];
+      const activeEmployees = employees.filter(e => e.role === 'employee' && e.status === 'active');
+      const totalActiveEmployees = activeEmployees.length;
+      const presentCount = presentRes.count || 0;
 
-    setStats({
-      total_cars: carsRes.count || 0,
-      total_sold: cars.filter(c => c.status === 'sold').length,
-      total_available: cars.filter(c => c.status === 'available').length,
-      total_reserved: cars.filter(c => c.status === 'reserved').length,
-      enquiries: leadsRes.count || 0,
-      present: presentCount,
-      absent: Math.max(0, totalActiveEmployees - presentCount),
-      test_drives: testDrivesRes.count || 0,
-    });
+      // 1. Stats
+      setStats({
+        total_cars: cars.length,
+        total_sold: cars.filter(c => c.status === 'sold').length,
+        total_available: cars.filter(c => c.status === 'available').length,
+        total_reserved: cars.filter(c => c.status === 'reserved').length,
+        enquiries: leadsRes.count || 0,
+        present: presentCount,
+        absent: Math.max(0, totalActiveEmployees - presentCount),
+        test_drives: testDrivesRes.count || 0,
+      });
 
-    // Upload activity (last 14 days)
-    const days: { date: string; count: number }[] = [];
-    for (let i = 13; i >= 0; i--) {
-      const d = new Date(now.getTime() - i * 86400000);
-      const ds = d.toISOString().split('T')[0];
-      const de = new Date(d.getTime() + 86400000).toISOString().split('T')[0];
-      const { count } = await supabase.from('cars').select('id', { count: 'exact', head: true }).gte('created_at', ds).lt('created_at', de);
-      days.push({ date: d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }), count: count || 0 });
-    }
-    setUploadActivity(days);
-
-    // Employee performance
-    const { data: emps } = await supabase.from('employees').select('id, name').eq('role', 'employee');
-    if (emps) {
-      const perf: EmployeePerformance[] = [];
-      for (const e of emps) {
-        const { count: total } = await supabase.from('cars').select('id', { count: 'exact', head: true }).eq('employee_id', e.id);
-        const { count: sold } = await supabase.from('cars').select('id', { count: 'exact', head: true }).eq('employee_id', e.id).eq('status', 'sold');
-        const { data: last } = await supabase.from('cars').select('created_at').eq('employee_id', e.id).order('created_at', { ascending: false }).limit(1);
-        perf.push({ employee_id: e.id, name: e.name, total_uploads: total || 0, total_sold: sold || 0, last_upload: last?.[0]?.created_at || null });
+      // 2. Upload activity (last 14 days)
+      const days: { date: string; count: number }[] = [];
+      for (let i = 13; i >= 0; i--) {
+        const d = new Date(now.getTime() - i * 86400000);
+        const ds = d.toISOString().split('T')[0];
+        const de = new Date(d.getTime() + 86400000).toISOString().split('T')[0];
+        
+        const count = cars.filter(c => {
+          if (!c.created_at) return false;
+          const cDate = c.created_at.split('T')[0];
+          return cDate >= ds && cDate < de;
+        }).length;
+        
+        days.push({ date: d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }), count });
       }
-      setEmpPerf(perf.sort((a, b) => b.total_uploads - a.total_uploads));
-    }
+      setUploadActivity(days);
 
-    // Brand analytics
-    const { data: allCars } = await supabase.from('cars').select('brand, status');
-    if (allCars) {
-      const map = new Map<string, BrandAnalytics>();
-      allCars.forEach(c => {
-        const b = map.get(c.brand) || { brand: c.brand, total: 0, sold: 0, available: 0 };
+      // 3. Employee performance
+      const salesStaff = employees.filter(e => e.role === 'employee');
+      const perf: EmployeePerformance[] = salesStaff.map(e => {
+        const empCars = cars.filter(c => c.employee_id === e.id);
+        const totalUploads = empCars.length;
+        const totalSold = empCars.filter(c => c.status === 'sold').length;
+        
+        let lastUpload: string | null = null;
+        if (empCars.length > 0) {
+          const sorted = [...empCars].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+          lastUpload = sorted[0].created_at;
+        }
+
+        return {
+          employee_id: e.id,
+          name: e.name,
+          total_uploads: totalUploads,
+          total_sold: totalSold,
+          last_upload: lastUpload,
+        };
+      });
+      setEmpPerf(perf.sort((a, b) => b.total_uploads - a.total_uploads));
+
+      // 4. Brand analytics
+      const brandMap = new Map<string, BrandAnalytics>();
+      cars.forEach(c => {
+        if (!c.brand) return;
+        const b = brandMap.get(c.brand) || { brand: c.brand, total: 0, sold: 0, available: 0 };
         b.total++;
         if (c.status === 'sold') b.sold++;
         if (c.status === 'available') b.available++;
-        map.set(c.brand, b);
+        brandMap.set(c.brand, b);
       });
-      setBrandData(Array.from(map.values()).sort((a, b) => b.total - a.total));
-    }
+      setBrandData(Array.from(brandMap.values()).sort((a, b) => b.total - a.total));
 
-    setLoading(false);
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const statCards = stats ? [
