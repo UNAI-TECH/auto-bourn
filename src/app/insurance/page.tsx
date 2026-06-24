@@ -32,7 +32,7 @@ export default function InsurancePage() {
             </p>
           </motion.div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: 'clamp(3rem, 5vw, 4rem)' }}>
+          <div className="insurance-features-grid" style={{ marginBottom: 'clamp(3rem, 5vw, 4rem)' }}>
             {features.map((f, i) => (
               <motion.div key={f.title} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}>
                 <div style={{ background: '#FAFAFA', borderRadius: '16px', padding: '2rem', border: '1px solid #ECECEC', height: '100%', transition: 'all 0.4s ease' }} className="insurance-card">
@@ -49,8 +49,35 @@ export default function InsurancePage() {
             style={{ background: '#F5F5F5', borderRadius: '20px', padding: 'clamp(2rem, 4vw, 3rem)', textAlign: 'center' }}>
             <p className="text-overline" style={{ marginBottom: '0.75rem' }}>Trusted Partners</p>
             <h2 style={{ fontFamily: 'var(--font-primary)', fontSize: '1.5rem', fontWeight: 700, color: '#2A2A2A', marginBottom: '2rem' }}>Our Partners</h2>
+            
+            {/* Top Partner: Kuwy (Larger) */}
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
+              <div style={{
+                background: '#FFFFFF',
+                borderRadius: '12px',
+                border: '1px solid #ECECEC',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '240px',
+                height: '100px',
+                position: 'relative',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                overflow: 'hidden',
+              }}>
+                <Image
+                  src="/kuwy.png"
+                  alt="Kuwy"
+                  width={200}
+                  height={80}
+                  style={{ objectFit: 'contain', marginTop: '6px' }}
+                />
+              </div>
+            </div>
+
+            {/* Bottom Partners (IDFC, Tata, Shriram) */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', justifyContent: 'center', alignItems: 'center' }}>
-              {partners.map(partner => (
+              {partners.filter(p => p.name !== 'Kuwy').map(partner => (
                 <div key={partner.name} style={{
                   background: '#FFFFFF',
                   borderRadius: '12px',
@@ -79,7 +106,19 @@ export default function InsurancePage() {
         </div>
       </section>
 
-      <style jsx global>{`.insurance-card:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0,0,0,0.06); }`}</style>
+      <style jsx global>{`
+        .insurance-card:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0,0,0,0.06); }
+        .insurance-features-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 1.5rem;
+        }
+        @media (max-width: 768px) {
+          .insurance-features-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
     </>
   );
 }

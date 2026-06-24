@@ -226,7 +226,12 @@ function InventoryContent({ initialVehicles }: { initialVehicles: Vehicle[] }) {
       {/* Header */}
       <section style={{ padding: 'clamp(3rem, 6vw, 5rem) 0 2rem', background: '#FFFFFF' }}>
         <div className="container">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            transition={{ duration: 0.8 }}
+            style={{ textAlign: 'center' }}
+          >
             <p className="text-overline" style={{ marginBottom: '0.5rem' }}>Our Collection</p>
             <h1 className="headline-section">Luxury Inventory</h1>
             <p style={{ fontSize: '1rem', color: '#8A8A8A', marginTop: '0.5rem' }}>

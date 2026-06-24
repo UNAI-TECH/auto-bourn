@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { createClient } from '@/lib/supabase/client';
 
 /* ═══════════════════════════════════════════════
    Types
@@ -312,6 +313,8 @@ function InputField({ label, value, onChange, type = 'text', placeholder, requir
    Main Page Component
    ═══════════════════════════════════════════════ */
 export default function SellPage() {
+  const supabase = createClient();
+  const [submitting, setSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [direction, setDirection] = useState(1);
   const [form, setForm] = useState<FormData>(INITIAL_FORM);
@@ -400,9 +403,71 @@ export default function SellPage() {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validate()) return;
-    alert('Your vehicle listing has been submitted successfully. Our team will contact you shortly.');
+    setSubmitting(true);
+    try {
+      const notes = `Vehicle Details:
+Variant: ${form.variant || 'N/A'}
+Fuel Type: ${form.fuelType}
+Transmission: ${form.transmission}
+Mileage: ${form.mileage} km
+Ownership: ${form.ownership}
+Registration State: ${form.registrationState || 'N/A'}
+Color: ${form.color || 'N/A'}
+Additional Details: ${form.additionalDetails || 'None'}`;
+
+      const { error } = await supabase.from('leads').insert({
+        customer_name: form.fullName,
+        phone: form.phone,
+        whatsapp: form.preferredContact === 'WhatsApp' ? form.phone : null,
+        email: form.email,
+        city: form.city,
+        state: form.registrationState || null,
+        source: 'website',
+        interested_car: `${form.brand} ${form.model} (${form.year})`,
+        preferred_brand: form.brand,
+        budget: form.expectedPrice ? parseInt(form.expectedPrice) : null,
+        lead_status: 'new',
+        notes: notes,
+      });
+
+      if (error) {
+        console.error('Error inserting lead to Supabase:', error);
+        alert('There was an issue submitting your details: ' + error.message);
+      } else {
+        const waText = `Hi Auto Bourn, I want to sell my car:
+*Brand:* ${form.brand}
+*Model:* ${form.model}
+*Year:* ${form.year}
+*Variant:* ${form.variant || 'N/A'}
+*Fuel Type:* ${form.fuelType}
+*Transmission:* ${form.transmission}
+*Mileage:* ${form.mileage} km
+*Ownership:* ${form.ownership}
+*Registration:* ${form.registrationState || 'N/A'}
+*Color:* ${form.color || 'N/A'}
+*Expected Price:* ${form.expectedPrice ? '₹' + parseInt(form.expectedPrice).toLocaleString('en-IN') : 'N/A'}
+${form.additionalDetails ? `*Additional Notes:* ${form.additionalDetails}` : ''}
+
+*Contact Details:*
+*Name:* ${form.fullName}
+*Phone:* ${form.phone}
+*Email:* ${form.email}
+*City:* ${form.city}
+*Preferred Contact:* ${form.preferredContact}`;
+
+        const waUrl = `https://wa.me/919176777222?text=${encodeURIComponent(waText)}`;
+        
+        alert('Your vehicle listing has been submitted successfully to our CRM. You will now be redirected to WhatsApp to complete your submission.');
+        window.open(waUrl, '_blank');
+      }
+    } catch (err: any) {
+      console.error('Unexpected error submitting lead:', err);
+      alert('An unexpected error occurred: ' + err.message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   /* ═══ Step Content Renderers ═══ */
@@ -662,12 +727,15 @@ export default function SellPage() {
                   type="button"
                   onClick={handleSubmit}
                   className="btn btn-primary btn-lg"
+                  disabled={submitting}
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
                     boxShadow: '0 8px 30px rgba(225, 6, 19, 0.20)',
+                    opacity: submitting ? 0.7 : 1,
+                    cursor: submitting ? 'not-allowed' : 'pointer',
                   }}
                 >
-                  Submit Listing
+                  {submitting ? 'Submitting...' : 'Submit Listing'}
                 </button>
               )}
             </div>

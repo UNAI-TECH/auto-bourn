@@ -390,7 +390,7 @@ export default function HomePage() {
           display: flex;
           gap: 1.5rem;
           padding: 0.5rem clamp(1.5rem, 4vw, 3rem) 1.5rem;
-          animation: featuredScroll 40s linear infinite;
+          animation: featuredScroll 80s linear infinite;
           width: max-content;
         }
         .featured-carousel-track:hover {
