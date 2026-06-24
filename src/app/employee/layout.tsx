@@ -301,11 +301,11 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
               <button 
                 className="saas-action-btn notif-wrap" 
                 title="Notifications & Messages" 
-                onClick={() => { setContactMessagesOpen(true); fetchNotifications(); }}
+                onClick={() => { setContactMessagesOpen(true); if (employee) fetchNotifications(employee.id); }}
                 style={{ marginRight: '0.75rem' }}
               >
                 <Mail size={18} />
-                {unreadNotifications > 0 && <span className="saas-dot notif-count" style={{ background: '#E10613', color: '#fff' }}>{unreadNotifications}</span>}
+                {notifications.filter(n => !n.read).length > 0 && <span className="saas-dot notif-count" style={{ background: '#E10613', color: '#fff' }}>{notifications.filter(n => !n.read).length}</span>}
               </button>
 
               {/* Submit Report Button */}
@@ -503,7 +503,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
                 {notifications.length > 0 && (
                   <div style={{ padding: '0.75rem 1.5rem', borderBottom: '1px solid var(--db-bd)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--db-sf2)' }}>
                     <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--db-tx2)' }}>
-                      {unreadNotifications} unread notification{unreadNotifications !== 1 && 's'}
+                      {notifications.filter(n => !n.read).length} unread notification{notifications.filter(n => !n.read).length !== 1 && 's'}
                     </span>
                     <button 
                       onClick={markNotificationsRead} 
@@ -532,8 +532,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
                           onClick={async () => {
                             if (!n.read) {
                               await supabase.from('notifications').update({ read: true }).eq('id', n.id);
-                              setNotifications(prev => prev.map(item => item.id === n.id ? { ...item, read: true } : item));
-                              setUnreadNotifications(prev => Math.max(0, prev - 1));
+                              setNotifications(prev => prev.map((item: any) => item.id === n.id ? { ...item, read: true } : item));
                             }
                             
                             if (n.metadata?.lead_id) {
