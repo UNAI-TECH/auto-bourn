@@ -46,8 +46,8 @@ export async function updateSession(request: NextRequest) {
     .eq('auth_user_id', user.id)
     .single();
 
-  // Suspended / inactive accounts — force logout and back to console
-  if (employee?.status === 'suspended' || employee?.status === 'inactive') {
+  // Suspended, inactive, or non-existent employee accounts — force logout and back to console
+  if (!employee || employee.status === 'suspended' || employee.status === 'inactive') {
     await supabase.auth.signOut();
     const url = request.nextUrl.clone();
     url.pathname = '/console';
