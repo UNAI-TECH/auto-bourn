@@ -132,3 +132,92 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: `Internal server error: ${message}` }, { status: 500 });
   }
 }
+
+export async function PUT(request: NextRequest) {
+  try {
+    // 1. Verify the caller is an authenticated admin
+    const supabase = await createServerSupabaseClient();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json({ error: 'Unauthorized — please log in as admin' }, { status: 401 });
+    }
+
+    const { data: admin, error: adminCheckErr } = await supabase
+      .from('employees')
+      .select('role, id')
+      .eq('auth_user_id', user.id)
+      .single();
+
+    if (adminCheckErr || admin?.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden — admin access required' }, { status: 403 });
+    }
+
+    // 2. Parse body
+    const body = await request.json();
+    const { id, password } = body;
+
+    if (!id || !password) {
+      return NextResponse.json(
+        { error: 'Missing required fields: id, password' },
+        { status: 400 }
+      );
+    }
+
+    if (password.length < 6) {
+      return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 });
+    }
+
+    // 3. Check for service role key
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!serviceRoleKey || serviceRoleKey.trim() === '') {
+      return NextResponse.json(
+        { error: 'SUPABASE_SERVICE_ROLE_KEY is not configured in .env.local' },
+        { status: 500 }
+      );
+    }
+
+    const serviceClient = await createServiceRoleClient();
+
+    // 4. Find the employee to get auth_user_id
+    const { data: emp, error: findError } = await serviceClient
+      .from('employees')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (findError || !emp) {
+      return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
+    }
+
+    if (!emp.auth_user_id) {
+      return NextResponse.json({ error: 'Employee has no associated auth user' }, { status: 400 });
+    }
+
+    // 5. Update user password in Supabase auth (requires service role client)
+    const { error: authUpdateError } = await serviceClient.auth.admin.updateUserById(
+      emp.auth_user_id,
+      { password }
+    );
+
+    if (authUpdateError) {
+      return NextResponse.json({ error: `Auth update failed: ${authUpdateError.message}` }, { status: 400 });
+    }
+
+    // 6. Log the admin activity
+    await serviceClient.from('activity_logs').insert({
+      employee_id: admin.id,
+      action: 'employee_password_reset',
+      details: `Admin reset password for employee ${emp.name} (ID: ${emp.employee_id})`,
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'Password updated successfully',
+    });
+  } catch (err: unknown) {
+    console.error('[PUT /api/employees] Unexpected error:', err);
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    return NextResponse.json({ error: `Internal server error: ${message}` }, { status: 500 });
+  }
+}

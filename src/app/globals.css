@@ -600,3 +600,21 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 0.875rem;
   }
 }
+
+/* ========================================
+   Prevent flash of public layout on admin/console pages during SSG hydration
+   ======================================== */
+body:has(.console-page) #main-nav,
+body:has(.console-page) #site-footer,
+body:has(.console-page) .floating-icons,
+body:has(.db-root) #main-nav,
+body:has(.db-root) #site-footer,
+body:has(.db-root) .floating-icons {
+  display: none !important;
+}
+
+body:has(.console-page) main,
+body:has(.db-root) main {
+  padding-top: 0 !important;
+}
+

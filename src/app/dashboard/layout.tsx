@@ -7,6 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Employee } from '@/types/database';
+import AlertModal from '@/components/AlertModal';
 import {
   LayoutDashboard, Users, Car, ClipboardList, Activity,
   LogOut, Menu, X, ChevronRight, Moon, Sun, Bell, Search,
@@ -57,6 +58,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [contactMessages, setContactMessages] = useState<any[]>([]);
   const [unreadContactsCount, setUnreadContactsCount] = useState(0);
   const [loadingContacts, setLoadingContacts] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'error' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info',
+  });
+
+  const showAlert = (title: string, message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setAlertConfig({
+      isOpen: true,
+      title,
+      message,
+      type,
+    });
+  };
 
   const fetchContactMessages = async () => {
     setLoadingContacts(true);
@@ -85,7 +106,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       .eq('id', leadId);
     
     if (error) {
-      alert('Failed to update status: ' + error.message);
+      showAlert('Status Update Failed', 'Failed to update status: ' + error.message, 'error');
     } else {
       setContactMessages(prev => prev.map(m => m.id === leadId ? { ...m, lead_status: newStatus } : m));
       const updatedMessages = contactMessages.map(m => m.id === leadId ? { ...m, lead_status: newStatus } : m);
@@ -261,6 +282,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <main className="db-content">{children}</main>
         </div>
       </div>
+
+      <AlertModal
+        isOpen={alertConfig.isOpen}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        onClose={() => setAlertConfig(prev => ({ ...prev, isOpen: false }))}
+      />
 
       <style jsx global>{`
 .db-loader{min-height:100vh;background:#fafafa;display:flex;align-items:center;justify-content:center}

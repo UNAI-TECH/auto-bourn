@@ -8,6 +8,7 @@ import Image from 'next/image';
 import { formatDate, timeAgo, generateEmployeeId } from '@/lib/utils';
 import type { Employee } from '@/types/database';
 import ConfirmModal from '@/components/ConfirmModal';
+import PromptModal from '@/components/PromptModal';
 
 interface CredentialsModal {
   name: string;
@@ -24,6 +25,7 @@ export default function EmployeesPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [resetTarget, setResetTarget] = useState<Employee | null>(null);
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', employee_id: generateEmployeeId() });
   const [submitting, setSubmitting] = useState(false);
@@ -172,11 +174,34 @@ export default function EmployeesPage() {
     fetchEmployees();
   };
 
-  const resetPassword = async (emp: Employee) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(emp.email);
-    if (error) showToast(error.message, 'error');
-    else showToast('Password reset email sent');
-    setMenuOpen(null);
+  const handleResetPasswordConfirm = async (newPassword: string) => {
+    if (!resetTarget) return;
+    if (newPassword.trim().length < 6) {
+      showToast('Password must be at least 6 characters', 'error');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/employees', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: resetTarget.id,
+          password: newPassword.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to reset password');
+      }
+
+      showToast(`Password for ${resetTarget.name} has been successfully updated.`);
+    } catch (err: any) {
+      showToast(err.message, 'error');
+    } finally {
+      setResetTarget(null);
+    }
   };
 
   const removeEmployee = (id: string) => {
@@ -247,7 +272,7 @@ export default function EmployeesPage() {
                         {emp.status !== 'active' && <button onClick={() => updateStatus(emp.id, 'active')}><Check size={14} />Activate</button>}
                         {emp.status !== 'suspended' && <button onClick={() => updateStatus(emp.id, 'suspended')}><Ban size={14} />Suspend</button>}
                         {emp.status !== 'inactive' && <button onClick={() => updateStatus(emp.id, 'inactive')}><Shield size={14} />Deactivate</button>}
-                        <button onClick={() => resetPassword(emp)}><Key size={14} />Reset Password</button>
+                        <button onClick={() => { setResetTarget(emp); setMenuOpen(null); }}><Key size={14} />Reset Password</button>
                         <button className="emp-del" onClick={() => removeEmployee(emp.id)}><Trash2 size={14} />Remove</button>
                       </div>
                     )}
@@ -660,6 +685,18 @@ export default function EmployeesPage() {
         onConfirm={handleRemoveConfirm}
         onCancel={() => setDeleteTargetId(null)}
         isDanger={true}
+      />
+
+      <PromptModal
+        isOpen={!!resetTarget}
+        title="Reset Password"
+        message={`Enter a new password for ${resetTarget?.name || ''} (minimum 6 characters):`}
+        placeholder="Enter password"
+        confirmLabel="Update Password"
+        cancelLabel="Cancel"
+        onConfirm={handleResetPasswordConfirm}
+        onCancel={() => setResetTarget(null)}
+        isPassword={true}
       />
 
       {/* Toast */}

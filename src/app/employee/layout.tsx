@@ -7,6 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Employee } from '@/types/database';
+import AlertModal from '@/components/AlertModal';
 import { LayoutDashboard, Car, Upload, LogOut, Menu, X, Bell, FileText, AlertCircle, Clock, CheckCircle, PhoneCall, Bookmark, Mail } from 'lucide-react';
 
 const EmpContext = createContext<{ employee: Employee | null; darkMode: boolean; onReportSubmitted: () => void }>({ employee: null, darkMode: false, onReportSubmitted: () => {} });
@@ -35,6 +36,26 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
   // Notifications
   const [notifications, setNotifications] = useState<any[]>([]);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'error' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info',
+  });
+
+  const showAlert = (title: string, message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setAlertConfig({
+      isOpen: true,
+      title,
+      message,
+      type,
+    });
+  };
   const [logoutWarning, setLogoutWarning] = useState(false);
 
   // Contact Messages states
@@ -70,7 +91,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
       .eq('id', leadId);
     
     if (error) {
-      alert('Failed to update status: ' + error.message);
+      showAlert('Status Update Failed', 'Failed to update status: ' + error.message, 'error');
     } else {
       setContactMessages(prev => prev.map(m => m.id === leadId ? { ...m, lead_status: newStatus } : m));
       const updatedMessages = contactMessages.map(m => m.id === leadId ? { ...m, lead_status: newStatus } : m);
@@ -614,6 +635,14 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
           )}
         </AnimatePresence>
       </div>
+
+      <AlertModal
+        isOpen={alertConfig.isOpen}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        onClose={() => setAlertConfig(prev => ({ ...prev, isOpen: false }))}
+      />
 
       <style jsx global>{`
 .db-loader{min-height:100vh;background:#ffffff;display:flex;align-items:center;justify-content:center}

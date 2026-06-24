@@ -2,7 +2,7 @@
 
 export default function FloatingIcons() {
   return (
-    <div style={{
+    <div className="floating-icons" style={{
       position: 'fixed', bottom: '2rem', right: '2rem', zIndex: 800,
       display: 'flex', flexDirection: 'column', gap: '0.75rem',
     }}>

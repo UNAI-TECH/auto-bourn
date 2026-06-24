@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, EyeOff, Lock, Mail, AlertCircle, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, AlertCircle, Loader2, User } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -183,15 +183,15 @@ export default function EmployeeConsolePage() {
 
             <form onSubmit={handleLogin}>
               <div className="console-field">
-                <label htmlFor="emp-id">EMAIL ADDRESS</label>
+                <label htmlFor="emp-id">EMAIL ADDRESS OR EMPLOYEE ID</label>
                 <div className="console-input-wrap">
                   <span className="console-input-icon">
-                    <Mail size={18} />
+                    <User size={18} />
                   </span>
                   <input
                     id="emp-id"
                     type="text"
-                    placeholder="Admin@autobourn.com"
+                    placeholder="Email address or Employee ID"
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
                     required

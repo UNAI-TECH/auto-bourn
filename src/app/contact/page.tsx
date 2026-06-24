@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import AlertModal from '@/components/AlertModal';
 
 /* ── SVG Contact Icons ── */
 function ContactIcon({ type }: { type: string }) {
@@ -43,6 +44,28 @@ export default function ContactPage() {
   const [success, setSuccess] = useState(false);
   const [emailModalOpen, setEmailModalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'error' | 'info';
+    onClose?: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info',
+  });
+
+  const showAlert = (title: string, message: string, type: 'success' | 'error' | 'info' = 'info', onClose?: () => void) => {
+    setAlertConfig({
+      isOpen: true,
+      title,
+      message,
+      type,
+      onClose,
+    });
+  };
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText('hello@autobourncars.com');
@@ -53,7 +76,7 @@ export default function ContactPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !phone.trim()) {
-      alert('Name and Phone are required.');
+      showAlert('Input Required', 'Name and Phone are required.', 'error');
       return;
     }
     setSubmitting(true);
@@ -76,7 +99,7 @@ export default function ContactPage() {
 
       if (!response.ok || resData.error) {
         console.error('Error submitting contact form:', resData.error);
-        alert('There was a problem sending your message: ' + (resData.error || 'Server error'));
+        showAlert('Submission Error', 'There was a problem sending your message: ' + (resData.error || 'Server error'), 'error');
       } else {
         const waText = `Hi Auto Bourn, I want to get in touch:
 *Name:* ${name}
@@ -87,20 +110,25 @@ export default function ContactPage() {
 
         const waUrl = `https://wa.me/919176777222?text=${encodeURIComponent(waText)}`;
 
-        alert('Your request has been submitted successfully to our CRM. You will now be redirected to WhatsApp to complete your message.');
-        window.location.href = waUrl;
-
-        setName('');
-        setPhone('');
-        setEmail('');
-        setInterest('Select');
-        setMessage('');
-        setSuccess(true);
-        setTimeout(() => setSuccess(false), 5000);
+        showAlert(
+          'Redirecting to WhatsApp',
+          'Your request has been submitted successfully to our CRM. You will now be redirected to WhatsApp to complete your message.',
+          'success',
+          () => {
+            window.location.href = waUrl;
+            setName('');
+            setPhone('');
+            setEmail('');
+            setInterest('Select');
+            setMessage('');
+            setSuccess(true);
+            setTimeout(() => setSuccess(false), 5000);
+          }
+        );
       }
     } catch (err: any) {
       console.error('Unexpected error in contact submission:', err);
-      alert('An unexpected error occurred: ' + err.message);
+      showAlert('Unexpected Error', 'An unexpected error occurred: ' + err.message, 'error');
     } finally {
       setSubmitting(false);
     }
@@ -499,6 +527,17 @@ export default function ContactPage() {
             </motion.div>
           </div>
         )}
+
+        <AlertModal
+          isOpen={alertConfig.isOpen}
+          title={alertConfig.title}
+          message={alertConfig.message}
+          type={alertConfig.type}
+          onClose={() => {
+            setAlertConfig(prev => ({ ...prev, isOpen: false }));
+            if (alertConfig.onClose) alertConfig.onClose();
+          }}
+        />
       </AnimatePresence>
     </>
   );

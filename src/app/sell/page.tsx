@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
+import AlertModal from '@/components/AlertModal';
 
 /* ═══════════════════════════════════════════════
    Types
@@ -315,6 +316,28 @@ function InputField({ label, value, onChange, type = 'text', placeholder, requir
 export default function SellPage() {
   const supabase = createClient();
   const [submitting, setSubmitting] = useState(false);
+  const [alertConfig, setAlertConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    type: 'success' | 'error' | 'info';
+    onClose?: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info',
+  });
+
+  const showAlert = (title: string, message: string, type: 'success' | 'error' | 'info' = 'info', onClose?: () => void) => {
+    setAlertConfig({
+      isOpen: true,
+      title,
+      message,
+      type,
+      onClose,
+    });
+  };
   const [currentStep, setCurrentStep] = useState(1);
   const [direction, setDirection] = useState(1);
   const [form, setForm] = useState<FormData>(INITIAL_FORM);
@@ -452,7 +475,7 @@ Additional Details: ${form.additionalDetails || 'None'}`;
 
       if (!response.ok || resData.error) {
         console.error('Error inserting lead to Supabase:', resData.error);
-        alert('There was an issue submitting your details: ' + (resData.error || 'Server error'));
+        showAlert('Submission Error', 'There was an issue submitting your details: ' + (resData.error || 'Server error'), 'error');
       } else {
         const emailSubject = `Sell My Car Inquiry - ${form.brand} ${form.model}`;
         const emailBody = `Hi Auto Bourn, I want to sell my car:
@@ -485,9 +508,15 @@ Preferred Contact: ${form.preferredContact}`;
           setForm(INITIAL_FORM);
           setCurrentStep(1);
         } else if (form.preferredContact === 'Phone') {
-          alert(`Your vehicle listing has been submitted successfully to our CRM. Since you selected Phone, our team will call you shortly at ${form.phone}.`);
-          setForm(INITIAL_FORM);
-          setCurrentStep(1);
+          showAlert(
+            'Submission Successful',
+            `Your vehicle listing has been submitted successfully to our CRM. Since you selected Phone, our team will call you shortly at ${form.phone}.`,
+            'success',
+            () => {
+              setForm(INITIAL_FORM);
+              setCurrentStep(1);
+            }
+          );
         } else {
           // Default to WhatsApp
           const waText = `Hi Auto Bourn, I want to sell my car:
@@ -512,15 +541,21 @@ ${form.additionalDetails ? `*Additional Notes:* ${form.additionalDetails}` : ''}
 *Preferred Contact:* ${form.preferredContact}`;
 
           const waUrl = `https://wa.me/919176777222?text=${encodeURIComponent(waText)}`;
-          alert('Your vehicle listing has been submitted successfully to our CRM. You will now be redirected to WhatsApp to complete your submission.');
-          window.location.href = waUrl;
-          setForm(INITIAL_FORM);
-          setCurrentStep(1);
+          showAlert(
+            'Redirecting to WhatsApp',
+            'Your vehicle listing has been submitted successfully to our CRM. You will now be redirected to WhatsApp to complete your submission.',
+            'success',
+            () => {
+              window.location.href = waUrl;
+              setForm(INITIAL_FORM);
+              setCurrentStep(1);
+            }
+          );
         }
       }
     } catch (err: any) {
       console.error('Unexpected error submitting lead:', err);
-      alert('An unexpected error occurred: ' + err.message);
+      showAlert('Unexpected Error', 'An unexpected error occurred: ' + err.message, 'error');
     } finally {
       setSubmitting(false);
     }
@@ -1110,6 +1145,17 @@ ${form.additionalDetails ? `*Additional Notes:* ${form.additionalDetails}` : ''}
             </motion.div>
           </div>
         )}
+
+        <AlertModal
+          isOpen={alertConfig.isOpen}
+          title={alertConfig.title}
+          message={alertConfig.message}
+          type={alertConfig.type}
+          onClose={() => {
+            setAlertConfig(prev => ({ ...prev, isOpen: false }));
+            if (alertConfig.onClose) alertConfig.onClose();
+          }}
+        />
       </AnimatePresence>
     </>
   );

@@ -248,9 +248,11 @@ export default function EmployeeDashboard() {
         <div className="crextio-col-left">
           
           {/* Real Employee Portrait Card */}
-          <div className="crextio-profile-card">
+          <div className="crextio-profile-card" style={{ background: employee?.avatar_url ? 'none' : 'linear-gradient(135deg, #2A2A2A 0%, #121212 100%)', border: '1px solid var(--db-bd)' }}>
             <div className="profile-img-container">
-              <Image src="/employee_avatar.png" alt="Employee Photo" fill className="profile-avatar-img" priority />
+              {employee?.avatar_url && (
+                <Image src={employee.avatar_url} alt="Employee Photo" fill className="profile-avatar-img" priority />
+              )}
               <div className="profile-overlay-gradient" />
             </div>
             <div className="profile-details">
