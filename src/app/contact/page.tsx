@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 /* ── SVG Contact Icons ── */
 function ContactIcon({ type }: { type: string }) {
@@ -41,6 +41,14 @@ export default function ContactPage() {
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText('hello@autobourncars.com');
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,12 +78,24 @@ export default function ContactPage() {
         console.error('Error submitting contact form:', resData.error);
         alert('There was a problem sending your message: ' + (resData.error || 'Server error'));
       } else {
-        setSuccess(true);
+        const waText = `Hi Auto Bourn, I want to get in touch:
+*Name:* ${name}
+*Phone:* ${phone}
+*Email:* ${email || 'N/A'}
+*Interest:* ${interest}
+*Message:* ${message || 'No message provided.'}`;
+
+        const waUrl = `https://wa.me/919176777222?text=${encodeURIComponent(waText)}`;
+
+        alert('Your request has been submitted successfully to our CRM. You will now be redirected to WhatsApp to complete your message.');
+        window.location.href = waUrl;
+
         setName('');
         setPhone('');
         setEmail('');
         setInterest('Select');
         setMessage('');
+        setSuccess(true);
         setTimeout(() => setSuccess(false), 5000);
       }
     } catch (err: any) {
@@ -184,12 +204,20 @@ export default function ContactPage() {
               style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               {contactInfo.map((c, i) => {
                 const isLink = !!c.link;
+                const isMail = c.link?.startsWith('mailto:');
                 const CardElement = isLink ? 'a' : 'div';
                 const extraProps = isLink ? {
-                  href: c.link,
+                  href: isMail ? undefined : c.link,
                   target: c.link.startsWith('http') ? '_blank' : undefined,
                   rel: c.link.startsWith('http') ? 'noopener noreferrer' : undefined,
                 } : {};
+
+                const handleClick = (e: React.MouseEvent) => {
+                  if (isMail) {
+                    e.preventDefault();
+                    setEmailModalOpen(true);
+                  }
+                };
 
                 return (
                   <motion.div
@@ -203,6 +231,7 @@ export default function ContactPage() {
                   >
                     <CardElement
                       {...(extraProps as any)}
+                      onClick={handleClick}
                       style={{
                         background: '#FAFAFA',
                         borderRadius: '16px',
@@ -254,6 +283,223 @@ export default function ContactPage() {
         @media (max-width: 768px) { .contact-grid { grid-template-columns: 1fr !important; } }
         input:focus, select:focus, textarea:focus { border-color: #E10613 !important; }
       `}</style>
+
+      <AnimatePresence>
+        {emailModalOpen && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.4)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+          }}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+              style={{
+                background: '#FFFFFF',
+                borderRadius: '24px',
+                padding: '2.25rem',
+                maxWidth: '440px',
+                width: '100%',
+                boxShadow: '0 25px 60px rgba(0, 0, 0, 0.15)',
+                border: '1px solid #EAEAEA',
+                position: 'relative',
+              }}
+            >
+              <button
+                onClick={() => setEmailModalOpen(false)}
+                style={{
+                  position: 'absolute',
+                  top: '1.25rem',
+                  right: '1.25rem',
+                  background: '#F5F5F5',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: '#4A4A4A',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#EAEAEA'}
+                onMouseLeave={e => e.currentTarget.style.background = '#F5F5F5'}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+
+              <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
+                <div style={{
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '50%',
+                  background: 'rgba(225, 6, 19, 0.08)',
+                  color: '#E10613',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 1rem',
+                }}>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                    <polyline points="22,6 12,13 2,6" />
+                  </svg>
+                </div>
+                <h3 style={{ fontFamily: 'var(--font-primary)', fontSize: '1.35rem', fontWeight: 700, color: '#2A2A2A', margin: '0 0 0.5rem' }}>
+                  Contact via Email
+                </h3>
+                <p style={{ fontSize: '0.9rem', color: '#8A8A8A', margin: 0, lineHeight: 1.5 }}>
+                  Choose your preferred email service to send a message to <strong style={{ color: '#2A2A2A' }}>hello@autobourncars.com</strong>.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {/* Gmail */}
+                <motion.a
+                  href="https://mail.google.com/mail/?view=cm&fs=1&to=hello@autobourncars.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '10px',
+                    padding: '0.875rem',
+                    borderRadius: '12px',
+                    border: '1px solid #ECECEC',
+                    background: '#FFFFFF',
+                    color: '#333333',
+                    fontSize: '0.9375rem',
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                    transition: 'all 0.2s',
+                    cursor: 'pointer',
+                  }}
+                  whileHover={{ borderColor: '#2A2A2A', backgroundColor: '#F9F9F9' }}
+                  onClick={() => setEmailModalOpen(false)}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
+                  </svg>
+                  Open in Gmail
+                </motion.a>
+
+                {/* Outlook Web */}
+                <motion.a
+                  href="https://outlook.live.com/default.aspx?rru=compose&to=hello@autobourncars.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '10px',
+                    padding: '0.875rem',
+                    borderRadius: '12px',
+                    border: '1px solid #ECECEC',
+                    background: '#FFFFFF',
+                    color: '#333333',
+                    fontSize: '0.9375rem',
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                    transition: 'all 0.2s',
+                    cursor: 'pointer',
+                  }}
+                  whileHover={{ borderColor: '#2A2A2A', backgroundColor: '#F9F9F9' }}
+                  onClick={() => setEmailModalOpen(false)}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M16.24 11.51l-5.66-5.65-1.41 1.41 4.24 4.24H2v2h11.41l-4.24 4.24 1.41 1.41 5.66-5.65z M20 2H4c-1.1 0-2 .9-2 2v4h2V4h16v16H4v-4H2v4c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" />
+                  </svg>
+                  Open in Outlook Web
+                </motion.a>
+
+                {/* Default Mail Client */}
+                <motion.a
+                  href="mailto:hello@autobourncars.com"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '10px',
+                    padding: '0.875rem',
+                    borderRadius: '12px',
+                    border: '1px solid #ECECEC',
+                    background: '#FFFFFF',
+                    color: '#333333',
+                    fontSize: '0.9375rem',
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                    transition: 'all 0.2s',
+                    cursor: 'pointer',
+                  }}
+                  whileHover={{ borderColor: '#2A2A2A', backgroundColor: '#F9F9F9' }}
+                  onClick={() => setEmailModalOpen(false)}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                    <line x1="2" y1="3" x2="12" y2="10" />
+                    <line x1="22" y1="3" x2="12" y2="10" />
+                  </svg>
+                  Default Mail App
+                </motion.a>
+
+                {/* Copy to Clipboard */}
+                <motion.button
+                  onClick={copyToClipboard}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '10px',
+                    padding: '0.875rem',
+                    borderRadius: '12px',
+                    border: '1px solid #E10613',
+                    background: copied ? '#E10613' : 'transparent',
+                    color: copied ? '#FFFFFF' : '#E10613',
+                    fontSize: '0.9375rem',
+                    fontWeight: 700,
+                    transition: 'all 0.2s',
+                    cursor: 'pointer',
+                  }}
+                  whileHover={copied ? undefined : { backgroundColor: 'rgba(225, 6, 19, 0.04)' }}
+                >
+                  {copied ? (
+                    <>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                      Copied!
+                    </>
+                  ) : (
+                    <>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                      </svg>
+                      Copy Email Address
+                    </>
+                  )}
+                </motion.button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </>
   );
 }
