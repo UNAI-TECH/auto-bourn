@@ -510,9 +510,10 @@ Preferred Contact: ${form.preferredContact}`;
         } else if (form.preferredContact === 'Phone') {
           showAlert(
             'Submission Successful',
-            `Your vehicle listing has been submitted successfully to our CRM. Since you selected Phone, our team will call you shortly at ${form.phone}.`,
+            `Your vehicle listing has been submitted successfully to our CRM. Since you selected Phone, you will now be redirected to call our team at +91 91767 77222.`,
             'success',
             () => {
+              window.location.href = 'tel:+919176777222';
               setForm(INITIAL_FORM);
               setCurrentStep(1);
             }
