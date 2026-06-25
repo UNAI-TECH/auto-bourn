@@ -441,6 +441,83 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     const isNew = !n.read;
                     const hasLink = !!(n.metadata?.lead_id || n.metadata?.booking_id || n.metadata?.test_drive_id);
                     
+                    // Categorize notification
+                    const t = n.type.toLowerCase();
+                    const mType = (n.metadata?.type || '').toLowerCase();
+                    let config = {
+                      label: 'CRM',
+                      color: '#10B981',
+                      bgLight: 'rgba(16, 185, 129, 0.03)',
+                      borderLight: 'rgba(16, 185, 129, 0.15)',
+                      glow: '0 4px 20px rgba(16, 185, 129, 0.04)',
+                      icon: (
+                        <div style={{
+                          width: '32px', height: '32px', borderRadius: '8px', 
+                          background: 'rgba(16, 185, 129, 0.1)', display: 'flex', 
+                          alignItems: 'center', justifyContent: 'center', color: '#10B981',
+                          flexShrink: 0
+                        }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                        </div>
+                      )
+                    };
+
+                    if (t === 'new_lead' || mType === 'sell_car' || t.includes('sell')) {
+                      config = {
+                        label: 'SELL',
+                        color: '#FF7A00',
+                        bgLight: 'rgba(255, 122, 0, 0.03)',
+                        borderLight: 'rgba(255, 122, 0, 0.15)',
+                        glow: '0 4px 20px rgba(255, 122, 0, 0.04)',
+                        icon: (
+                          <div style={{
+                            width: '32px', height: '32px', borderRadius: '8px', 
+                            background: 'rgba(255, 122, 0, 0.1)', display: 'flex', 
+                            alignItems: 'center', justifyContent: 'center', color: '#FF7A00',
+                            flexShrink: 0
+                          }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                          </div>
+                        )
+                      };
+                    } else if (t.includes('booking') || t.includes('drive') || t.includes('reserve') || t.includes('test_drive')) {
+                      config = {
+                        label: 'BUY / BOOKING',
+                        color: '#C5A880',
+                        bgLight: 'rgba(197, 168, 128, 0.05)',
+                        borderLight: 'rgba(197, 168, 128, 0.2)',
+                        glow: '0 4px 20px rgba(197, 168, 128, 0.05)',
+                        icon: (
+                          <div style={{
+                            width: '32px', height: '32px', borderRadius: '8px', 
+                            background: 'rgba(197, 168, 128, 0.12)', display: 'flex', 
+                            alignItems: 'center', justifyContent: 'center', color: '#C5A880',
+                            flexShrink: 0
+                          }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                          </div>
+                        )
+                      };
+                    } else if (t.includes('report') || t.includes('reminder') || t.includes('employee')) {
+                      config = {
+                        label: 'EMPLOYEE',
+                        color: '#2F80ED',
+                        bgLight: 'rgba(47, 128, 237, 0.03)',
+                        borderLight: 'rgba(47, 128, 237, 0.15)',
+                        glow: '0 4px 20px rgba(47, 128, 237, 0.04)',
+                        icon: (
+                          <div style={{
+                            width: '32px', height: '32px', borderRadius: '8px', 
+                            background: 'rgba(47, 128, 237, 0.1)', display: 'flex', 
+                            alignItems: 'center', justifyContent: 'center', color: '#2F80ED',
+                            flexShrink: 0
+                          }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                          </div>
+                        )
+                      };
+                    }
+
                     return (
                       <div 
                         key={n.id}
@@ -462,41 +539,69 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           }
                         }}
                         style={{
-                          padding: '1.25rem',
-                          background: isNew ? 'rgba(225, 6, 19, 0.02)' : 'var(--db-sf2)',
-                          border: isNew ? '1.5px solid rgba(225, 6, 19, 0.15)' : '1px solid var(--db-bd)',
+                          padding: '1.25rem 1.25rem 1.25rem 1.125rem',
+                          background: isNew ? config.bgLight : 'var(--db-sf2)',
+                          border: isNew ? `1px solid ${config.borderLight}` : '1px solid var(--db-bd)',
+                          borderLeft: `4px solid ${config.color}`,
                           borderRadius: '16px',
                           cursor: hasLink ? 'pointer' : 'default',
                           position: 'relative',
                           transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
-                          boxShadow: isNew ? '0 4px 20px rgba(225, 6, 19, 0.03)' : 'none',
+                          boxShadow: isNew ? config.glow : 'none',
                         }}
                         onMouseEnter={e => {
                           if (hasLink) {
                             e.currentTarget.style.transform = 'translateY(-2px)';
-                            e.currentTarget.style.borderColor = '#E10613';
+                            e.currentTarget.style.borderColor = config.color;
                             e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.06)';
                           }
                         }}
                         onMouseLeave={e => {
                           if (hasLink) {
                             e.currentTarget.style.transform = 'none';
-                            e.currentTarget.style.borderColor = isNew ? 'rgba(225, 6, 19, 0.15)' : 'var(--db-bd)';
-                            e.currentTarget.style.boxShadow = isNew ? '0 4px 20px rgba(225, 6, 19, 0.03)' : 'none';
+                            e.currentTarget.style.borderColor = isNew ? config.borderLight : 'var(--db-bd)';
+                            e.currentTarget.style.borderLeftColor = config.color;
+                            e.currentTarget.style.boxShadow = isNew ? config.glow : 'none';
                           }
                         }}
                       >
                         {isNew && (
-                          <span style={{ position: 'absolute', top: '16px', right: '16px', width: '8px', height: '8px', borderRadius: '50%', background: '#E10613', boxShadow: '0 0 10px #E10613' }} />
+                          <span style={{ position: 'absolute', top: '16px', right: '16px', width: '8px', height: '8px', borderRadius: '50%', background: config.color, boxShadow: `0 0 10px ${config.color}` }} />
                         )}
 
                         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
-                          <div style={{ fontSize: '1.25rem', marginTop: '2px' }}>
-                            {n.type.includes('message') ? '✉️' : n.type.includes('booking') ? '🔑' : n.type.includes('drive') ? '📅' : '🔔'}
+                          <div style={{ flexShrink: 0 }}>
+                            {config.icon}
                           </div>
                           <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                              <span style={{ 
+                                fontSize: '0.625rem', 
+                                fontWeight: 800, 
+                                color: config.color, 
+                                background: `${config.color}15`, 
+                                padding: '2px 6px', 
+                                borderRadius: '4px',
+                                letterSpacing: '0.05em'
+                              }}>
+                                {config.label}
+                              </span>
+                              {isNew && (
+                                <span style={{ 
+                                  fontSize: '0.625rem', 
+                                  fontWeight: 800, 
+                                  color: '#E10613', 
+                                  background: 'rgba(225, 6, 19, 0.1)', 
+                                  padding: '2px 6px', 
+                                  borderRadius: '4px',
+                                  letterSpacing: '0.05em'
+                                }}>
+                                  NEW
+                                </span>
+                              )}
+                            </div>
                             <strong style={{ fontSize: '0.875rem', color: 'var(--db-tx)', display: 'block', marginBottom: '4px', fontWeight: 700, paddingRight: '12px' }}>
-                              {n.title}
+                              {n.title.replace(/^[^\w\s\(\)]+\s*/, '')}
                             </strong>
                             <p style={{ fontSize: '0.8125rem', color: 'var(--db-tx2)', margin: 0, lineHeight: 1.4, fontWeight: 500 }}>
                               {n.message}
