@@ -15,7 +15,7 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
   const [notes, setNotes] = useState<CustomerNote[]>([]);
   const [tab, setTab] = useState<'info'|'followups'|'notes'>('info');
   const [newNote, setNewNote] = useState('');
-  const [fuForm, setFuForm] = useState({ follow_up_type:'call', scheduled_at:'', notes:'', priority:'normal' });
+  const [fuForm, setFuForm] = useState({ follow_up_type:'', scheduled_at:'', notes:'', priority:'' });
   const [toast, setToast] = useState('');
   const [editStatus, setEditStatus] = useState(false);
   const [waModal, setWaModal] = useState(false);
@@ -94,8 +94,16 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
   const addFollowUp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!employee) return;
+    if (!fuForm.follow_up_type) {
+      showToast('Please select a follow-up type');
+      return;
+    }
+    if (!fuForm.priority) {
+      showToast('Please select a priority');
+      return;
+    }
     await supabase.from('follow_ups').insert({ lead_id:id, employee_id:employee.id, ...fuForm });
-    setFuForm({ follow_up_type:'call', scheduled_at:'', notes:'', priority:'normal' });
+    setFuForm({ follow_up_type:'', scheduled_at:'', notes:'', priority:'' });
     loadAll(); showToast('Follow-up scheduled!');
   };
 
@@ -172,13 +180,15 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
         <div>
           <form onSubmit={addFollowUp} style={{background:'var(--emp-sf)',border:'1px solid var(--emp-bd)',borderRadius:14,padding:'1rem',marginBottom:'1rem',display:'grid',gridTemplateColumns:'1fr 1fr',gap:'.75rem'}}>
             <div className="emp-field"><label>Type</label>
-              <select value={fuForm.follow_up_type} onChange={e=>setFuForm({...fuForm,follow_up_type:e.target.value})}>
+              <select required value={fuForm.follow_up_type} onChange={e=>setFuForm({...fuForm,follow_up_type:e.target.value})}>
+                <option value="" disabled>Select an option</option>
                 {Object.entries(FOLLOW_UP_TYPE_LABELS).map(([k,v])=><option key={k} value={k}>{v}</option>)}
               </select>
             </div>
             <div className="emp-field"><label>Date &amp; Time</label><input type="datetime-local" required value={fuForm.scheduled_at} onChange={e=>setFuForm({...fuForm,scheduled_at:e.target.value})}/></div>
             <div className="emp-field"><label>Priority</label>
-              <select value={fuForm.priority} onChange={e=>setFuForm({...fuForm,priority:e.target.value})}>
+              <select required value={fuForm.priority} onChange={e=>setFuForm({...fuForm,priority:e.target.value})}>
+                <option value="" disabled>Select an option</option>
                 <option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option>
               </select>
             </div>
