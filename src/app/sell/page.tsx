@@ -919,9 +919,13 @@ ${form.additionalDetails ? `*Additional Notes:* ${form.additionalDetails}` : ''}
       </section>
 
       <style jsx global>{`
-        @media (max-width: 640px) {
-          .sell-form { grid-template-columns: 1fr !important; }
+        @media (max-width: 1024px) {
           .sell-how-grid { grid-template-columns: 1fr !important; gap: 2.5rem !important; }
+        }
+        @media (max-width: 768px) {
+          .sell-form { grid-template-columns: 1fr !important; }
+        }
+        @media (max-width: 640px) {
           .sell-progress-label { font-size: 0.5rem !important; }
         }
         input:focus, select:focus, textarea:focus {
