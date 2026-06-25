@@ -8,6 +8,171 @@ import { LEAD_STAGES, FOLLOW_UP_TYPE_LABELS, formatBudget, type Lead, type LeadS
 
 const TABS = ['Timeline','Follow-ups','Notes','Test Drives','Booking'];
 
+const openPdf = (url: string) => {
+  if (url.startsWith('data:application/pdf')) {
+    const pdfWindow = window.open("");
+    if (pdfWindow) {
+      pdfWindow.document.write(
+        `<iframe width='100%' height='100%' src='${url}' style='border:0;position:fixed;top:0;left:0;right:0;bottom:0;'></iframe>`
+      );
+    }
+  } else {
+    window.open(url, '_blank');
+  }
+};
+
+const renderInspectionReport = (note: string) => {
+  if (!note.includes('Used Car Inspection Report')) {
+    return <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{note}</div>;
+  }
+
+  const lines = note.split('\n');
+  const sections: { title: string; items: string[] }[] = [];
+  let currentSection: { title: string; items: string[] } | null = null;
+  let headerInfo: { overall?: string; action?: string; value?: string; inspector?: string } = {};
+
+  lines.forEach(line => {
+    const trimmed = line.trim();
+    if (!trimmed) return;
+
+    if (trimmed.startsWith('####')) {
+      if (currentSection) {
+        sections.push(currentSection);
+      }
+      currentSection = {
+        title: trimmed.replace(/^####\s*/, ''),
+        items: []
+      };
+      return;
+    }
+
+    if (trimmed.startsWith('###')) return;
+
+    if (trimmed.startsWith('**Overall Condition:**')) {
+      const match1 = trimmed.match(/\*\*Overall Condition:\*\*\s*([^\s|]+)/i);
+      const match2 = trimmed.match(/\*\*Recommended Action:\*\*\s*([^\s|]+)/i);
+      if (match1) headerInfo.overall = match1[1];
+      if (match2) headerInfo.action = match2[1];
+      return;
+    }
+
+    if (trimmed.startsWith('**Estimated Value:**')) {
+      const match = trimmed.match(/\*\*Estimated Value:\*\*\s*(.*)/i);
+      if (match) headerInfo.value = match[1];
+      return;
+    }
+
+    if (trimmed.startsWith('**Inspector:**')) {
+      const match = trimmed.match(/\*\*Inspector:\*\*\s*(.*)/i);
+      if (match) headerInfo.inspector = match[1];
+      return;
+    }
+
+    if (trimmed.startsWith('-')) {
+      if (currentSection) {
+        currentSection.items.push(trimmed.replace(/^-\s*/, ''));
+      }
+    } else {
+      if (currentSection) {
+        currentSection.items.push(trimmed);
+      }
+    }
+  });
+
+  if (currentSection) {
+    sections.push(currentSection);
+  }
+
+  return (
+    <div style={{ background: 'var(--db-sf2, #f8fafc)', border: '1px solid var(--db-bd, #e2e8f0)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', marginTop: '0.5rem', width: '100%' }}>
+      {/* Top Header Card */}
+      <div style={{ background: 'linear-gradient(135deg, #1e293b, #0f172a)', color: '#fff', padding: '1rem 1.25rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', color: '#fff' }}>
+              📋 Used Car Inspection Report
+            </h3>
+            <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginTop: '2px' }}>
+              Inspector: {headerInfo.inspector || '—'}
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+            <span style={{ background: '#e10613', color: '#fff', fontSize: '0.7rem', fontWeight: 750, padding: '3px 8px', borderRadius: '4px', textTransform: 'uppercase' }}>
+              Value: {headerInfo.value || '—'}
+            </span>
+            <span style={{ background: '#3b82f6', color: '#fff', fontSize: '0.7rem', fontWeight: 750, padding: '3px 8px', borderRadius: '4px', textTransform: 'uppercase' }}>
+              Rating: {headerInfo.overall || '—'}
+            </span>
+            <span style={{ background: '#10b981', color: '#fff', fontSize: '0.7rem', fontWeight: 750, padding: '3px 8px', borderRadius: '4px', textTransform: 'uppercase' }}>
+              {headerInfo.action || '—'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Grid of Sections */}
+      <div style={{ padding: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', background: 'var(--db-sf, #fff)' }}>
+        {sections.map((sec, idx) => {
+          const isMedia = sec.title.toLowerCase().includes('media') || sec.title.toLowerCase().includes('photo');
+          return (
+            <div key={idx} style={{ background: 'var(--db-sf2, #f8fafc)', padding: '0.875rem', borderRadius: '8px', border: '1px solid var(--db-bd, #e2e8f0)' }}>
+              <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', fontWeight: 750, color: '#e10613', borderBottom: '1.5px solid var(--db-bd, #f1f5f9)', paddingBottom: '4px' }}>
+                {sec.title}
+              </h4>
+              {isMedia ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '8px', padding: 0 }}>
+                  {sec.items.map((item, i) => {
+                    const parts = item.split('**');
+                    if (parts.length >= 3) {
+                      const url = parts.slice(2).join('').trim().replace(/^:\s*/, '');
+                      const label = parts[1].replace(':', '');
+                      const isPdf = url.startsWith('data:application/pdf') || url.toLowerCase().includes('.pdf');
+                      return (
+                        <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'var(--db-sf, #fff)', border: '1px solid var(--db-bd, #e2e8f0)', borderRadius: '6px', padding: '6px', minWidth: 0 }}>
+                          <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--db-tx3, #64748b)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
+                          {isPdf ? (
+                            <button onClick={() => openPdf(url)} style={{ background: 'none', border: 'none', padding: 0, margin: 0, cursor: 'pointer', fontSize: '10px', color: '#e10613', fontWeight: 700, textAlign: 'left', display: 'flex', alignItems: 'center', height: '40px' }}>
+                              View PDF ↗
+                            </button>
+                          ) : (
+                            <div style={{ width: '100%', height: '50px', borderRadius: '4px', overflow: 'hidden', cursor: 'pointer', background: '#f1f5f9' }} onClick={() => window.open(url, '_blank')}>
+                              <img src={url} alt={label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+                    return <div key={i} style={{ fontSize: '0.75rem', color: 'var(--db-tx2)' }}>{item}</div>;
+                  })}
+                </div>
+              ) : (
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {sec.items.map((item, i) => {
+                    const parts = item.split('**');
+                    if (parts.length >= 3) {
+                      return (
+                        <li key={i} style={{ fontSize: '0.78rem', color: 'var(--db-tx2, #334155)', display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
+                          <span style={{ fontWeight: 600, color: 'var(--db-tx3, #64748b)' }}>{parts[1].replace(':', '')}</span>
+                          <span style={{ fontWeight: 500, textAlign: 'right', color: 'var(--db-tx, #0f172a)' }}>{parts.slice(2).join('').trim().replace(/^:\s*/, '')}</span>
+                        </li>
+                      );
+                    }
+                    return (
+                      <li key={i} style={{ fontSize: '0.78rem', color: 'var(--db-tx2, #334155)', lineHeight: 1.4 }}>
+                        {item}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 export default function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [lead, setLead] = useState<Lead|null>(null);
@@ -276,9 +441,9 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
               {notes.map(n=>{
                 const nEmp = n.employee as {name:string}|null;
                 return (
-                  <div key={n.id} className="crm-note-item">
-                    <div style={{fontSize:'.875rem',lineHeight:1.6}}>{n.note}</div>
-                    <div style={{fontSize:'.6875rem',color:'var(--db-tx3)',marginTop:4}}>{nEmp?.name||'Unknown'} · {new Date(n.created_at).toLocaleString('en-IN')}</div>
+                  <div key={n.id} className="crm-note-item" style={{ borderLeft: n.note.includes('Inspection Report') ? '4px solid #E10613' : '4px solid #6366f1' }}>
+                    <div style={{fontSize:'.875rem',lineHeight:1.6}}>{renderInspectionReport(n.note)}</div>
+                    <div style={{fontSize:'.6875rem',color:'var(--db-tx3)',marginTop:6}}>{nEmp?.name||'Unknown'} · {new Date(n.created_at).toLocaleString('en-IN')}</div>
                   </div>
                 );
               })}

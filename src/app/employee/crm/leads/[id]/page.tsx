@@ -11,6 +11,171 @@ import {
 import { useEmpContext } from '../../../layout';
 import { LEAD_STAGES, FOLLOW_UP_TYPE_LABELS, type Lead, type LeadStatus, type FollowUp, type CustomerNote, formatBudget } from '@/types/crm';
 
+const openPdf = (url: string) => {
+  if (url.startsWith('data:application/pdf')) {
+    const pdfWindow = window.open("");
+    if (pdfWindow) {
+      pdfWindow.document.write(
+        `<iframe width='100%' height='100%' src='${url}' style='border:0;position:fixed;top:0;left:0;right:0;bottom:0;'></iframe>`
+      );
+    }
+  } else {
+    window.open(url, '_blank');
+  }
+};
+
+const renderInspectionReport = (note: string) => {
+  if (!note.includes('Used Car Inspection Report')) {
+    return <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{note}</div>;
+  }
+
+  const lines = note.split('\n');
+  const sections: { title: string; items: string[] }[] = [];
+  let currentSection: { title: string; items: string[] } | null = null;
+  let headerInfo: { overall?: string; action?: string; value?: string; inspector?: string } = {};
+
+  lines.forEach(line => {
+    const trimmed = line.trim();
+    if (!trimmed) return;
+
+    if (trimmed.startsWith('####')) {
+      if (currentSection) {
+        sections.push(currentSection);
+      }
+      currentSection = {
+        title: trimmed.replace(/^####\s*/, ''),
+        items: []
+      };
+      return;
+    }
+
+    if (trimmed.startsWith('###')) return;
+
+    if (trimmed.startsWith('**Overall Condition:**')) {
+      const match1 = trimmed.match(/\*\*Overall Condition:\*\*\s*([^\s|]+)/i);
+      const match2 = trimmed.match(/\*\*Recommended Action:\*\*\s*([^\s|]+)/i);
+      if (match1) headerInfo.overall = match1[1];
+      if (match2) headerInfo.action = match2[1];
+      return;
+    }
+
+    if (trimmed.startsWith('**Estimated Value:**')) {
+      const match = trimmed.match(/\*\*Estimated Value:\*\*\s*(.*)/i);
+      if (match) headerInfo.value = match[1];
+      return;
+    }
+
+    if (trimmed.startsWith('**Inspector:**')) {
+      const match = trimmed.match(/\*\*Inspector:\*\*\s*(.*)/i);
+      if (match) headerInfo.inspector = match[1];
+      return;
+    }
+
+    if (trimmed.startsWith('-')) {
+      if (currentSection) {
+        currentSection.items.push(trimmed.replace(/^-\s*/, ''));
+      }
+    } else {
+      if (currentSection) {
+        currentSection.items.push(trimmed);
+      }
+    }
+  });
+
+  if (currentSection) {
+    sections.push(currentSection);
+  }
+
+  return (
+    <div style={{ background: 'var(--db-sf2, #f8fafc)', border: '1px solid var(--db-bd, #e2e8f0)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', marginTop: '0.5rem', width: '100%' }}>
+      {/* Top Header Card */}
+      <div style={{ background: 'linear-gradient(135deg, #1e293b, #0f172a)', color: '#fff', padding: '1rem 1.25rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', color: '#fff' }}>
+              📋 Used Car Inspection Report
+            </h3>
+            <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginTop: '2px' }}>
+              Inspector: {headerInfo.inspector || '—'}
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+            <span style={{ background: '#e10613', color: '#fff', fontSize: '0.7rem', fontWeight: 750, padding: '3px 8px', borderRadius: '4px', textTransform: 'uppercase' }}>
+              Value: {headerInfo.value || '—'}
+            </span>
+            <span style={{ background: '#3b82f6', color: '#fff', fontSize: '0.7rem', fontWeight: 750, padding: '3px 8px', borderRadius: '4px', textTransform: 'uppercase' }}>
+              Rating: {headerInfo.overall || '—'}
+            </span>
+            <span style={{ background: '#10b981', color: '#fff', fontSize: '0.7rem', fontWeight: 750, padding: '3px 8px', borderRadius: '4px', textTransform: 'uppercase' }}>
+              {headerInfo.action || '—'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Grid of Sections */}
+      <div style={{ padding: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', background: 'var(--db-sf, #fff)' }}>
+        {sections.map((sec, idx) => {
+          const isMedia = sec.title.toLowerCase().includes('media') || sec.title.toLowerCase().includes('photo');
+          return (
+            <div key={idx} style={{ background: 'var(--db-sf2, #f8fafc)', padding: '0.875rem', borderRadius: '8px', border: '1px solid var(--db-bd, #e2e8f0)' }}>
+              <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', fontWeight: 750, color: '#e10613', borderBottom: '1.5px solid var(--db-bd, #f1f5f9)', paddingBottom: '4px' }}>
+                {sec.title}
+              </h4>
+              {isMedia ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '8px', padding: 0 }}>
+                  {sec.items.map((item, i) => {
+                    const parts = item.split('**');
+                    if (parts.length >= 3) {
+                      const url = parts.slice(2).join('').trim().replace(/^:\s*/, '');
+                      const label = parts[1].replace(':', '');
+                      const isPdf = url.startsWith('data:application/pdf') || url.toLowerCase().includes('.pdf');
+                      return (
+                        <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'var(--db-sf, #fff)', border: '1px solid var(--db-bd, #e2e8f0)', borderRadius: '6px', padding: '6px', minWidth: 0 }}>
+                          <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--db-tx3, #64748b)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
+                          {isPdf ? (
+                            <button onClick={() => openPdf(url)} style={{ background: 'none', border: 'none', padding: 0, margin: 0, cursor: 'pointer', fontSize: '10px', color: '#e10613', fontWeight: 700, textAlign: 'left', display: 'flex', alignItems: 'center', height: '40px' }}>
+                              View PDF ↗
+                            </button>
+                          ) : (
+                            <div style={{ width: '100%', height: '50px', borderRadius: '4px', overflow: 'hidden', cursor: 'pointer', background: '#f1f5f9' }} onClick={() => window.open(url, '_blank')}>
+                              <img src={url} alt={label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+                    return <div key={i} style={{ fontSize: '0.75rem', color: 'var(--db-tx2)' }}>{item}</div>;
+                  })}
+                </div>
+              ) : (
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {sec.items.map((item, i) => {
+                    const parts = item.split('**');
+                    if (parts.length >= 3) {
+                      return (
+                        <li key={i} style={{ fontSize: '0.78rem', color: 'var(--db-tx2, #334155)', display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
+                          <span style={{ fontWeight: 600, color: 'var(--db-tx3, #64748b)' }}>{parts[1].replace(':', '')}</span>
+                          <span style={{ fontWeight: 500, textAlign: 'right', color: 'var(--db-tx, #0f172a)' }}>{parts.slice(2).join('').trim().replace(/^:\s*/, '')}</span>
+                        </li>
+                      );
+                    }
+                    return (
+                      <li key={i} style={{ fontSize: '0.78rem', color: 'var(--db-tx2, #334155)', lineHeight: 1.4 }}>
+                        {item}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 const BRANDS = ['Mercedes-Benz', 'BMW', 'Audi', 'Jaguar', 'Land Rover', 'Volvo', 'Porsche', 'Lexus', 'Other'];
 const YEARS = Array.from({ length: 17 }, (_, i) => String(2010 + i));
 
@@ -191,13 +356,87 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
         // Auto pre-populate brand/model/variant if lead details exist
         if (data.lead) {
           const match = data.lead.interested_car?.match(/^([^\s]+)\s+([^\(]+)(?:\s+\((\d+)\))?/);
+          
+          // Parse sell details from customer notes
+          const sellNote = (data.notes || []).find((n: any) => n.note && n.note.includes('Vehicle Details:'))?.note || '';
+          
+          const extractField = (regex: RegExp) => {
+            const m = sellNote.match(regex);
+            return m ? m[1].trim() : null;
+          };
+
+          const pVariant = extractField(/Variant:\s*(.*)/i);
+          const pFuel = extractField(/Fuel Type:\s*(.*)/i);
+          const pTrans = extractField(/Transmission:\s*(.*)/i);
+          const pMileage = extractField(/Mileage:\s*(\d+)/i);
+          const pOwnership = extractField(/Ownership:\s*(.*)/i);
+          const pAdditional = extractField(/Additional Details:\s*([\s\S]*)/i);
+
+          let pOwners = '';
+          if (pOwnership) {
+            if (pOwnership.includes('1')) pOwners = '1';
+            else if (pOwnership.includes('2')) pOwners = '2';
+            else if (pOwnership.includes('3')) pOwners = '3';
+            else if (pOwnership.includes('4')) pOwners = '4';
+          }
+
+          let pPaint = 'Original paint';
+          let pRust = 'No rust';
+          let pWindshield = 'Good';
+          let pSpare = 'Yes';
+
+          const checkText = (pAdditional || sellNote || '').toLowerCase();
+          
+          if (checkText) {
+            if (checkText.includes('colour mismatch') || checkText.includes('color mismatch') || checkText.includes('mismatch')) {
+              pPaint = 'Colour mismatch detected';
+            } else if (checkText.includes('overspray')) {
+              pPaint = 'Overspray visible';
+            } else if (checkText.includes('original paint') || checkText.includes('good paint') || checkText.includes('excellent paint')) {
+              pPaint = 'Original paint';
+            }
+
+            if (checkText.includes('surface rust')) {
+              pRust = 'Surface rust';
+            } else if (checkText.includes('structural rust') || checkText.includes('heavy rust') || checkText.includes('rust in frame')) {
+              pRust = 'Structural rust';
+            } else if (checkText.includes('no rust') || checkText.includes('rust free') || checkText.includes('rust-free')) {
+              pRust = 'No rust';
+            }
+
+            if (checkText.includes('crack') || checkText.includes('cracked')) {
+              pWindshield = 'Cracked';
+            } else if (checkText.includes('replaced')) {
+              pWindshield = 'Replaced';
+            } else if (checkText.includes('good windshield') || checkText.includes('clear windshield') || checkText.includes('perfect glass')) {
+              pWindshield = 'Good';
+            }
+
+            if (checkText.includes('no spare') || checkText.includes('spare missing') || checkText.includes('spare tyre missing') || checkText.includes('spare tire missing') || checkText.includes('spare tyre not available')) {
+              pSpare = 'No';
+            } else if (checkText.includes('spare tyre') || checkText.includes('spare tire') || checkText.includes('spare available')) {
+              pSpare = 'Yes';
+            }
+          }
+
           setInspectForm(prev => ({
             ...prev,
             brand: match ? match[1] : '',
             model: match ? match[2]?.trim() : '',
             year: match && match[3] ? match[3] : '',
             estimatedValue: data.lead.budget ? String(data.lead.budget) : '',
-            inspectorName: employee?.name || ''
+            inspectorName: employee?.name || '',
+            
+            // Auto-populated from sell notes
+            variant: pVariant || prev.variant,
+            fuelType: pFuel || prev.fuelType,
+            transmissionType: pTrans || prev.transmissionType,
+            odometer: pMileage || prev.odometer,
+            owners: pOwners || prev.owners,
+            paintCondition: pPaint,
+            rustInspection: pRust,
+            windshieldCondition: pWindshield,
+            spareTyre: pSpare
           }));
         }
       } else {
@@ -253,22 +492,22 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
 
   const submitInspection = async () => {
     if (!employee) return;
-    setClaiming(true);
     try {
-      // 1. Claim the lead
-      const res = await fetch(`/api/leads/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'claim' })
-      });
-      const data = await res.json();
-      if (!data.success) {
-        showToast(data.error || 'Failed to claim lead');
-        setClaiming(false);
-        return;
-      }
+      setClaiming(true);
+      // 1. Format detailed Inspection Report note
+      const photoLinks = [];
+      if (uploads['Exterior_Front'] && uploads['Exterior_Front'] !== 'Uploading...') photoLinks.push(`- **Front Photo:** ${uploads['Exterior_Front']}`);
+      if (uploads['Exterior_Rear'] && uploads['Exterior_Rear'] !== 'Uploading...') photoLinks.push(`- **Rear Photo:** ${uploads['Exterior_Rear']}`);
+      if (uploads['Exterior_Left Side'] && uploads['Exterior_Left Side'] !== 'Uploading...') photoLinks.push(`- **Left Side Photo:** ${uploads['Exterior_Left Side']}`);
+      if (uploads['Exterior_Right Side'] && uploads['Exterior_Right Side'] !== 'Uploading...') photoLinks.push(`- **Right Side Photo:** ${uploads['Exterior_Right Side']}`);
+      if (uploads['Engine_Bay'] && uploads['Engine_Bay'] !== 'Uploading...') photoLinks.push(`- **Engine Bay Photo:** ${uploads['Engine_Bay']}`);
+      if (uploads['Interior_Cabin'] && uploads['Interior_Cabin'] !== 'Uploading...') photoLinks.push(`- **Interior Cabin Photo:** ${uploads['Interior_Cabin']}`);
+      if (uploads['Documents'] && uploads['Documents'] !== 'Uploading...') photoLinks.push(`- **Documents File:** ${uploads['Documents']}`);
 
-      // 2. Format detailed Inspection Report note
+      const photosSection = photoLinks.length > 0
+        ? `\n\n#### 📸 Uploaded Media\n${photoLinks.join('\n')}`
+        : '';
+
       const formattedReport = `### 📋 Used Car Inspection Report
 **Overall Condition:** ${inspectForm.overallCondition.toUpperCase()} | **Recommended Action:** ${inspectForm.recommendedAction.toUpperCase()}
 **Estimated Value:** INR ${inspectForm.estimatedValue}
@@ -309,32 +548,40 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
 - **Evaluation Notes:** ${inspectForm.testDriveNotes || 'None'}
 - **Verification Check:** ${inspectForm.docsVerified.join(', ') || 'None'}
 - **Vehicle Category:** Type: ${inspectForm.vehicleType} | Warranty: ${inspectForm.warrantyAvailable}
-`;
+${photosSection}`;
 
-      // 3. Save to customer_notes
-      await supabase.from('customer_notes').insert({ 
-        lead_id: id, 
-        employee_id: employee.id, 
-        note: formattedReport 
-      });
-
-      // 4. Update lead details (status -> contacted, budget -> estimatedValue)
       const cleanVal = inspectForm.estimatedValue.replace(/[^0-9]/g, '');
       const parsedVal = cleanVal ? parseInt(cleanVal) : null;
-      await supabase.from('leads').update({
-        lead_status: 'contacted',
-        budget: parsedVal,
-        interested_car: `${inspectForm.brand} ${inspectForm.model} (${inspectForm.year})`,
-        updated_at: new Date().toISOString()
-      }).eq('id', id);
 
-      // 5. Add to activity log
-      await supabase.from('crm_activity_logs').insert({ 
-        lead_id: id, 
-        employee_id: employee.id, 
-        action: 'inspection_submitted', 
-        details: `Inspected ${inspectForm.brand} ${inspectForm.model} - Value: INR ${inspectForm.estimatedValue}` 
+      // 2. Claim and update lead via server PATCH endpoint (bypasses RLS limits)
+      const res = await fetch(`/api/leads/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'claim',
+          updateData: {
+            lead_status: 'contacted',
+            budget: parsedVal,
+            interested_car: `${inspectForm.brand} ${inspectForm.model} (${inspectForm.year})`
+          },
+          note: formattedReport,
+          inspectionData: {
+            ...inspectForm,
+            uploads
+          },
+          activityLog: {
+            action: 'inspection_submitted',
+            details: `Inspected ${inspectForm.brand} ${inspectForm.model} - Value: INR ${inspectForm.estimatedValue}`
+          }
+        })
       });
+      
+      const data = await res.json();
+      if (!data.success) {
+        showToast(data.error || 'Failed to submit inspection');
+        setClaiming(false);
+        return;
+      }
 
       showToast('🎉 Inspection saved and lead claimed successfully!');
       setShowInspection(false);
@@ -346,12 +593,23 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
     setClaiming(false);
   };
 
-  const handleMockUpload = (field: string) => {
-    setUploads(prev => ({ ...prev, [field]: 'Uploading...' }));
-    setTimeout(() => {
-      setUploads(prev => ({ ...prev, [field]: `${field}_mock_photo.jpg` }));
-      showToast('Photo uploaded successfully');
-    }, 800);
+  const handlePhotoUpload = (field: string) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = field === 'Documents' ? 'image/*,application/pdf' : 'image/*';
+    input.onchange = (e: any) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      setUploads(prev => ({ ...prev, [field]: 'Uploading...' }));
+      const reader = new FileReader();
+      reader.onload = () => {
+        setUploads(prev => ({ ...prev, [field]: reader.result as string }));
+        showToast('Photo uploaded successfully');
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
   };
 
   const toggleCheckbox = (field: 'bodyCondition' | 'lightsWorking' | 'warningLights' | 'leakages' | 'testDriveNoises' | 'docsVerified', value: string) => {
@@ -598,7 +856,7 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {notes.map(n => (
                   <div key={n.id} style={{ background: 'var(--db-sf2, #fafafa)', border: '1.5px solid var(--db-bd, rgba(0,0,0,0.04))', borderLeft: n.note.includes('Inspection Report') ? '4px solid #E10613' : '4px solid #6366f1', borderRadius: '14px', padding: '1rem' }}>
-                    <div style={{ fontSize: '.9rem', lineHeight: 1.5, color: 'var(--db-tx, #000)', fontWeight: 500, whiteSpace: 'pre-wrap' }}>{n.note}</div>
+                    <div style={{ fontSize: '.9rem', lineHeight: 1.5, color: 'var(--db-tx, #000)', fontWeight: 500 }}>{renderInspectionReport(n.note)}</div>
                     <div style={{ fontSize: '.75rem', color: 'var(--db-tx3, #777)', marginTop: '6px', display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
                       <span>👤 {(n.employee as {name:string}|null)?.name || 'Admin'}</span>
                       <span>{new Date(n.created_at).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}</span>
@@ -858,11 +1116,49 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
                     <div className="wa-form-group">
                       <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem', marginBottom: '6px' }}>Upload Photos</label>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px' }}>
-                        {['Front', 'Rear', 'Left Side', 'Right Side'].map(dir => (
-                          <button key={dir} onClick={() => handleMockUpload(`Exterior_${dir}`)} className="mock-upload-btn">
-                            <Upload size={14} /> {uploads[`Exterior_${dir}`] ? 'Uploaded ✓' : `Upload ${dir}`}
-                          </button>
-                        ))}
+                        {['Front', 'Rear', 'Left Side', 'Right Side'].map(dir => {
+                          const key = `Exterior_${dir}`;
+                          const isUploaded = uploads[key] && uploads[key] !== 'Uploading...';
+                          const isUploading = uploads[key] === 'Uploading...';
+                          return (
+                            <div key={dir} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                              <button 
+                                onClick={() => handlePhotoUpload(key)} 
+                                className="mock-upload-btn"
+                                style={{ 
+                                  height: '80px', 
+                                  padding: '4px',
+                                  display: 'flex', 
+                                  flexDirection: 'column', 
+                                  justifyContent: 'center', 
+                                  alignItems: 'center',
+                                  border: isUploaded ? '1.5px solid #22c55e' : '1.5px dashed rgba(0,0,0,0.15)',
+                                  background: '#f9f9f9',
+                                  borderRadius: '8px',
+                                  cursor: 'pointer',
+                                  position: 'relative',
+                                  overflow: 'hidden'
+                                }}
+                              >
+                                {isUploaded ? (
+                                  <>
+                                    <img src={uploads[key]} alt={dir} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '6px' }} />
+                                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(34, 197, 94, 0.85)', color: '#fff', fontSize: '10px', fontWeight: 750, textAlign: 'center', padding: '2px 0' }}>
+                                      {dir} ✓
+                                    </div>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Upload size={16} style={{ color: '#E10613', marginBottom: '4px' }} />
+                                    <span style={{ fontSize: '11px', fontWeight: 600, color: '#333' }}>
+                                      {isUploading ? 'Uploading...' : `Upload ${dir}`}
+                                    </span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
 
@@ -1060,13 +1356,51 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
 
                     <div className="wa-form-group">
                       <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem', marginBottom: '6px' }}>Upload Engine / Interior Photos</label>
-                      <div style={{ display: 'flex', gap: '12px' }}>
-                        <button onClick={() => handleMockUpload('Engine_Bay')} className="mock-upload-btn">
-                          <Upload size={14} /> {uploads['Engine_Bay'] ? 'Engine Uploaded ✓' : 'Upload Engine Photo'}
-                        </button>
-                        <button onClick={() => handleMockUpload('Interior_Cabin')} className="mock-upload-btn">
-                          <Upload size={14} /> {uploads['Interior_Cabin'] ? 'Interior Uploaded ✓' : 'Upload Interior Photo'}
-                        </button>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        {[
+                          { label: 'Engine Bay', key: 'Engine_Bay', btnText: 'Engine Photo' },
+                          { label: 'Interior Cabin', key: 'Interior_Cabin', btnText: 'Interior Photo' }
+                        ].map(item => {
+                          const isUploaded = uploads[item.key] && uploads[item.key] !== 'Uploading...';
+                          const isUploading = uploads[item.key] === 'Uploading...';
+                          return (
+                            <button 
+                              key={item.key}
+                              onClick={() => handlePhotoUpload(item.key)} 
+                              className="mock-upload-btn"
+                              style={{ 
+                                height: '90px', 
+                                padding: '4px',
+                                display: 'flex', 
+                                flexDirection: 'column', 
+                                justifyContent: 'center', 
+                                alignItems: 'center',
+                                border: isUploaded ? '1.5px solid #22c55e' : '1.5px dashed rgba(0,0,0,0.15)',
+                                background: '#f9f9f9',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                position: 'relative',
+                                overflow: 'hidden'
+                              }}
+                            >
+                              {isUploaded ? (
+                                <>
+                                  <img src={uploads[item.key]} alt={item.label} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '6px' }} />
+                                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(34, 197, 94, 0.85)', color: '#fff', fontSize: '10px', fontWeight: 750, textAlign: 'center', padding: '2px 0' }}>
+                                    {item.label} ✓
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <Upload size={18} style={{ color: '#E10613', marginBottom: '4px' }} />
+                                  <span style={{ fontSize: '11px', fontWeight: 600, color: '#333' }}>
+                                    {isUploading ? 'Uploading...' : `Upload ${item.btnText}`}
+                                  </span>
+                                </>
+                              )}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
 
@@ -1221,8 +1555,21 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
 
                     <div className="wa-form-group">
                       <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem', marginBottom: '6px' }}>Upload Inspection Documents &amp; Certificates</label>
-                      <button onClick={() => handleMockUpload('Documents')} className="mock-upload-btn" style={{ width: '100%' }}>
-                        <Upload size={14} /> {uploads['Documents'] ? 'All PDF/Docs Uploaded ✓' : 'Upload Documents (RC, Insurance, Form 29/30)'}
+                      <button 
+                        onClick={() => handlePhotoUpload('Documents')} 
+                        className="mock-upload-btn" 
+                        style={{ 
+                          width: '100%', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          gap: '8px', 
+                          background: uploads['Documents'] && uploads['Documents'] !== 'Uploading...' ? '#f0fdf4' : '#fff',
+                          border: uploads['Documents'] && uploads['Documents'] !== 'Uploading...' ? '1.5px solid #22c55e' : '1.5px solid rgba(0,0,0,0.15)',
+                          color: uploads['Documents'] && uploads['Documents'] !== 'Uploading...' ? '#15803d' : '#333'
+                        }}
+                      >
+                        <Upload size={14} /> {uploads['Documents'] === 'Uploading...' ? 'Uploading...' : uploads['Documents'] ? 'All PDF/Docs Uploaded ✓' : 'Upload Documents (RC, Insurance, Form 29/30)'}
                       </button>
                     </div>
 
@@ -1434,7 +1781,13 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
         .wa-btn.send:hover { background: #1eb253; }
         @media (max-width: 768px) {
           .crm-details-grid {
-            grid-template-columns: 1fr;
+            grid-template-columns: 1fr !important;
+          }
+          .crm-details-grid [style*="grid-template-columns"],
+          .crm-details-grid form[style*="grid-template-columns"],
+          .wa-modal-content [style*="grid-template-columns"],
+          .inspection-modal-body [style*="grid-template-columns"] {
+            grid-template-columns: 1fr !important;
           }
         }
       `}</style>

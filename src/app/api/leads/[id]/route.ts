@@ -72,35 +72,147 @@ export async function PATCH(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // 3. Parse action from request body
+    // 3. Parse action and update fields from request body
     const body = await request.json();
-    const { action } = body;
-
-    if (action !== 'claim') {
-      return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
-    }
+    const { action, updateData, note, activityLog, inspectionData } = body;
 
     const serviceClient = await createServiceRoleClient();
 
-    // 4. Update assigned_to to employee's ID
-    const { error: claimErr } = await serviceClient
+    // 4. Build updates payload
+    const updatePayload: any = { updated_at: new Date().toISOString() };
+    if (action === 'claim') {
+      updatePayload.assigned_to = emp.id;
+    }
+
+    if (updateData) {
+      if (updateData.lead_status) updatePayload.lead_status = updateData.lead_status;
+      if (updateData.budget !== undefined) updatePayload.budget = updateData.budget;
+      if (updateData.interested_car !== undefined) updatePayload.interested_car = updateData.interested_car;
+      if (updateData.assigned_to) updatePayload.assigned_to = updateData.assigned_to;
+    }
+
+    // Perform database update
+    const { error: updateErr } = await serviceClient
       .from('leads')
-      .update({ assigned_to: emp.id, updated_at: new Date().toISOString() })
+      .update(updatePayload)
       .eq('id', id);
 
-    if (claimErr) throw claimErr;
+    if (updateErr) throw updateErr;
 
-    // 5. Log activity
-    await serviceClient.from('crm_activity_logs').insert({
-      lead_id: id,
-      employee_id: emp.id,
-      action: 'claim_lead',
-      details: `Claimed by ${emp.role === 'admin' ? 'Admin' : 'Employee'}`
-    });
+    // 5. Insert note if provided
+    if (note) {
+      const { error: noteErr } = await serviceClient
+        .from('customer_notes')
+        .insert({
+          lead_id: id,
+          employee_id: emp.id,
+          note: note
+        });
+      if (noteErr) throw noteErr;
+    }
 
-    return NextResponse.json({ success: true, message: 'Lead claimed successfully' });
+    // 5b. Insert structured inspection details if provided
+    if (inspectionData) {
+      const dbInspection = {
+        lead_id: id,
+        employee_id: emp.id,
+        
+        overall_condition: (inspectionData.overallCondition || 'good').toLowerCase(),
+        recommended_action: (inspectionData.recommendedAction || 'approve').toLowerCase(),
+        estimated_value: inspectionData.estimatedValue ? parseFloat(String(inspectionData.estimatedValue).replace(/[^0-9.]/g, '')) : null,
+        inspector_name: inspectionData.inspectorName || 'Employee',
+        inspection_date: inspectionData.inspectionDate || new Date().toISOString().split('T')[0],
+
+        reg_no: inspectionData.regNo || null,
+        vin: inspectionData.vin || null,
+        brand: inspectionData.brand || '',
+        model: inspectionData.model || '',
+        variant: inspectionData.variant || null,
+        year: inspectionData.year ? parseInt(inspectionData.year) : null,
+        fuel_type: inspectionData.fuelType || null,
+        transmission_type: inspectionData.transmissionType || null,
+        odometer: inspectionData.odometer ? parseInt(inspectionData.odometer) : null,
+        owners: inspectionData.owners ? parseInt(inspectionData.owners) : null,
+
+        paint_condition: inspectionData.paintCondition || null,
+        rust_inspection: inspectionData.rustInspection || null,
+        body_condition: inspectionData.bodyCondition || [],
+        windshield_condition: inspectionData.windshieldCondition || null,
+        lights_working: inspectionData.lightsWorking || [],
+        tread_fl: inspectionData.treadFL ? parseInt(inspectionData.treadFL) : null,
+        tread_fr: inspectionData.treadFR ? parseInt(inspectionData.treadFR) : null,
+        tread_rl: inspectionData.treadRL ? parseInt(inspectionData.treadRL) : null,
+        tread_rr: inspectionData.treadRR ? parseInt(inspectionData.treadRR) : null,
+        spare_tyre: inspectionData.spareTyre || null,
+        exterior_notes: inspectionData.exteriorNotes || null,
+
+        odour: inspectionData.odour || null,
+        seat_condition: inspectionData.seatCondition || null,
+        seatbelt_check: inspectionData.seatbeltCheck || null,
+        ac_working: inspectionData.acWorking || null,
+        info_working: inspectionData.infoWorking || null,
+        win_working: inspectionData.winWorking || null,
+        lock_working: inspectionData.lockWorking || null,
+        horn_working: inspectionData.hornWorking || null,
+        warning_lights: inspectionData.warningLights || [],
+        interior_remarks: inspectionData.interiorRemarks || null,
+
+        engine_oil: inspectionData.engineOil || null,
+        coolant: inspectionData.coolant || null,
+        brake_fluid: inspectionData.brakeFluid || null,
+        steering_fluid: inspectionData.steeringFluid || null,
+        leakages: inspectionData.leakages || [],
+        battery_age: inspectionData.batteryAge ? parseInt(inspectionData.batteryAge) : null,
+        battery_terminal: inspectionData.batteryTerminal || null,
+        transmission_response: inspectionData.transmissionResponse || null,
+        bounce_test: inspectionData.bounceTest || null,
+        frame_condition: inspectionData.frameCondition || null,
+        alignment: inspectionData.alignment || null,
+        suspension_noise: inspectionData.suspensionNoise || null,
+        mechanical_comments: inspectionData.mechanicalComments || null,
+
+        cold_start: inspectionData.coldStart || null,
+        steering_performance: inspectionData.steeringPerformance || null,
+        brake_performance: inspectionData.brakePerformance || null,
+        acceleration: inspectionData.acceleration || null,
+        test_drive_noises: inspectionData.testDriveNoises || [],
+        test_drive_notes: inspectionData.testDriveNotes || null,
+        docs_verified: inspectionData.docsVerified || [],
+        vehicle_type: inspectionData.vehicleType || null,
+        warranty_available: inspectionData.warrantyAvailable || null,
+
+        uploads: inspectionData.uploads || {}
+      };
+
+      const { error: inspectErr } = await serviceClient
+        .from('car_inspections')
+        .insert(dbInspection);
+
+      if (inspectErr) {
+        console.error('Error inserting structured inspection:', inspectErr);
+      }
+    }
+
+    // 6. Log activity
+    if (activityLog) {
+      await serviceClient.from('crm_activity_logs').insert({
+        lead_id: id,
+        employee_id: emp.id,
+        action: activityLog.action,
+        details: activityLog.details
+      });
+    } else if (action === 'claim') {
+      await serviceClient.from('crm_activity_logs').insert({
+        lead_id: id,
+        employee_id: emp.id,
+        action: 'claim_lead',
+        details: `Claimed by ${emp.role === 'admin' ? 'Admin' : 'Employee'}`
+      });
+    }
+
+    return NextResponse.json({ success: true, message: 'Lead updated successfully' });
   } catch (err: any) {
-    console.error('Error claiming lead:', err);
+    console.error('Error in PATCH leads/[id] API:', err);
     return NextResponse.json({ error: err.message || 'Internal Server Error' }, { status: 500 });
   }
 }

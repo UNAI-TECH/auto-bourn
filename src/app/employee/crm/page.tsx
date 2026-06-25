@@ -12,7 +12,8 @@ export default function EmployeeCRMPage() {
   const router = useRouter();
   const { employee } = useEmpContext();
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [followUps, setFollowUps] = useState<FollowUp[]>([]);
+  const [todayFollowUps, setTodayFollowUps] = useState<FollowUp[]>([]);
+  const [upcomingFollowUps, setUpcomingFollowUps] = useState<FollowUp[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState('');
@@ -22,6 +23,33 @@ export default function EmployeeCRMPage() {
 
   const showToast = (m:string) => { setToast(m); setTimeout(()=>setToast(''),3000); };
 
+  const getPriorityClass = (priority: string) => {
+    switch (priority?.toLowerCase()) {
+      case 'high': return 'crm-badge-high';
+      case 'normal': return 'crm-badge-normal';
+      default: return 'crm-badge-low';
+    }
+  };
+
+  const getFollowUpCustomerName = (fu: FollowUp) => {
+    const lead = fu.lead as any;
+    return lead?.customer_name || 'Customer';
+  };
+
+  const getFollowUpCarName = (fu: FollowUp) => {
+    const lead = fu.lead as any;
+    return lead?.interested_car || 'Luxury Vehicle';
+  };
+
+  const getFollowUpTime = (fu: FollowUp) => {
+    try {
+      const dt = new Date(fu.scheduled_at);
+      return dt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return '12:00 PM';
+    }
+  };
+
   const load = useCallback(async () => {
     if (!employee) return;
     setLoading(true);
@@ -30,16 +58,24 @@ export default function EmployeeCRMPage() {
 
     try {
       // Fetch both assigned and unassigned leads to calculate counts and display the current tab's leads
-      const [assignedRes, unassignedRes, myFURes] = await Promise.all([
+      const [assignedRes, unassignedRes, todayFURes, upcomingFURes] = await Promise.all([
         fetch(`/api/leads?assigned_to=${employee.id}`),
         fetch('/api/leads?assigned_to=unassigned'),
         supabase
           .from('follow_ups')
-          .select('*, lead:leads!lead_id(customer_name,phone)')
+          .select('*, lead:leads!lead_id(customer_name,phone,interested_car)')
           .eq('employee_id', employee.id)
           .eq('status', 'pending')
           .lte('scheduled_at', todayEnd.toISOString())
+          .order('scheduled_at'),
+        supabase
+          .from('follow_ups')
+          .select('*, lead:leads!lead_id(customer_name,phone,interested_car)')
+          .eq('employee_id', employee.id)
+          .eq('status', 'pending')
+          .gt('scheduled_at', todayEnd.toISOString())
           .order('scheduled_at')
+          .limit(10)
       ]);
 
       const assignedData = await assignedRes.json();
@@ -73,8 +109,11 @@ export default function EmployeeCRMPage() {
         setLeads(unassignedSell);
       }
 
-      if (myFURes.data) {
-        setFollowUps(myFURes.data as any[]);
+      if (todayFURes.data) {
+        setTodayFollowUps(todayFURes.data as any[]);
+      }
+      if (upcomingFURes.data) {
+        setUpcomingFollowUps(upcomingFURes.data as any[]);
       }
     } catch (e) {
       console.error(e);
@@ -113,7 +152,7 @@ export default function EmployeeCRMPage() {
           { label: 'Total Leads Listed', count: counts.my + counts.buy + counts.sell, icon: <Users size={20} />, color: '#3b82f6', bg: 'rgba(59,130,246,.07)' },
           { label: 'Active Opportunities', count: counts.my, icon: <FileText size={20} />, color: '#f59e0b', bg: 'rgba(245,158,11,.07)' },
           { label: 'Deals Completed', count: 0, icon: <CheckCircle2 size={20} />, color: '#10b981', bg: 'rgba(16,185,129,.07)' },
-          { label: "Today's Follow-ups", count: followUps.length, icon: <CheckSquare size={20} />, color: '#ef4444', bg: 'rgba(239,68,68,.07)' }
+          { label: "Today's Follow-ups", count: todayFollowUps.length, icon: <CheckSquare size={20} />, color: '#ef4444', bg: 'rgba(239,68,68,.07)' }
         ].map((c, i) => (
           <div key={i} style={{ background: 'var(--db-sf, #ffffff)', border: '1.5px solid var(--db-bd, rgba(0,0,0,0.06))', borderRadius: '20px', padding: '1.25rem 1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <div style={{ background: c.bg, color: c.color, width: 44, height: 44, borderRadius: '12px', display: 'flex', alignItems: 'center', justifySelf: 'center', justifyContent: 'center' }}>
@@ -125,6 +164,84 @@ export default function EmployeeCRMPage() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Follow-ups and Upcoming Leads Two-Column Row */}
+      <div className="crm-two-columns-row" style={{ marginBottom: '2.5rem' }}>
+        
+        {/* Today's Follow-ups Timeline */}
+        <div className="crm-sidebar-panel" style={{ height: '380px', display: 'flex', flexDirection: 'column' }}>
+          <div className="crm-sidebar-panel-head">
+            <h3>Today's Follow-ups ({todayFollowUps.length})</h3>
+            <span style={{ fontSize: '.75rem', color: 'var(--db-tx3, #777)', fontWeight: 600 }}>Scheduled for Today</span>
+          </div>
+          <div className="crm-timeline-body" style={{ flex: 1, overflowY: 'auto' }}>
+            {todayFollowUps.length === 0 ? (
+              <p className="crm-empty-state">No pending follow-ups scheduled for today</p>
+            ) : (
+              todayFollowUps.map((fu, idx) => (
+                <div 
+                  key={fu.id} 
+                  className="crm-timeline-item" 
+                  onClick={() => router.push(`/employee/crm/leads/${fu.lead_id}`)} 
+                  style={{ cursor: 'pointer' }}
+                >
+                  <div className="crm-timeline-time">{getFollowUpTime(fu)}</div>
+                  <div className="crm-timeline-indicator">
+                    <div className="crm-timeline-dot"></div>
+                    {idx < todayFollowUps.length - 1 && <div className="crm-timeline-line"></div>}
+                  </div>
+                  <div className="crm-timeline-content">
+                    <div className="crm-timeline-top">
+                      <span className="crm-timeline-name">{getFollowUpCustomerName(fu)}</span>
+                      <span className={`crm-timeline-badge ${getPriorityClass(fu.priority)}`}>
+                        {fu.priority}
+                      </span>
+                    </div>
+                    <p className="crm-timeline-desc">{getFollowUpCarName(fu)}</p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Upcoming Leads List */}
+        <div className="crm-panel-widget" style={{ height: '380px', display: 'flex', flexDirection: 'column' }}>
+          <div className="crm-widget-head">
+            <h3>Upcoming Follow-ups ({upcomingFollowUps.length})</h3>
+            <span style={{ fontSize: '.75rem', color: 'var(--db-tx3, #777)', fontWeight: 600 }}>Future Scheduled Tasks</span>
+          </div>
+          <div className="crm-widget-body" style={{ flex: 1, overflowY: 'auto' }}>
+            {upcomingFollowUps.length === 0 ? (
+              <p className="crm-empty-state">No future follow-ups scheduled</p>
+            ) : (
+              upcomingFollowUps.map(fu => (
+                <div 
+                  key={fu.id} 
+                  className="crm-widget-row" 
+                  onClick={() => router.push(`/employee/crm/leads/${fu.lead_id}`)} 
+                  style={{ cursor: 'pointer', padding: '0.75rem 1rem' }}
+                >
+                  <div className="crm-widget-avatar-wrap">
+                    <div className="crm-mini-avatar bg-blue-soft" style={{ fontSize: '0.85rem' }}>{getFollowUpCustomerName(fu).charAt(0)}</div>
+                  </div>
+                  <div className="crm-widget-info-block" style={{ marginLeft: '0.75rem' }}>
+                    <h4 className="crm-row-name" style={{ margin: 0, fontSize: '0.9rem' }}>{getFollowUpCustomerName(fu)}</h4>
+                    <p className="crm-row-sub" style={{ margin: '2px 0 0', fontSize: '0.75rem' }}>{getFollowUpCarName(fu)}</p>
+                  </div>
+                  <div className="crm-widget-time-block" style={{ marginLeft: 'auto', textAlign: 'right' }}>
+                    <span className="crm-row-time" style={{ fontSize: '0.75rem', display: 'block' }}>
+                      {new Date(fu.scheduled_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}
+                    </span>
+                    <span className={`crm-row-badge ${getPriorityClass(fu.priority)}`} style={{ fontSize: '0.65rem' }}>{fu.priority}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
       </div>
 
       {/* Tabs Header and Search */}
@@ -308,6 +425,200 @@ export default function EmployeeCRMPage() {
         .icon-action-btn:hover {
           background: rgba(59,130,246,.15) !important;
           transform: scale(1.05);
+        }
+
+        .crm-two-columns-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1.5rem;
+        }
+
+        .crm-sidebar-panel, .crm-panel-widget {
+          background: var(--db-sf, #ffffff) !important;
+          border: 1px solid var(--db-bd, rgba(0,0,0,0.06)) !important;
+          border-radius: 20px !important;
+          padding: 1.5rem !important;
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02) !important;
+        }
+
+        .crm-timeline-body {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .crm-timeline-item {
+          display: flex;
+          gap: 12px;
+          min-height: 72px;
+        }
+
+        .crm-timeline-time {
+          font-size: 0.6875rem;
+          font-weight: 600;
+          color: var(--db-tx3, #777);
+          width: 55px;
+          text-align: right;
+          flex-shrink: 0;
+          margin-top: 2px;
+        }
+
+        .crm-timeline-indicator {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          flex-shrink: 0;
+          margin-top: 4px;
+        }
+
+        .crm-timeline-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: var(--db-gold, #E10613);
+        }
+
+        .crm-timeline-line {
+          width: 1px;
+          flex: 1;
+          background: var(--db-bd, rgba(0,0,0,0.06));
+          margin: 4px 0;
+        }
+
+        .crm-timeline-content {
+          flex: 1;
+          padding-bottom: 12px;
+          min-width: 0;
+        }
+
+        .crm-timeline-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+        }
+
+        .crm-timeline-name {
+          font-size: 0.8125rem;
+          font-weight: 700;
+          color: var(--db-tx, #000);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .crm-timeline-badge {
+          font-size: 0.55rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          padding: 1px 4px;
+          border-radius: 3px;
+          flex-shrink: 0;
+        }
+
+        .crm-timeline-desc {
+          font-size: 0.725rem;
+          color: var(--db-tx3, #777);
+          margin: 2px 0 0 0;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .crm-widget-body {
+          display: flex;
+          flex-direction: column;
+          gap: 0.625rem;
+        }
+
+        .crm-widget-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding-bottom: 0.625rem;
+          border-bottom: 1px solid var(--db-bd, rgba(0,0,0,0.06));
+        }
+
+        .crm-widget-row:last-child {
+          border-bottom: none;
+        }
+
+        .crm-mini-avatar {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background: var(--db-sf2, #f5f5f5);
+          color: var(--db-tx2, #555);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.8125rem;
+          font-weight: 700;
+          flex-shrink: 0;
+        }
+
+        .crm-mini-avatar.bg-blue-soft {
+          background: var(--db-gd, rgba(225,6,19,0.06));
+          color: var(--db-gold, #E10613);
+        }
+
+        .crm-widget-info-block {
+          min-width: 0;
+          flex: 1;
+        }
+
+        .crm-row-name {
+          font-size: 0.8125rem;
+          font-weight: 700;
+          color: var(--db-tx, #000);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .crm-row-sub {
+          font-size: 0.725rem;
+          color: var(--db-tx3, #777);
+          margin: 1px 0 0 0;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .crm-widget-time-block {
+          text-align: right;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 2px;
+          flex-shrink: 0;
+        }
+
+        .crm-row-time {
+          font-size: 0.725rem;
+          color: var(--db-tx3, #777);
+          font-weight: 500;
+        }
+
+        .crm-row-badge {
+          font-size: 0.6rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          padding: 1px 6px;
+          border-radius: 4px;
+          letter-spacing: 0.05em;
+        }
+
+        .crm-badge-high { background: #FEF2F2; color: #EF4444; }
+        .crm-badge-normal { background: #EFF6FF; color: #3B82F6; }
+        .crm-badge-low { background: #F1F5F9; color: #64748B; }
+
+        @media (max-width: 900px) {
+          .crm-two-columns-row {
+            grid-template-columns: 1fr;
+          }
+          .crm-sidebar-panel, .crm-panel-widget {
+            height: auto !important;
+          }
         }
       `}</style>
     </div>

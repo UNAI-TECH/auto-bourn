@@ -133,66 +133,66 @@ export default function LogsPage() {
         <button className={filterTab === 'errors' ? 'active' : ''} onClick={() => setFilterTab('errors')}>Errors</button>
       </div>
 
-      {/* 3-Column Card Grid */}
-      <div className="log-grid">
-        {loading ? (
-          Array(9).fill(0).map((_, i) => <div key={i} className="log-skel" />)
-        ) : filtered.length === 0 ? (
-          <p className="db-empty-full">No matching activity logs found</p>
-        ) : (
-          filtered.map((log, i) => {
-            const meta = getMeta(log.action);
-            const Icon = meta.icon;
-            const emp = log.employee as unknown as { name: string } | null;
-            return (
-              <motion.div
-                key={log.id}
-                className="log-card"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: Math.min(i * 0.015, 0.2), ease: 'easeOut' }}
-              >
-                <div className="log-card-header">
-                  <div className="log-card-icon-wrap" style={{ backgroundColor: meta.bg, color: meta.color }}>
-                    <Icon size={18} />
-                  </div>
-                  {log.action === 'login' || log.action === 'upload' ? (
-                    <span className="log-card-badge-new">NEW</span>
-                  ) : log.action === 'delete' || log.action === 'employee_removed' ? (
-                    <span className="log-card-badge-warn">★</span>
-                  ) : (
-                    <span className="log-card-badge-dot">●</span>
-                  )}
-                </div>
-
-                <div className="log-card-content">
-                  <h3 className="log-card-title">{meta.title}</h3>
-                  <p className="log-card-body-text">
-                    "{log.details || `${meta.title} completed.`}"
-                  </p>
-                </div>
-
-                <div className="log-card-meta">
-                  <div className="log-card-meta-item">
-                    <span>{emp?.name || 'System'}</span>
-                  </div>
-                  <div className="log-card-meta-sep">•</div>
-                  <div className="log-card-meta-item">
-                    <span>{timeAgo(log.created_at)}</span>
-                  </div>
-                  {log.ip_address && (
-                    <>
-                      <div className="log-card-meta-sep">•</div>
-                      <div className="log-card-meta-item ip">
-                        <span>{log.ip_address}</span>
+      {/* Tabular List Format for Active Audit Logs */}
+      <div className="log-list-wrap">
+        <table className="log-table">
+          <thead>
+            <tr>
+              <th>Action</th>
+              <th>Performer</th>
+              <th>Details</th>
+              <th>IP Address</th>
+              <th>Timestamp</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              Array(8).fill(0).map((_, i) => (
+                <tr key={i}>
+                  <td colSpan={5}><div className="log-skel-line" /></td>
+                </tr>
+              ))
+            ) : filtered.length === 0 ? (
+              <tr>
+                <td colSpan={5} style={{ textAlign: 'center', padding: '3rem 0', color: 'var(--db-tx3)' }}>
+                  No matching activity logs found
+                </td>
+              </tr>
+            ) : (
+              filtered.map((log) => {
+                const meta = getMeta(log.action);
+                const Icon = meta.icon;
+                const emp = log.employee as unknown as { name: string } | null;
+                return (
+                  <tr key={log.id}>
+                    <td>
+                      <div className="log-action-cell">
+                        <div className="log-action-icon" style={{ backgroundColor: meta.bg, color: meta.color }}>
+                          <Icon size={14} />
+                        </div>
+                        <span className="log-action-title">{meta.title}</span>
                       </div>
-                    </>
-                  )}
-                </div>
-              </motion.div>
-            );
-          })
-        )}
+                    </td>
+                    <td>
+                      <span className="log-performer">{emp?.name || 'System'}</span>
+                    </td>
+                    <td>
+                      <span className="log-details" title={log.details || `${meta.title} completed.`}>
+                        "{log.details || `${meta.title} completed.`}"
+                      </span>
+                    </td>
+                    <td>
+                      <span className="log-ip">{log.ip_address || '—'}</span>
+                    </td>
+                    <td>
+                      <span className="log-time" title={new Date(log.created_at).toLocaleString()}>{timeAgo(log.created_at)}</span>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
       </div>
 
       <style jsx global>{`
@@ -299,120 +299,88 @@ export default function LogsPage() {
           box-shadow: 0 4px 6px -1px rgba(225, 6, 19, 0.2);
         }
 
-        .log-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 24px;
+        .log-list-wrap {
+          background: var(--db-sf);
+          border: 1px solid var(--db-bd);
+          border-radius: 14px;
+          overflow-x: auto;
           margin-top: 1.5rem;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
         }
-        .log-card {
-          background: var(--db-sf) !important;
-          border: 1px solid var(--db-bd) !important;
-          border-radius: 20px !important;
-          padding: 24px !important;
-          min-height: 220px;
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-          transition: all 0.25s ease-in-out;
-          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02) !important;
-          position: relative;
+        .log-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 0.875rem;
+          text-align: left;
         }
-        .log-card:hover {
-          border-color: var(--db-gold) !important;
-          box-shadow: 0 12px 30px rgba(225, 6, 19, 0.06), 0 4px 12px rgba(225, 6, 19, 0.03) !important;
-          transform: translateY(-2px);
+        .log-table th {
+          padding: 1rem;
+          color: var(--db-tx3);
+          font-weight: 600;
+          font-size: 0.75rem;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          border-bottom: 1px solid var(--db-bd);
         }
-        .log-card-header {
+        .log-table td {
+          padding: 1rem;
+          border-bottom: 1px solid var(--db-bd);
+          vertical-align: middle;
+          color: var(--db-tx2);
+        }
+        .log-table tr:last-child td {
+          border-bottom: 0;
+        }
+        .log-table tr:hover {
+          background: var(--db-sf2);
+        }
+        .log-action-cell {
           display: flex;
           align-items: center;
-          justify-content: space-between;
-          margin-bottom: 20px;
+          gap: 10px;
         }
-        .log-card-icon-wrap {
-          height: 38px;
-          width: 38px;
+        .log-action-icon {
+          width: 28px;
+          height: 28px;
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
-          border: 1px solid var(--db-bd);
+          flex-shrink: 0;
         }
-        .log-card-badge-new {
-          background: var(--db-gold);
-          color: #ffffff;
-          font-size: 0.65rem;
-          font-weight: 700;
-          padding: 3px 8px;
-          border-radius: 4px;
-          letter-spacing: 0.05em;
-        }
-        .log-card-badge-warn {
-          color: var(--db-rd);
-          font-size: 1rem;
-          line-height: 1;
-        }
-        .log-card-badge-dot {
-          color: var(--db-tx3);
-          font-size: 0.8rem;
-          opacity: 0.5;
-        }
-        .log-card-content {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-        .log-card-title {
-          font-family: 'Outfit', sans-serif;
-          font-size: 1rem;
+        .log-action-title {
           font-weight: 600;
           color: var(--db-tx);
-          margin: 0;
         }
-        .log-card-body-text {
-          font-size: 0.85rem;
-          color: var(--db-tx2);
-          margin: 0;
-          line-height: 1.5;
-          font-style: italic;
-          display: -webkit-box;
-          -webkit-line-clamp: 3;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-        .log-card-meta {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          margin-top: 20px;
-          font-size: 0.75rem;
-          color: var(--db-tx3);
-          flex-wrap: wrap;
-        }
-        .log-card-meta-item {
-          display: flex;
-          align-items: center;
-        }
-        .log-card-meta-item span {
+        .log-performer {
           font-weight: 500;
+          color: var(--db-tx);
         }
-        .log-card-meta-item.ip span {
+        .log-details {
+          font-size: 0.8125rem;
+          color: var(--db-tx2);
+          max-width: 380px;
+          display: block;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .log-ip {
           font-family: monospace;
           background: var(--db-sf2);
-          padding: 1px 6px;
+          padding: 2px 6px;
           border-radius: 4px;
-          color: var(--db-tx2);
+          font-size: 0.75rem;
+          color: var(--db-tx3);
         }
-        .log-card-meta-sep {
-          opacity: 0.5;
+        .log-time {
+          font-size: 0.8125rem;
+          color: var(--db-tx3);
         }
-
-        .log-skel {
-          height: 220px;
-          background: var(--db-sf);
-          border: 1px solid var(--db-bd);
-          border-radius: 20px;
+        .log-skel-line {
+          height: 20px;
+          background: var(--db-sf2);
+          border-radius: 4px;
           animation: pulse 1.5s infinite;
         }
         @keyframes pulse {
@@ -420,12 +388,8 @@ export default function LogsPage() {
           50% { opacity: 1; }
         }
 
-        @media(max-width: 1024px) {
-          .log-grid { grid-template-columns: repeat(2, 1fr); }
-        }
         @media(max-width: 768px) {
           .rp-stats-row { flex-direction: column; gap: 0.75rem; }
-          .log-grid { grid-template-columns: 1fr; }
         }
       `}</style>
     </div>

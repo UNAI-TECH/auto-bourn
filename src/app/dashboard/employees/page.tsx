@@ -304,9 +304,9 @@ export default function EmployeesPage() {
         <table className="emp-table">
           <thead><tr><th>Employee</th><th>ID</th><th>Phone</th><th>Joined</th><th>Uploads</th><th>Sold</th><th>Last Upload</th><th>Status</th><th></th></tr></thead>
           <tbody>
-            {loading ? Array(5).fill(0).map((_, i) => (
-              <tr key={i}><td colSpan={9}><div className="emp-skel" /></td></tr>
-            )) : filtered.length === 0 ? (
+            {loading ? (
+              <tr><td colSpan={9} className="emp-empty" style={{ fontStyle: 'normal' }}>Loading employee list...</td></tr>
+            ) : filtered.length === 0 ? (
               <tr><td colSpan={9} className="emp-empty">No employees found</td></tr>
             ) : filtered.map(emp => (
               <tr key={emp.id}>
@@ -565,12 +565,8 @@ export default function EmployeesPage() {
               </button>
 
               {modalLoading ? (
-                <div className="modal-loader">
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                    className="modal-spinner"
-                  />
+                <div className="modal-loader" style={{ minHeight: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--db-tx3)' }}>
+                  Loading employee details...
                 </div>
               ) : selectedEmployee ? (
                 <div className="modal-grid">
