@@ -58,9 +58,24 @@ export default function LeadsPage() {
     if (!form.customer_name||!form.phone) return;
     setSaving(true);
     const payload = { ...form, budget: form.budget ? parseInt(form.budget) : null, assigned_to: form.assigned_to||null, created_by: myId };
-    const { error } = await supabase.from('leads').insert(payload);
+    const { data: leadData, error } = await supabase.from('leads').insert(payload).select().single();
     if (error) { showToast('Error: '+error.message); }
-    else { showToast('Lead added!'); setShowForm(false); setForm(emptyForm); load(); }
+    else { 
+      if (form.assigned_to && leadData) {
+        await supabase.from('notifications').insert({
+          recipient_role: 'employee',
+          recipient_employee_id: form.assigned_to,
+          type: 'lead_assigned',
+          title: '📞 New Lead Assigned',
+          message: `You have been assigned a new lead: ${form.customer_name} (${form.interested_car || 'Luxury car interest'}).`,
+          metadata: { lead_id: leadData.id }
+        });
+      }
+      showToast('Lead added!'); 
+      setShowForm(false); 
+      setForm(emptyForm); 
+      load(); 
+    }
     setSaving(false);
   };
 

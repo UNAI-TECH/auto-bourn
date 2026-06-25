@@ -276,7 +276,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </span>
                 )}
               </button>
-              <div className="db-avatar">{employee?.name?.charAt(0) || 'A'}</div>
+              {employee?.avatar_url ? (
+                <div style={{ position: 'relative', width: 36, height: 36 }}>
+                  <Image src={employee.avatar_url} alt={employee.name || 'Avatar'} fill style={{ objectFit: 'cover', borderRadius: '10px' }} />
+                </div>
+              ) : (
+                <div className="db-avatar">{employee?.name?.charAt(0) || 'A'}</div>
+              )}
             </div>
           </header>
           <main className="db-content">{children}</main>
@@ -536,6 +542,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             setContactMessagesOpen(false);
                             const isEmployee = pathname.startsWith('/employee');
                             router.push(isEmployee ? `/employee/bookings` : `/dashboard/bookings`);
+                          } else if (n.metadata?.test_drive_id) {
+                            setContactMessagesOpen(false);
+                            const isEmployee = pathname.startsWith('/employee');
+                            router.push(isEmployee ? `/employee/test-drives` : `/dashboard/test-drives`);
                           }
                         }}
                         style={{

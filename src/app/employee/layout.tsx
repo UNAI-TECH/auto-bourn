@@ -10,7 +10,7 @@ import type { Employee } from '@/types/database';
 import AlertModal from '@/components/AlertModal';
 import { LayoutDashboard, Car, Upload, LogOut, Menu, X, Bell, FileText, AlertCircle, Clock, CheckCircle, PhoneCall, Bookmark, Mail } from 'lucide-react';
 
-const EmpContext = createContext<{ employee: Employee | null; darkMode: boolean; onReportSubmitted: () => void }>({ employee: null, darkMode: false, onReportSubmitted: () => {} });
+const EmpContext = createContext<{ employee: Employee | null; refreshEmployee?: () => Promise<void>; darkMode: boolean; onReportSubmitted: () => void }>({ employee: null, darkMode: false, onReportSubmitted: () => {} });
 export const useEmpContext = () => useContext(EmpContext);
 
 const navItems = [
@@ -122,9 +122,9 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
       .from('notifications')
       .select('*')
       .eq('recipient_employee_id', empId)
-      .eq('read', false)
+      .in('type', ['new_booking_request', 'new_test_drive_request', 'lead_assigned', 'report_reviewed', 'new_lead', 'new_contact_message'])
       .order('created_at', { ascending: false })
-      .limit(10);
+      .limit(15);
     setNotifications(data || []);
   };
 
@@ -156,27 +156,15 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
     return () => clearInterval(interval);
   }, []);
 
-  // 1-hour reminder notification check (runs every minute)
-  useEffect(() => {
+
+
+  const refreshEmployee = async () => {
     if (!employee) return;
-    const checkReminder = () => {
-      const now = new Date();
-      const hour = now.getHours();
-      const minutes = now.getMinutes();
-      // Trigger reminder at 5PM (17:00) if not submitted
-      if (hour === 17 && minutes === 0 && !hasSubmittedToday) {
-        supabase.from('notifications').insert({
-          recipient_role: 'employee',
-          recipient_employee_id: employee.id,
-          type: 'report_reminder',
-          title: '⏰ Daily Report Due in 1 Hour',
-          message: 'Your daily report is due by 6:00 PM today. Please submit before logging out.',
-        }).then(() => fetchNotifications(employee.id));
-      }
-    };
-    const interval = setInterval(checkReminder, 60000);
-    return () => clearInterval(interval);
-  }, [employee, hasSubmittedToday]);
+    const { data } = await supabase.from('employees').select('*').eq('id', employee.id).single();
+    if (data) {
+      setEmployee(data);
+    }
+  };
 
   // Handle logout — block if no report submitted
   const handleLogout = async () => {
@@ -283,9 +271,11 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
 
   const markNotificationsRead = async () => {
     if (!employee || notifications.length === 0) return;
-    const ids = notifications.map(n => n.id);
-    await supabase.from('notifications').update({ read: true }).in('id', ids);
-    setNotifications([]);
+    const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
+    if (unreadIds.length > 0) {
+      await supabase.from('notifications').update({ read: true }).in('id', unreadIds);
+      setNotifications(prev => prev.map(n => unreadIds.includes(n.id) ? { ...n, read: true } : n));
+    }
   };
 
   if (loading) {
@@ -293,7 +283,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
   }
 
   return (
-    <EmpContext.Provider value={{ employee, darkMode, onReportSubmitted: () => checkTodayReport(employee?.id || '') }}>
+    <EmpContext.Provider value={{ employee, refreshEmployee, darkMode, onReportSubmitted: () => checkTodayReport(employee?.id || '') }}>
       <div className={`db-root ${darkMode ? 'db-dark' : 'db-light'}`}>
         
         {/* PREMIUM TOPBAR NAVIGATION (desktop only) */}
@@ -340,7 +330,13 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
                 <span>Sign Out</span>
               </button>
               <div className="saas-avatar-wrap">
-                <div className="saas-avatar">{employee?.name?.charAt(0) || 'E'}</div>
+                {employee?.avatar_url ? (
+                  <div style={{ position: 'relative', width: 36, height: 36 }}>
+                    <Image src={employee.avatar_url} alt={employee.name || 'Avatar'} fill style={{ objectFit: 'cover', borderRadius: '10px' }} />
+                  </div>
+                ) : (
+                  <div className="saas-avatar">{employee?.name?.charAt(0) || 'E'}</div>
+                )}
               </div>
             </div>
           </div>
@@ -384,7 +380,13 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
           <header className="saas-mob-topbar">
             <button className="db-menu" onClick={() => setMobileOpen(true)}><Menu size={20} /></button>
             <span className="saas-mob-title">AUTO BOURN Console</span>
-            <div className="saas-avatar">{employee?.name?.charAt(0) || 'E'}</div>
+            {employee?.avatar_url ? (
+              <div style={{ position: 'relative', width: 36, height: 36, borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--db-bd)' }}>
+                <Image src={employee.avatar_url} alt={employee.name || 'Avatar'} fill style={{ objectFit: 'cover' }} />
+              </div>
+            ) : (
+              <div className="saas-avatar">{employee?.name?.charAt(0) || 'E'}</div>
+            )}
           </header>
           <main className="saas-content">{children}</main>
         </div>
@@ -641,6 +643,10 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
                               setContactMessagesOpen(false);
                               const isEmployee = pathname.startsWith('/employee');
                               router.push(isEmployee ? `/employee/bookings` : `/dashboard/bookings`);
+                            } else if (n.metadata?.test_drive_id) {
+                              setContactMessagesOpen(false);
+                              const isEmployee = pathname.startsWith('/employee');
+                              router.push(isEmployee ? `/employee/test-drives` : `/dashboard/test-drives`);
                             }
                           }}
                           style={{

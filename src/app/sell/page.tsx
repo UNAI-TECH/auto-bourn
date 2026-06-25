@@ -882,7 +882,7 @@ ${form.additionalDetails ? `*Additional Notes:* ${form.additionalDetails}` : ''}
                 },
               ].map((s, i) => (
                 <motion.div
-                  key={s.step}
+                  key={`sell-how-${s.step}`}
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}

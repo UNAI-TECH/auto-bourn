@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceRoleClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
   try {
@@ -78,9 +78,72 @@ export async function POST(request: NextRequest) {
       metadata: { lead_id: lead.id, type: isContactUs ? 'contact_us' : 'sell_car' },
     });
 
+    // Notify all active employees
+    const { data: emps } = await serviceClient
+      .from('employees')
+      .select('id')
+      .eq('status', 'active');
+
+    if (emps && emps.length > 0) {
+      const employeeNotifs = emps.map(emp => ({
+        recipient_role: 'employee',
+        recipient_employee_id: emp.id,
+        type: isContactUs ? 'new_contact_message' : 'new_lead',
+        title: isContactUs ? '✉️ New Contact Message' : '📞 New Lead Received',
+        message: isContactUs 
+          ? `${customer_name} sent a message via Get In Touch.` 
+          : `${customer_name} submitted a listing via Sell Your Car.`,
+        metadata: { lead_id: lead.id, type: isContactUs ? 'contact_us' : 'sell_car' },
+      }));
+      await serviceClient.from('notifications').insert(employeeNotifs);
+    }
+
     return NextResponse.json({ success: true, lead });
   } catch (err: any) {
     console.error('Unexpected error in leads API POST:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    // 1. Verify caller is authenticated
+    const supabase = await createServerSupabaseClient();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // 2. Verify caller is an active employee or admin
+    const { data: emp, error: empCheckErr } = await supabase
+      .from('employees')
+      .select('role, id, status')
+      .eq('auth_user_id', user.id)
+      .single();
+
+    if (empCheckErr || !emp || emp.status !== 'active') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const assignedTo = searchParams.get('assigned_to');
+
+    const serviceClient = await createServiceRoleClient();
+    let query = serviceClient.from('leads').select('*, customer_notes(note)').order('created_at', { ascending: false });
+
+    if (assignedTo === 'unassigned') {
+      query = query.is('assigned_to', null);
+    } else if (assignedTo) {
+      query = query.eq('assigned_to', assignedTo);
+    }
+
+    const { data: leads, error } = await query;
+    if (error) throw error;
+
+    return NextResponse.json({ success: true, leads });
+  } catch (err: any) {
+    console.error('Error fetching leads:', err);
+    return NextResponse.json({ error: err.message || 'Internal Server Error' }, { status: 500 });
   }
 }

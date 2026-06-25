@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Car, Users, TrendingUp, ShoppingCart, Upload, Calendar, Award, BarChart3, X, Mail, PhoneCall, CalendarClock, CheckCircle2, XCircle } from 'lucide-react';
+import { Car, Users, TrendingUp, ShoppingCart, Upload, Calendar, Award, BarChart3, X, Mail, PhoneCall, CalendarClock, CheckCircle2, XCircle, Camera } from 'lucide-react';
 import Image from 'next/image';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import type { PieLabelRenderProps } from 'recharts';
@@ -29,6 +29,62 @@ export default function DashboardOverview() {
   const [modalLoading, setModalLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'cars'>('profile');
   const [employeeCars, setEmployeeCars] = useState<any[]>([]);
+  const detailFileInputRef = useRef<HTMLInputElement>(null);
+  const [updatingAvatar, setUpdatingAvatar] = useState(false);
+  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleDetailFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedEmployee) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Image size must be less than 5MB', 'error');
+      return;
+    }
+
+    setUpdatingAvatar(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `avatar-${selectedEmployee.employee_id || 'temp'}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('car-images')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        throw new Error(`Avatar upload failed: ${uploadError.message}`);
+      }
+
+      const { data } = supabase.storage
+        .from('car-images')
+        .getPublicUrl(filePath);
+
+      const uploadedAvatarUrl = data.publicUrl;
+
+      const { error: updateError } = await supabase
+        .from('employees')
+        .update({ avatar_url: uploadedAvatarUrl })
+        .eq('id', selectedEmployee.id);
+
+      if (updateError) {
+        throw new Error(`Failed to update profile: ${updateError.message}`);
+      }
+
+      setSelectedEmployee({ ...selectedEmployee, avatar_url: uploadedAvatarUrl });
+      fetchAll();
+      showToast('Profile photo updated successfully!', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to update profile photo', 'error');
+    } finally {
+      setUpdatingAvatar(false);
+    }
+  };
 
   const handleBarClick = async (clickedData: any) => {
     if (!clickedData) return;
@@ -165,7 +221,7 @@ export default function DashboardOverview() {
         testDrivesRes
       ] = await Promise.all([
         supabase.from('cars').select('employee_id, status, created_at, brand'),
-        supabase.from('employees').select('id, name, status, role'),
+        supabase.from('employees').select('id, name, status, role, avatar_url, employee_id'),
         supabase.from('leads').select('id', { count: 'exact', head: true }),
         supabase.from('daily_reports').select('id', { count: 'exact', head: true }).eq('report_date', todayStr),
         supabase.from('test_drives').select('id', { count: 'exact', head: true }),
@@ -357,6 +413,14 @@ export default function DashboardOverview() {
       </div>
 
       <AnimatePresence>
+        {toast && (
+          <motion.div className={`db-toast ${toast.type}`} initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }}>
+            {toast.type === 'success' ? <CheckCircle2 size={16} /> : <XCircle size={16} />}{toast.msg}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
         {showModal && (
           <div className="modal-backdrop" onClick={() => setShowModal(false)}>
             <motion.div
@@ -391,10 +455,27 @@ export default function DashboardOverview() {
                           style={{ objectFit: 'cover' }}
                           sizes="280px"
                         />
+                        <div className="photo-change-overlay" onClick={() => detailFileInputRef.current?.click()}>
+                          {updatingAvatar ? (
+                            <div className="avatar-spinner" />
+                          ) : (
+                            <>
+                              <Camera size={20} />
+                              <span style={{ marginLeft: 6 }}>Change Photo</span>
+                            </>
+                          )}
+                        </div>
                         <span className={`status-badge ${selectedEmployee.status}`}>
                           {selectedEmployee.status}
                         </span>
                       </div>
+                      <input
+                        type="file"
+                        ref={detailFileInputRef}
+                        onChange={handleDetailFileChange}
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                      />
                       <div className="founder-card-info">
                         <h3 className="founder-card-name">
                           {selectedEmployee.name}
@@ -1016,6 +1097,60 @@ export default function DashboardOverview() {
   color: var(--db-rd);
   font-weight: 500;
   padding: 2rem 0;
+}
+:global(.photo-change-overlay) {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  cursor: pointer;
+  z-index: 5;
+}
+:global(.founder-card-photo-container:hover) :global(.photo-change-overlay) {
+  opacity: 1;
+}
+:global(.avatar-spinner) {
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(255,255,255,0.2);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: pulse 1s infinite linear;
+}
+:global(.db-toast) {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .875rem 1.5rem;
+  border-radius: 12px;
+  font-size: .875rem;
+  font-weight: 500;
+  z-index: 200;
+  box-shadow: 0 8px 30px rgba(0,0,0,.3);
+}
+:global(.db-toast.success) {
+  background: #065f46;
+  color: #6ee7b7;
+  border: 1px solid rgba(34,197,94,.3);
+}
+:global(.db-toast.error) {
+  background: #7f1d1d;
+  color: #fca5a5;
+  border: 1px solid rgba(239,68,68,.3);
+}
+@keyframes pulse {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
       `}</style>
     </div>

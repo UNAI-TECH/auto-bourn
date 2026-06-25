@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UserPlus, Search, MoreVertical, X, Shield, Ban, RotateCcw, Trash2, Key, Check, AlertCircle, Copy, CheckCheck, Mail, PhoneCall, CalendarClock, Upload, ShoppingCart, TrendingUp } from 'lucide-react';
+import { UserPlus, Search, MoreVertical, X, Shield, Ban, RotateCcw, Trash2, Key, Check, AlertCircle, Copy, CheckCheck, Mail, PhoneCall, CalendarClock, Upload, ShoppingCart, TrendingUp, Camera } from 'lucide-react';
 import Image from 'next/image';
 import { formatDate, timeAgo, generateEmployeeId } from '@/lib/utils';
 import type { Employee } from '@/types/database';
@@ -42,6 +42,56 @@ export default function EmployeesPage() {
   const [modalLoading, setModalLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'cars'>('profile');
   const [employeeCars, setEmployeeCars] = useState<any[]>([]);
+  const detailFileInputRef = useRef<HTMLInputElement>(null);
+  const [updatingAvatar, setUpdatingAvatar] = useState(false);
+
+  const handleDetailFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedEmployee) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Image size must be less than 5MB', 'error');
+      return;
+    }
+
+    setUpdatingAvatar(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `avatar-${selectedEmployee.employee_id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('car-images')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        throw new Error(`Avatar upload failed: ${uploadError.message}`);
+      }
+
+      const { data } = supabase.storage
+        .from('car-images')
+        .getPublicUrl(filePath);
+
+      const uploadedAvatarUrl = data.publicUrl;
+
+      const { error: updateError } = await supabase
+        .from('employees')
+        .update({ avatar_url: uploadedAvatarUrl })
+        .eq('id', selectedEmployee.id);
+
+      if (updateError) {
+        throw new Error(`Failed to update profile: ${updateError.message}`);
+      }
+
+      setSelectedEmployee({ ...selectedEmployee, avatar_url: uploadedAvatarUrl });
+      setEmployees(prev => prev.map(emp => emp.id === selectedEmployee.id ? { ...emp, avatar_url: uploadedAvatarUrl } : emp));
+      showToast('Profile photo updated successfully!', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to update profile photo', 'error');
+    } finally {
+      setUpdatingAvatar(false);
+    }
+  };
 
   useEffect(() => { fetchEmployees(); }, []);
 
@@ -211,8 +261,17 @@ export default function EmployeesPage() {
 
   const handleRemoveConfirm = async () => {
     if (!deleteTargetId) return;
-    await supabase.from('employees').delete().eq('id', deleteTargetId);
-    showToast('Employee removed');
+    try {
+      const res = await fetch(`/api/employees?id=${deleteTargetId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        showToast('Employee permanently removed');
+      } else {
+        showToast(data.error || 'Failed to remove employee');
+      }
+    } catch {
+      showToast('Failed to remove employee');
+    }
     setDeleteTargetId(null);
     fetchEmployees();
   };
@@ -253,7 +312,13 @@ export default function EmployeesPage() {
               <tr key={emp.id}>
                 <td>
                   <div className="emp-user" onClick={() => handleEmployeeClick(emp)}>
-                    <div className="emp-avatar">{emp.name.charAt(0)}</div>
+                    {emp.avatar_url ? (
+                      <div className="emp-avatar-img-wrap">
+                        <Image src={emp.avatar_url} alt={emp.name} width={36} height={36} style={{ objectFit: 'cover' }} />
+                      </div>
+                    ) : (
+                      <div className="emp-avatar">{emp.name.charAt(0)}</div>
+                    )}
                     <div><span className="emp-name">{emp.name}</span><span className="emp-email">{emp.email}</span></div>
                   </div>
                 </td>
@@ -519,10 +584,27 @@ export default function EmployeesPage() {
                           style={{ objectFit: 'cover' }}
                           sizes="280px"
                         />
+                        <div className="photo-change-overlay" onClick={() => detailFileInputRef.current?.click()}>
+                          {updatingAvatar ? (
+                            <div className="avatar-spinner" />
+                          ) : (
+                            <>
+                              <Camera size={20} />
+                              <span style={{ marginLeft: 6 }}>Change Photo</span>
+                            </>
+                          )}
+                        </div>
                         <span className={`status-badge ${selectedEmployee.status}`}>
                           {selectedEmployee.status}
                         </span>
                       </div>
+                      <input
+                        type="file"
+                        ref={detailFileInputRef}
+                        onChange={handleDetailFileChange}
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                      />
                       <div className="founder-card-info">
                         <h3 className="founder-card-name">
                           {selectedEmployee.name}
@@ -717,7 +799,7 @@ export default function EmployeesPage() {
 .emp-tabs{display:flex;gap:4px;background:var(--db-sf);border:1px solid var(--db-bd);border-radius:10px;padding:4px}
 .emp-tab{background:0;border:0;padding:.5rem 1rem;border-radius:8px;color:var(--db-tx2);font-size:.8125rem;cursor:pointer;transition:all .2s;font-family:inherit}
 .emp-tab.active{background:var(--db-gd);color:var(--db-gold);font-weight:600}
-.emp-table-wrap{background:var(--db-sf);border:1px solid var(--db-bd);border-radius:14px;overflow-x:auto;min-height:280px}
+.emp-table-wrap{background:var(--db-sf);border:1px solid var(--db-bd);border-radius:14px;overflow-x:auto;min-height:550px}
 .emp-table{width:100%;border-collapse:collapse;font-size:.875rem}
 .emp-table th{text-align:left;padding:.875rem 1rem;color:var(--db-tx3);font-weight:500;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--db-bd)}
 .emp-table td{padding:.875rem 1rem;border-bottom:1px solid var(--db-bd);vertical-align:middle}
@@ -1514,6 +1596,45 @@ export default function EmployeesPage() {
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+.emp-avatar-img-wrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  border: 1px solid var(--db-bd);
+}
+:global(.photo-change-overlay) {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  cursor: pointer;
+  z-index: 5;
+}
+:global(.founder-card-photo-container:hover) :global(.photo-change-overlay) {
+  opacity: 1;
+}
+:global(.avatar-spinner) {
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(255,255,255,0.2);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: pulse 1s infinite linear;
+}
+@keyframes pulse {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
       `}</style>
     </div>

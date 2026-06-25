@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useEmpContext } from './layout';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Car, ShoppingCart, Clock, Upload, TrendingUp, Check, 
   ChevronRight, Calendar, User, FileText, ArrowRight, Eye, ClipboardList,
-  PhoneCall, Bookmark
+  PhoneCall, Bookmark, Camera, AlertCircle
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -15,7 +15,67 @@ import { formatPrice, timeAgo } from '@/lib/utils';
 import type { Car as CarType, ActivityLog } from '@/types/database';
 
 export default function EmployeeDashboard() {
-  const { employee } = useEmpContext();
+  const { employee, refreshEmployee } = useEmpContext();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = (msg: string, type: 'success' | 'error') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !employee) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Image size must be less than 5MB', 'error');
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `avatar-${employee.employee_id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('car-images')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        throw new Error(`Avatar upload failed: ${uploadError.message}`);
+      }
+
+      const { data } = supabase.storage
+        .from('car-images')
+        .getPublicUrl(filePath);
+
+      const uploadedAvatarUrl = data.publicUrl;
+
+      const res = await fetch('/api/employees', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ avatar_url: uploadedAvatarUrl })
+      });
+      const resData = await res.json();
+      if (!resData.success) {
+        throw new Error(resData.error || 'Failed to update profile photo database record');
+      }
+
+      if (refreshEmployee) {
+        await refreshEmployee();
+      }
+
+      showToast('Profile photo updated successfully!', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to update profile photo', 'error');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   const [stats, setStats] = useState({ total: 0, sold: 0, available: 0, reserved: 0 });
   const [recentCars, setRecentCars] = useState<CarType[]>([]);
   const [allCars, setAllCars] = useState<CarType[]>([]);
@@ -248,13 +308,28 @@ export default function EmployeeDashboard() {
         <div className="crextio-col-left">
           
           {/* Real Employee Portrait Card */}
-          <div className="crextio-profile-card" style={{ background: employee?.avatar_url ? 'none' : 'linear-gradient(135deg, #2A2A2A 0%, #121212 100%)', border: '1px solid var(--db-bd)' }}>
+          <div className="crextio-profile-card" style={{ border: '1px solid var(--db-bd)' }}>
             <div className="profile-img-container">
-              {employee?.avatar_url && (
-                <Image src={employee.avatar_url} alt="Employee Photo" fill className="profile-avatar-img" priority />
-              )}
+              <Image src={employee?.avatar_url || '/employee_avatar.png'} alt="Employee Photo" fill className="profile-avatar-img" priority />
               <div className="profile-overlay-gradient" />
+              <div className="profile-avatar-upload-overlay" onClick={() => fileInputRef.current?.click()}>
+                {uploadingAvatar ? (
+                  <div className="avatar-spinner" />
+                ) : (
+                  <>
+                    <Camera size={18} />
+                    <span>Change Photo</span>
+                  </>
+                )}
+              </div>
             </div>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleAvatarChange}
+              accept="image/*"
+              style={{ display: 'none' }}
+            />
             <div className="profile-details">
               <div>
                 <h2>{employee?.name || 'Inventory Agent'}</h2>
@@ -422,6 +497,15 @@ export default function EmployeeDashboard() {
 
       </div>
 
+      <AnimatePresence>
+        {toast && (
+          <motion.div className={`db-toast ${toast.type}`} initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }}>
+            {toast.type === 'success' ? <Check size={16} style={{ color: '#22c55e' }} /> : <AlertCircle size={16} style={{ color: '#ef4444' }} />}
+            {toast.msg}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <style jsx global>{`
 .crextio-dashboard {
   display: flex;
@@ -546,6 +630,61 @@ export default function EmployeeDashboard() {
   position: relative;
   overflow: hidden;
   box-shadow: var(--card-shadow);
+}
+.profile-avatar-upload-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  gap: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  cursor: pointer;
+  z-index: 3;
+}
+.profile-img-container:hover .profile-avatar-upload-overlay {
+  opacity: 1;
+}
+.avatar-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(255,255,255,0.2);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: pulse 1s infinite linear;
+}
+.db-toast {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 200;
+  background: var(--db-sf);
+  border: 1px solid var(--db-bd);
+  color: var(--db-tx);
+  padding: 0.75rem 1.25rem;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  font-size: 0.875rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.db-toast.success {
+  border-color: #22c55e;
+}
+.db-toast.error {
+  border-color: #ef4444;
+}
+@keyframes pulse {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 .profile-img-container {
   position: absolute;

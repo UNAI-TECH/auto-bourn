@@ -70,6 +70,16 @@ export default function AdminReportsPage() {
       .eq('id', report.id);
 
     if (!error) {
+      // Create notification for employee
+      await supabase.from('notifications').insert({
+        recipient_role: 'employee',
+        recipient_employee_id: report.employee_id,
+        type: 'report_reviewed',
+        title: '📋 Daily Report Reviewed',
+        message: `Admin reviewed your daily report for ${report.report_date}.${adminNotes.trim() ? ` Notes: ${adminNotes.trim()}` : ''}`,
+        metadata: { report_date: report.report_date, report_id: report.id }
+      });
+
       setToast('Report marked as reviewed');
       setSelectedReport(null);
       setAdminNotes('');

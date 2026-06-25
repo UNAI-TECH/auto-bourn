@@ -82,6 +82,17 @@ export async function POST(request: NextRequest) {
       metadata: { lead_id: lead.id, booking_id: booking.id, car_name: carName },
     });
 
+    if (employeeId) {
+      await serviceClient.from('notifications').insert({
+        recipient_role: 'employee',
+        recipient_employee_id: employeeId,
+        type: 'new_booking_request',
+        title: '🔑 Vehicle Reservation Requested',
+        message: `${name} requested to reserve your listed vehicle ${carName || 'Luxury Vehicle'}.`,
+        metadata: { lead_id: lead.id, booking_id: booking.id, car_name: carName },
+      });
+    }
+
     return NextResponse.json({ success: true, lead, booking });
   } catch (err: any) {
     console.error('Unexpected error in bookings POST API:', err);

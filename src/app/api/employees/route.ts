@@ -221,3 +221,118 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: `Internal server error: ${message}` }, { status: 500 });
   }
 }
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json({ error: 'Unauthorized — please log in' }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { avatar_url } = body;
+
+    if (!avatar_url) {
+      return NextResponse.json({ error: 'Missing avatar_url' }, { status: 400 });
+    }
+
+    const serviceClient = await createServiceRoleClient();
+    const { data, error } = await serviceClient
+      .from('employees')
+      .update({ avatar_url })
+      .eq('auth_user_id', user.id)
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json({ error: `Failed to update avatar: ${error.message}` }, { status: 400 });
+    }
+
+    return NextResponse.json({ success: true, employee: data });
+  } catch (err: unknown) {
+    console.error('[PATCH /api/employees] Unexpected error:', err);
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    return NextResponse.json({ error: `Internal server error: ${message}` }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    // 1. Verify the caller is an authenticated admin
+    const supabase = await createServerSupabaseClient();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json({ error: 'Unauthorized — please log in as admin' }, { status: 401 });
+    }
+
+    const { data: admin, error: adminCheckErr } = await supabase
+      .from('employees')
+      .select('role, id')
+      .eq('auth_user_id', user.id)
+      .single();
+
+    if (adminCheckErr || admin?.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden — admin access required' }, { status: 403 });
+    }
+
+    // 2. Get employee ID from query params
+    const { searchParams } = new URL(request.url);
+    const employeeId = searchParams.get('id');
+
+    if (!employeeId) {
+      return NextResponse.json({ error: 'Missing employee id parameter' }, { status: 400 });
+    }
+
+    const serviceClient = await createServiceRoleClient();
+
+    // 3. Find the employee to get their auth_user_id
+    const { data: emp, error: findError } = await serviceClient
+      .from('employees')
+      .select('*')
+      .eq('id', employeeId)
+      .single();
+
+    if (findError || !emp) {
+      return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
+    }
+
+    // 4. Delete the Supabase Auth user (this cascades to delete the employees row due to ON DELETE CASCADE)
+    if (emp.auth_user_id) {
+      const { error: authDeleteError } = await serviceClient.auth.admin.deleteUser(emp.auth_user_id);
+      if (authDeleteError) {
+        console.error('Failed to delete auth user:', authDeleteError.message);
+        // Even if auth delete fails, still try to delete the DB record
+      }
+    }
+
+    // 5. Delete the employee record (in case auth cascade didn't handle it)
+    const { error: dbDeleteError } = await serviceClient
+      .from('employees')
+      .delete()
+      .eq('id', employeeId);
+
+    if (dbDeleteError) {
+      // The row may already be deleted by cascade — that's okay
+      console.log('DB delete note:', dbDeleteError.message);
+    }
+
+    // 6. Log the admin activity
+    await serviceClient.from('activity_logs').insert({
+      employee_id: admin.id,
+      action: 'employee_deleted',
+      details: `Admin deleted employee ${emp.name} (ID: ${emp.employee_id}, Email: ${emp.email})`,
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: `Employee ${emp.name} has been permanently deleted from the system`,
+    });
+  } catch (err: unknown) {
+    console.error('[DELETE /api/employees] Unexpected error:', err);
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    return NextResponse.json({ error: `Internal server error: ${message}` }, { status: 500 });
+  }
+}
