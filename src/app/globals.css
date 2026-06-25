@@ -41,8 +41,8 @@
   --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.12);
 
   /* Typography */
-  --font-primary: sans-serif;
-  --font-secondary: sans-serif;
+  --font-primary: 'Outfit', sans-serif;
+  --font-secondary: 'Inter', sans-serif;
 
   /* Spacing */
   --section-padding: clamp(4rem, 8vw, 8rem);
@@ -616,14 +616,5 @@ body:has(.db-root) .floating-icons {
 body:has(.console-page) main,
 body:has(.db-root) main {
   padding-top: 0 !important;
-}
-
-/* Force standard sans-serif across all sites, while preserving code/log monospace */
-body, button, input, select, textarea, h1, h2, h3, h4, h5, h6, span, p, div, a, li, ul, ol, label, section, header, footer, main, aside, nav, td, th {
-  font-family: sans-serif !important;
-}
-
-code, pre, kbd, samp, .mono, [style*="monospace"], .cred-val, .crm-activity-time, .db-activity-time {
-  font-family: monospace !important;
 }
 

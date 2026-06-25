@@ -786,14 +786,11 @@ export default function CustomerDetailsPage() {
           text-decoration: underline;
         }
  
-        @media (max-width: 768px) {
-          .upl-grid {
-            grid-template-columns: 1fr 1fr;
-          }
-        }
-        @media (max-width: 500px) {
-          .upl-grid {
+        @media (max-width: 600px) {
+          .form-row {
             grid-template-columns: 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
           }
           .alt-actions {
             flex-direction: column;

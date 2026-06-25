@@ -1781,13 +1781,7 @@ ${photosSection}`;
         .wa-btn.send:hover { background: #1eb253; }
         @media (max-width: 768px) {
           .crm-details-grid {
-            grid-template-columns: 1fr !important;
-          }
-          .crm-details-grid [style*="grid-template-columns"],
-          .crm-details-grid form[style*="grid-template-columns"],
-          .wa-modal-content [style*="grid-template-columns"],
-          .inspection-modal-body [style*="grid-template-columns"] {
-            grid-template-columns: 1fr !important;
+            grid-template-columns: 1fr;
           }
         }
       `}</style>

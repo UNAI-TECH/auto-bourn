@@ -1136,13 +1136,11 @@ export default function EmployeeDashboard() {
   .crextio-welcome-row {
     flex-direction: column;
     align-items: flex-start;
-    gap: 1.25rem;
+    gap: 1rem;
   }
   .crextio-welcome-r {
     width: 100%;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-    gap: 1rem;
+    justify-content: space-between;
   }
 }
       `}</style>
