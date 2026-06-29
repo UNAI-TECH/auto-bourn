@@ -247,7 +247,7 @@ export default function EmployeeCRMPage() {
       {/* Tabs Header and Search */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1.5px solid var(--db-bd, rgba(0,0,0,0.06))', paddingBottom: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         {/* Tabs */}
-        <div style={{ display: 'flex', background: 'var(--db-sf2, #f5f5f5)', padding: '5px', borderRadius: '12px', gap: '4px' }}>
+        <div className="crm-leads-tabs" style={{ display: 'flex', background: 'var(--db-sf2, #f5f5f5)', padding: '5px', borderRadius: '12px', gap: '4px' }}>
           <button 
             onClick={() => setActiveTab('my')} 
             style={{ 
@@ -336,6 +336,7 @@ export default function EmployeeCRMPage() {
               <motion.div 
                 key={lead.id} 
                 onClick={() => router.push(`/employee/crm/leads/${lead.id}`)}
+                className="crm-lead-card"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -356,58 +357,45 @@ export default function EmployeeCRMPage() {
                 animate={{ opacity: 1, y: 0 }} 
                 transition={{ delay: i * 0.02 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, minWidth: 0 }}>
-                  <div style={{ width: 42, height: 42, borderRadius: '12px', background: stage?.bg, color: stage?.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 850, fontSize: '1rem', flexShrink: 0, fontFamily: "'Outfit', sans-serif" }}>
+                <div className="crm-lead-left">
+                  <div className="crm-lead-avatar" style={{ background: stage?.bg, color: stage?.color }}>
                     {lead.customer_name.charAt(0)}
                   </div>
 
                   {/* Buyer/Seller label on the left side of the lead */}
-                  <div style={{ flexShrink: 0 }}>
-                    <span style={{ color: '#000000', fontWeight: 700, fontSize: '0.875rem', letterSpacing: '0.05em', textTransform: 'uppercase', padding: '0.375rem 0.625rem', borderRadius: '8px', background: isSell ? 'rgba(255, 122, 0, 0.1)' : 'rgba(59, 130, 246, 0.1)', border: `1px solid ${isSell ? 'rgba(255, 122, 0, 0.2)' : 'rgba(59, 130, 246, 0.2)'}` }}>
+                  <div className="crm-lead-badge-container">
+                    <span className={`crm-type-badge ${isSell ? 'sell' : 'buy'}`}>
                       {isSell ? 'SELLER' : 'BUYER'}
                     </span>
                   </div>
 
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--db-tx, #000)', marginBottom: '2px' }}>{lead.customer_name}</div>
-                    <div style={{ fontSize: '.8125rem', color: 'var(--db-tx2, #555)', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                  <div className="crm-lead-info">
+                    <div className="crm-lead-name">{lead.customer_name}</div>
+                    <div className="crm-lead-meta">
                       <span>{lead.phone}</span>
                       {lead.interested_car && (
                         <>
                           <span style={{ opacity: 0.5 }}>·</span>
-                          <span style={{ fontWeight: 700, color: 'var(--db-tx, #000)' }}>{lead.interested_car}</span>
+                          <span className="crm-lead-car">{lead.interested_car}</span>
                         </>
                       )}
                     </div>
                   </div>
                 </div>
 
-                <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
-                  <span style={{ background: stage?.bg, color: stage?.color, fontSize: '.75rem', fontWeight: 800, padding: '.35rem .75rem', borderRadius: '100px', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                <div className="crm-lead-right">
+                  <span className="crm-stage-badge" style={{ background: stage?.bg, color: stage?.color }}>
                     {stage?.label}
                   </span>
-                  <span style={{ fontSize: '.8125rem', fontWeight: 700, color: 'var(--db-tx3, #777)' }}>{formatBudget(lead.budget)}</span>
+                  <span className="crm-lead-budget">{formatBudget(lead.budget)}</span>
                 </div>
 
-                <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginLeft: '.5rem' }}>
+                <div className="crm-lead-actions">
                   <button 
                     onClick={(e) => {
                       e.stopPropagation();
                       window.location.href = `tel:${lead.phone}`;
                     }}
-                    style={{ 
-                      width: 36, 
-                      height: 36, 
-                      background: 'rgba(59,130,246,.08)', 
-                      color: '#3b82f6', 
-                      border: '1px solid rgba(59,130,246,.15)', 
-                      borderRadius: '10px', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center', 
-                      transition: 'all 0.2s',
-                      cursor: 'pointer'
-                    }} 
                     className="icon-action-btn"
                   >
                     <Phone size={14} />
@@ -422,9 +410,381 @@ export default function EmployeeCRMPage() {
       {toast && <div style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', background: '#22c55e', color: '#fff', padding: '.75rem 1.25rem', borderRadius: '12px', fontWeight: 600, zIndex: 200, boxShadow: '0 4px 15px rgba(34, 197, 94, 0.2)' }}>{toast}</div>}
 
       <style jsx>{`
+        /* Lead list styles */
+        .crm-lead-left {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          flex: 1;
+          min-width: 0;
+        }
+        .crm-lead-avatar {
+          width: 42px;
+          height: 42px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 850;
+          font-size: 1rem;
+          flex-shrink: 0;
+          font-family: 'Outfit', sans-serif;
+        }
+        .crm-type-badge {
+          color: #000000;
+          font-weight: 700;
+          font-size: 0.875rem;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          padding: 0.375rem 0.625rem;
+          border-radius: 8px;
+          white-space: nowrap;
+        }
+        .crm-type-badge.sell {
+          background: rgba(255, 122, 0, 0.1);
+          border: 1px solid rgba(255, 122, 0, 0.2);
+        }
+        .crm-type-badge.buy {
+          background: rgba(59, 130, 246, 0.1);
+          border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+        .crm-lead-info {
+          flex: 1;
+          min-width: 0;
+        }
+        .crm-lead-name {
+          font-weight: 700;
+          font-size: 1rem;
+          color: var(--db-tx, #000);
+          margin-bottom: 2px;
+        }
+        .crm-lead-meta {
+          font-size: .8125rem;
+          color: var(--db-tx2, #555);
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+        .crm-lead-car {
+          font-weight: 700;
+          color: var(--db-tx, #000);
+        }
+        .crm-lead-right {
+          flex-shrink: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 4px;
+        }
+        .crm-stage-badge {
+          font-size: .75rem;
+          font-weight: 800;
+          padding: .35rem .75rem;
+          border-radius: 100px;
+          white-space: nowrap;
+          text-transform: uppercase;
+          letter-spacing: 0.03em;
+        }
+        .crm-lead-budget {
+          font-size: .8125rem;
+          font-weight: 700;
+          color: var(--db-tx3, #777);
+        }
+        .crm-lead-actions {
+          display: flex;
+          gap: 6px;
+          align-items: center;
+          margin-left: .5rem;
+        }
+        .icon-action-btn {
+          width: 36px;
+          height: 36px;
+          background: rgba(59,130,246,.08);
+          color: #3b82f6;
+          border: 1px solid rgba(59,130,246,.15);
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+          cursor: pointer;
+        }
         .icon-action-btn:hover {
           background: rgba(59,130,246,.15) !important;
           transform: scale(1.05);
+        }
+
+        /* Two Columns Row layout */
+        .crm-two-columns-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1.5rem;
+        }
+
+        /* Widgets and Sidebar Panels */
+        .crm-panel-widget {
+          background: var(--db-sf, #ffffff) !important;
+          border: 1.5px solid var(--db-bd, rgba(0,0,0,0.06)) !important;
+          border-radius: 24px !important;
+          padding: 1.5rem !important;
+          display: flex;
+          flex-direction: column;
+          height: 380px;
+          box-shadow: 0 8px 30px rgba(0,0,0,0.01) !important;
+        }
+        .crm-widget-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 1rem;
+        }
+        .crm-widget-head h3 {
+          font-size: 0.9375rem;
+          font-weight: 700;
+          color: var(--db-tx, #000);
+          margin: 0;
+        }
+        .crm-widget-body {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 0.625rem;
+          overflow-y: auto;
+        }
+        .crm-widget-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding-bottom: 0.625rem;
+          border-bottom: 1px solid var(--db-bd, rgba(0,0,0,0.05));
+        }
+        .crm-widget-row:last-child {
+          border-bottom: none;
+        }
+        .crm-widget-avatar-wrap {
+          flex-shrink: 0;
+        }
+        .crm-mini-avatar {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background: var(--db-sf2, #f5f5f5);
+          color: var(--db-tx2, #555);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.8125rem;
+          font-weight: 700;
+        }
+        .crm-mini-avatar.bg-blue-soft {
+          background: var(--db-gd, rgba(225,6,19,0.05));
+          color: var(--db-gold, #c5a880);
+        }
+        .crm-widget-info-block {
+          min-width: 0;
+          flex: 1;
+        }
+        .crm-row-name {
+          font-size: 0.8125rem;
+          font-weight: 700;
+          color: var(--db-tx, #000);
+          margin: 0;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .crm-row-sub {
+          font-size: 0.725rem;
+          color: var(--db-tx3, #777);
+          margin: 1px 0 0 0;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .crm-widget-time-block {
+          text-align: right;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 2px;
+          flex-shrink: 0;
+        }
+        .crm-row-time {
+          font-size: 0.725rem;
+          color: var(--db-tx3, #777);
+          font-weight: 500;
+        }
+        .crm-row-badge {
+          font-size: 0.6rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          padding: 1px 6px;
+          border-radius: 4px;
+          letter-spacing: 0.05em;
+        }
+
+        /* Empty state styling */
+        .crm-empty-state {
+          color: var(--db-tx3, #777);
+          font-size: 0.8125rem;
+          text-align: center;
+          padding: 3rem 1rem;
+          font-weight: 500;
+        }
+
+        /* Sidebar Panels */
+        .crm-sidebar-panel {
+          background: var(--db-sf, #ffffff) !important;
+          border: 1.5px solid var(--db-bd, rgba(0,0,0,0.06)) !important;
+          border-radius: 24px !important;
+          padding: 1.5rem !important;
+          box-shadow: 0 8px 30px rgba(0,0,0,0.01) !important;
+        }
+        .crm-sidebar-panel-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 1.25rem;
+          border-bottom: 1px solid var(--db-bd, rgba(0,0,0,0.05));
+          padding-bottom: 0.75rem;
+        }
+        .crm-sidebar-panel-head h3 {
+          font-size: 0.9375rem;
+          font-weight: 700;
+          color: var(--db-tx, #000);
+          margin: 0;
+        }
+        
+        /* Timeline style for sidebar */
+        .crm-timeline-body {
+          display: flex;
+          flex-direction: column;
+        }
+        .crm-timeline-item {
+          display: flex;
+          gap: 12px;
+          min-height: 72px;
+        }
+        .crm-timeline-time {
+          font-size: 0.6875rem;
+          font-weight: 600;
+          color: var(--db-tx3, #777);
+          width: 55px;
+          text-align: right;
+          flex-shrink: 0;
+          margin-top: 2px;
+        }
+        .crm-timeline-indicator {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          flex-shrink: 0;
+          margin-top: 4px;
+        }
+        .crm-timeline-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: var(--db-gold, #c5a880);
+        }
+        .crm-timeline-line {
+          width: 1px;
+          flex: 1;
+          background: var(--db-bd, rgba(0,0,0,0.05));
+          margin: 4px 0;
+        }
+        .crm-timeline-content {
+          flex: 1;
+          padding-bottom: 12px;
+        }
+        .crm-timeline-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+        }
+        .crm-timeline-name {
+          font-size: 0.8125rem;
+          font-weight: 700;
+          color: var(--db-tx, #000);
+        }
+        .crm-timeline-badge {
+          font-size: 0.55rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          padding: 1px 4px;
+          border-radius: 3px;
+        }
+        .crm-timeline-desc {
+          font-size: 0.725rem;
+          color: var(--db-tx3, #777);
+          margin: 2px 0 0 0;
+        }
+
+        /* Priority Colors */
+        .crm-badge-high { background: #FEF2F2; color: #EF4444; }
+        .crm-badge-normal { background: #EFF6FF; color: #3B82F6; }
+        .crm-badge-low { background: #F1F5F9; color: #64748B; }
+
+        @media (max-width: 900px) {
+          .crm-two-columns-row {
+            grid-template-columns: 1fr;
+          }
+          .crm-panel-widget {
+            height: auto;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .crm-lead-card {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 0.875rem !important;
+            padding: 1.25rem !important;
+          }
+          .crm-lead-left {
+            align-items: flex-start !important;
+            flex-wrap: wrap !important;
+            gap: 0.75rem !important;
+          }
+          .crm-lead-badge-container {
+            order: 2 !important;
+          }
+          .crm-lead-info {
+            order: 3 !important;
+            flex: 1 1 100% !important;
+          }
+          .crm-lead-right {
+            flex-direction: row !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            width: 100% !important;
+            border-top: 1px dashed var(--db-bd, rgba(0,0,0,0.06));
+            padding-top: 0.75rem !important;
+            margin-top: 0.25rem !important;
+          }
+          .crm-lead-actions {
+            position: absolute !important;
+            top: 1.25rem !important;
+            right: 1.25rem !important;
+            margin-left: 0 !important;
+          }
+          .crm-leads-tabs {
+            overflow-x: auto !important;
+            white-space: nowrap !important;
+            width: 100% !important;
+            -webkit-overflow-scrolling: touch;
+          }
+          .crm-leads-tabs button {
+            flex-shrink: 0 !important;
+          }
+        }
+        @media (max-width: 600px) {
+          .db-search-inline {
+            width: 100% !important;
+            max-width: none !important;
+          }
         }
       `}</style>
     </div>

@@ -863,6 +863,7 @@ export default function EmployeeBookingsPage() {
           .act-btn { flex: 1; justify-content: center; }
           .filters-bar { flex-direction: column; align-items: stretch; }
           .tabs-container { overflow-x: auto; }
+          .search-box { min-width: 0 !important; width: 100% !important; }
         }
       `}</style>
     </div>
