@@ -94,7 +94,7 @@ export default function AboutPage() {
                 border: '1px solid #ECECEC'
               }}>
                 <Image
-                  src="/AutoBourn-Founder.png"
+                  src="/CEO.png"
                   alt="Mr. S. Prasanna - Founder of Auto Bourn"
                   fill
                   style={{ objectFit: 'cover' }}

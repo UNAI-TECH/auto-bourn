@@ -362,30 +362,20 @@ export default function EmployeeCRMPage() {
                     {lead.customer_name.charAt(0)}
                   </div>
 
-                  {/* Buyer/Seller label on the left side of the lead */}
-                  <div className="crm-lead-badge-container">
-                    <span 
-                      className="crm-type-badge"
-                      style={{
-                        background: isSell ? 'rgba(255, 122, 0, 0.1)' : 'rgba(59, 130, 246, 0.1)',
-                        border: `1px solid ${isSell ? 'rgba(255, 122, 0, 0.2)' : 'rgba(59, 130, 246, 0.2)'}`
-                      }}
-                    >
-                      {isSell ? 'SELLER' : 'BUYER'}
-                    </span>
-                  </div>
-
-                  <div className="crm-lead-info">
-                    <div className="crm-lead-name">{lead.customer_name}</div>
-                    <div className="crm-lead-meta">
-                      <span>{lead.phone}</span>
-                      {lead.interested_car && (
-                        <>
-                          <span style={{ opacity: 0.5 }}>·</span>
-                          <span className="crm-lead-car">{lead.interested_car}</span>
-                        </>
-                      )}
+                  <div className="crm-lead-main-info">
+                    <div className="crm-lead-name-row">
+                      <span className="crm-lead-name">{lead.customer_name}</span>
+                      <span 
+                        className="crm-type-badge"
+                        style={{
+                          background: isSell ? 'rgba(255, 122, 0, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                          border: `1px solid ${isSell ? 'rgba(255, 122, 0, 0.2)' : 'rgba(59, 130, 246, 0.2)'}`
+                        }}
+                      >
+                        {isSell ? 'SELLER' : 'BUYER'}
+                      </span>
                     </div>
+                    <div className="crm-lead-phone">{lead.phone}</div>
                   </div>
                 </div>
 
@@ -454,27 +444,25 @@ export default function EmployeeCRMPage() {
           background: rgba(59, 130, 246, 0.1);
           border: 1px solid rgba(59, 130, 246, 0.2);
         }
-        .crm-lead-info {
-          flex: 1;
+        .crm-lead-main-info {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
           min-width: 0;
+        }
+        .crm-lead-name-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
         }
         .crm-lead-name {
           font-weight: 700;
           font-size: 1rem;
           color: var(--db-tx, #000);
-          margin-bottom: 2px;
         }
-        .crm-lead-meta {
-          font-size: .8125rem;
+        .crm-lead-phone {
+          font-size: 0.8125rem;
           color: var(--db-tx2, #555);
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          flex-wrap: wrap;
-        }
-        .crm-lead-car {
-          font-weight: 700;
-          color: var(--db-tx, #000);
         }
         .crm-lead-right {
           flex-shrink: 0;
@@ -744,37 +732,82 @@ export default function EmployeeCRMPage() {
 
         @media (max-width: 768px) {
           .crm-lead-card {
-            flex-direction: column !important;
-            align-items: stretch !important;
-            gap: 0.875rem !important;
-            padding: 1.25rem !important;
-          }
-          .crm-lead-left {
-            align-items: flex-start !important;
-            flex-wrap: wrap !important;
-            gap: 0.75rem !important;
-          }
-          .crm-lead-badge-container {
-            order: 2 !important;
-          }
-          .crm-lead-info {
-            order: 3 !important;
-            flex: 1 1 100% !important;
-          }
-          .crm-lead-right {
+            display: flex !important;
             flex-direction: row !important;
             align-items: center !important;
             justify-content: space-between !important;
-            width: 100% !important;
-            border-top: 1px dashed var(--db-bd, rgba(0,0,0,0.06));
-            padding-top: 0.75rem !important;
-            margin-top: 0.25rem !important;
+            padding: 12px 14px !important;
+            gap: 10px !important;
+            position: relative !important;
+          }
+          .crm-lead-left {
+            display: flex !important;
+            align-items: center !important;
+            gap: 10px !important;
+            flex: 1 !important;
+            min-width: 0 !important;
+          }
+          .crm-lead-avatar {
+            width: 36px !important;
+            height: 36px !important;
+            font-size: 0.9rem !important;
+          }
+          .crm-lead-main-info {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 2px !important;
+            min-width: 0 !important;
+            flex: 1 !important;
+          }
+          .crm-lead-name-row {
+            display: flex !important;
+            align-items: center !important;
+            gap: 6px !important;
+            flex-wrap: wrap !important;
+          }
+          .crm-lead-name {
+            font-size: 0.95rem !important;
+            font-weight: 700 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            max-width: 110px !important;
+          }
+          .crm-type-badge {
+            font-size: 0.7rem !important;
+            padding: 2px 6px !important;
+            border-radius: 6px !important;
+          }
+          .crm-lead-phone {
+            font-size: 0.8rem !important;
+            color: var(--db-tx2, #555) !important;
+            font-weight: 500 !important;
+          }
+          .crm-lead-right {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: flex-end !important;
+            gap: 4px !important;
+            border-top: none !important;
+            padding-top: 0 !important;
+            margin-top: 0 !important;
+            flex-shrink: 0 !important;
+          }
+          .crm-stage-badge {
+            font-size: 0.7rem !important;
+            padding: 3px 8px !important;
+          }
+          .crm-lead-budget {
+            font-size: 0.75rem !important;
+            font-weight: 700 !important;
           }
           .crm-lead-actions {
-            position: absolute !important;
-            top: 1.25rem !important;
-            right: 1.25rem !important;
-            margin-left: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            position: static !important;
+            margin-left: 4px !important;
+            flex-shrink: 0 !important;
           }
           .crm-leads-tabs {
             overflow-x: auto !important;
