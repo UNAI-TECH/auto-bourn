@@ -77,7 +77,7 @@ export default function AdminReportsPage() {
         type: 'report_reviewed',
         title: '📋 Daily Report Reviewed',
         message: `Admin reviewed your daily report for ${report.report_date}.${adminNotes.trim() ? ` Notes: ${adminNotes.trim()}` : ''}`,
-        metadata: { report_date: report.report_date, report_id: report.id }
+        metadata: { report_date: report.report_date, report_id: report.id, notes: adminNotes.trim() || null }
       });
 
       setToast('Report marked as reviewed');

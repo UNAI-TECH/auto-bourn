@@ -252,7 +252,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
       type: 'daily_report_submitted',
       title: `📋 Report from ${employee.name}`,
       message: `${employee.name} (${employee.employee_id}) submitted their daily report for ${today}. Uploads: ${uploadsCount}, Sold: ${soldCount}.`,
-      metadata: { employee_id: employee.id, report_date: today },
+      metadata: { employee_id: employee.id, report_date: today, notes: reportText.trim() },
     });
 
     // Log activity
@@ -547,7 +547,13 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
                   ) : (
                     notifications.map((n: any) => {
                       const isNew = !n.read;
-                      const hasLink = !!(n.metadata?.lead_id || n.metadata?.booking_id || n.metadata?.test_drive_id);
+                      const hasLink = !!(
+                        n.metadata?.lead_id || 
+                        n.metadata?.booking_id || 
+                        n.metadata?.test_drive_id ||
+                        n.metadata?.report_id ||
+                        n.type === 'report_reviewed'
+                      );
                       
                       // Categorize notification
                       const t = n.type.toLowerCase();
@@ -647,6 +653,9 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
                               setContactMessagesOpen(false);
                               const isEmployee = pathname.startsWith('/employee');
                               router.push(isEmployee ? `/employee/test-drives` : `/dashboard/test-drives`);
+                            } else if (n.type === 'report_reviewed' || n.metadata?.report_id) {
+                              setContactMessagesOpen(false);
+                              router.push('/employee');
                             }
                           }}
                           style={{
