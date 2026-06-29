@@ -30,7 +30,7 @@ export async function GET(
     // 3. Fetch lead details using service role client to bypass client RLS for unassigned leads
     const serviceClient = await createServiceRoleClient();
     const [{ data: lead, error: leadError }, { data: followUps }, { data: notes }] = await Promise.all([
-      serviceClient.from('leads').select('*').eq('id', id).maybeSingle(),
+      serviceClient.from('leads').select('*, assigned_employee:employees!assigned_to(name)').eq('id', id).maybeSingle(),
       serviceClient.from('follow_ups').select('*, employee:employees!employee_id(name)').eq('lead_id', id).order('scheduled_at', { ascending: false }),
       serviceClient.from('customer_notes').select('*, employee:employees!employee_id(name)').eq('lead_id', id).order('created_at', { ascending: false }),
     ]);
@@ -82,6 +82,8 @@ export async function PATCH(
     const updatePayload: any = { updated_at: new Date().toISOString() };
     if (action === 'claim') {
       updatePayload.assigned_to = emp.id;
+    } else if (action === 'release') {
+      updatePayload.assigned_to = null;
     }
 
     if (updateData) {
@@ -102,12 +104,12 @@ export async function PATCH(
     // 5. Insert note if provided
     if (note) {
       const { error: noteErr } = await serviceClient
-        .from('customer_notes')
-        .insert({
-          lead_id: id,
-          employee_id: emp.id,
-          note: note
-        });
+         .from('customer_notes')
+         .insert({
+           lead_id: id,
+           employee_id: emp.id,
+           note: note
+         });
       if (noteErr) throw noteErr;
     }
 
@@ -207,6 +209,13 @@ export async function PATCH(
         employee_id: emp.id,
         action: 'claim_lead',
         details: `Claimed by ${emp.role === 'admin' ? 'Admin' : 'Employee'}`
+      });
+    } else if (action === 'release') {
+      await serviceClient.from('crm_activity_logs').insert({
+        lead_id: id,
+        employee_id: emp.id,
+        action: 'release_lead',
+        details: `Released by ${emp.role === 'admin' ? 'Admin' : 'Employee'}`
       });
     }
 

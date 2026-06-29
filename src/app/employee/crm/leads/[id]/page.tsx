@@ -490,6 +490,28 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
     setClaiming(false);
   };
 
+  const releaseLead = async () => {
+    if (!employee) return;
+    setClaiming(true);
+    try {
+      const res = await fetch(`/api/leads/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'release' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('🔓 Lead released and set to unassigned');
+        loadAll();
+      } else {
+        showToast(data.error || 'Failed to release lead');
+      }
+    } catch (err) {
+      showToast('Error releasing lead');
+    }
+    setClaiming(false);
+  };
+
   const submitInspection = async () => {
     if (!employee) return;
     try {
@@ -690,8 +712,8 @@ ${photosSection}`;
         </div>
 
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          {/* Claim Lead Button - Red Auto Bourn Theme */}
-          {!isAssigned && (
+          {/* Claim / Reclaim Lead Button */}
+          {(!isAssigned || (isAssigned && employee?.role === 'admin' && lead.assigned_to !== employee?.id)) && (
             <button 
               onClick={handleClaimClick} 
               disabled={claiming}
@@ -711,7 +733,31 @@ ${photosSection}`;
                 boxShadow: '0 4px 15px rgba(225, 6, 19, 0.25)'
               }}
             >
-              <User size={15}/> {claiming ? 'Processing...' : 'Claim Lead (Assign to Me)'}
+              <User size={15}/> {claiming ? 'Processing...' : isAssigned ? 'Reclaim Lead (Assign to Me)' : 'Claim Lead (Assign to Me)'}
+            </button>
+          )}
+
+          {/* Release Lead Button */}
+          {isAssigned && (employee?.id === lead.assigned_to || employee?.role === 'admin') && (
+            <button 
+              onClick={releaseLead} 
+              disabled={claiming}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.625rem 1.25rem',
+                background: 'rgba(239, 68, 68, 0.08)',
+                color: '#ef4444',
+                border: '1px solid rgba(239, 68, 68, 0.2)',
+                borderRadius: '12px',
+                fontSize: '0.875rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              <User size={15}/> {claiming ? 'Processing...' : 'Release Lead (Unassign)'}
             </button>
           )}
 
@@ -943,7 +989,7 @@ ${photosSection}`;
               <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid var(--db-bd, rgba(0,0,0,0.05))' }}>
                 <span style={{ color: 'var(--db-tx2, #555)', fontWeight: 600 }}>Assigned Consultant</span>
                 <span style={{ fontWeight: 700, color: isAssigned ? '#22c55e' : '#E10613' }}>
-                  {isAssigned ? (employee?.id === lead.assigned_to ? 'You' : 'Another Employee') : 'Unassigned'}
+                  {isAssigned ? (employee?.id === lead.assigned_to ? 'You' : (lead.assigned_employee?.name || 'Another Employee')) : 'Unassigned'}
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid var(--db-bd, rgba(0,0,0,0.05))' }}>

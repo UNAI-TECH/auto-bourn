@@ -344,7 +344,12 @@ export default function UploadsPage() {
           }
           .up-thumb {
             width: 100%;
-            height: 180px;
+            height: auto;
+            aspect-ratio: 16 / 9;
+          }
+          .up-thumb img {
+            object-fit: contain;
+            background: #000000;
           }
           .up-body {
             padding: 1.25rem 1rem;
