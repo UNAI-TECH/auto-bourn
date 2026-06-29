@@ -174,7 +174,7 @@ export default function EmployeeBookingsPage() {
   return (
     <div className="db-page">
       <div className="db-page-header">
-        <div>
+        <div className="db-page-title-container">
           <h1 className="db-page-title">Reservations</h1>
           <p className="db-page-sub">View and manage customer booking and vehicle reservation requests</p>
         </div>
@@ -821,6 +821,9 @@ export default function EmployeeBookingsPage() {
         }
 
         @media (max-width: 1024px) {
+          .stats-row {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
           .emp-booking-card {
             grid-template-columns: 1fr 1fr !important;
             gap: 1.25rem !important;
@@ -841,6 +844,9 @@ export default function EmployeeBookingsPage() {
         }
 
         @media (max-width: 600px) {
+          .stats-row {
+            grid-template-columns: 1fr !important;
+          }
           .emp-booking-card {
             grid-template-columns: 1fr !important;
           }

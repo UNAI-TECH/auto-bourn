@@ -1351,6 +1351,15 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
   .saas-content {
     padding: 1.5rem 1rem;
   }
+  .db-page-header {
+    position: relative;
+    padding-right: 90px !important;
+  }
+  .refresh-btn {
+    position: absolute !important;
+    top: 4px;
+    right: 0;
+  }
 }
 
 /* Page Header Standard Styling */
@@ -1374,7 +1383,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
   font-size: 1.75rem;
   font-weight: 800;
   color: var(--db-tx);
-  margin: 0;
+  margin: 0 0 0.35rem 0 !important;
   letter-spacing: -0.02em;
   line-height: 1.15;
 }

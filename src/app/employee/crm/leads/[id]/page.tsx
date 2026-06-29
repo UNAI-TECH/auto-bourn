@@ -114,7 +114,7 @@ const renderInspectionReport = (note: string) => {
       </div>
 
       {/* Grid of Sections */}
-      <div style={{ padding: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', background: 'var(--db-sf, #fff)' }}>
+      <div className="inspection-grid" style={{ padding: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', background: 'var(--db-sf, #fff)' }}>
         {sections.map((sec, idx) => {
           const isMedia = sec.title.toLowerCase().includes('media') || sec.title.toLowerCase().includes('photo');
           return (
@@ -664,14 +664,14 @@ ${photosSection}`;
   const isAssigned = !!lead.assigned_to;
 
   return (
-    <div style={{ padding: '1.5rem', maxWidth: '1280px', margin: '0 auto', fontFamily: "'Outfit', sans-serif" }}>
+    <div className="crm-detail-container" style={{ padding: '1.5rem', maxWidth: '1280px', margin: '0 auto', fontFamily: "'Outfit', sans-serif" }}>
       {/* Top breadcrumb */}
       <Link href="/employee/crm" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--db-tx2, #555)', textDecoration: 'none', fontSize: '.875rem', fontWeight: 600, marginBottom: '1.5rem', transition: 'color 0.2s' }} className="hover-link">
         <ArrowLeft size={16} /> Back to CRM
       </Link>
 
       {/* Main Header Card */}
-      <div style={{ background: 'var(--db-sf, #ffffff)', border: '1.5px solid var(--db-bd, rgba(0,0,0,0.06))', borderRadius: '20px', padding: '1.5rem 2rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem', boxShadow: '0 8px 30px rgba(0,0,0,0.02)' }}>
+      <div className="crm-header-card" style={{ background: 'var(--db-sf, #ffffff)', border: '1.5px solid var(--db-bd, rgba(0,0,0,0.06))', borderRadius: '20px', padding: '1.5rem 2rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem', boxShadow: '0 8px 30px rgba(0,0,0,0.02)' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
             <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--db-tx, #000)', margin: 0 }}>{lead.customer_name}</h1>
@@ -727,9 +727,9 @@ ${photosSection}`;
       {/* Main Content Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.5rem', alignItems: 'flex-start' }} className="crm-details-grid">
         {/* Left Column: Tabbed Information */}
-        <div style={{ background: 'var(--db-sf, #ffffff)', border: '1.5px solid var(--db-bd, rgba(0,0,0,0.06))', borderRadius: '24px', padding: '1.5rem', boxShadow: '0 8px 30px rgba(0,0,0,0.01)' }}>
+        <div className="crm-main-card" style={{ background: 'var(--db-sf, #ffffff)', border: '1.5px solid var(--db-bd, rgba(0,0,0,0.06))', borderRadius: '24px', padding: '1.5rem', boxShadow: '0 8px 30px rgba(0,0,0,0.01)' }}>
           {/* Tab Switchers */}
-          <div style={{ display: 'flex', gap: '8px', background: 'var(--db-sf2, #f5f5f5)', borderRadius: '14px', padding: '6px', marginBottom: '1.5rem' }}>
+          <div className="crm-tabs-container" style={{ display: 'flex', gap: '8px', background: 'var(--db-sf2, #f5f5f5)', borderRadius: '14px', padding: '6px', marginBottom: '1.5rem' }}>
             {(['info', 'followups', 'notes'] as const).map(t => (
               <button 
                 key={t} 
@@ -760,6 +760,7 @@ ${photosSection}`;
               <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--db-tx, #000)' }}>Customer Profile Details</h2>
               {[
                 { label: 'Interested Vehicle', value: lead.interested_car, icon: <Tag size={16} /> },
+                { label: 'Preferred Brand', value: lead.preferred_brand, icon: <Award size={16} /> },
                 { label: 'Estimated Budget', value: formatBudget(lead.budget), icon: <DollarSign size={16} /> },
                 { label: 'Lead Source', value: lead.source, icon: <ChevronRight size={16} /> },
                 { label: 'Purchase Timeline', value: lead.purchase_timeline, icon: <Clock size={16} /> },
@@ -991,7 +992,7 @@ ${photosSection}`;
                     <ShieldAlert size={20} style={{ color: '#E10613' }} /> Used Car Inspection Report
                   </h3>
                   <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: '#555' }}>
-                    Fill out the checklist to complete physical inspection &amp; claim seller lead
+                    Quick inspection checklist to claim lead
                   </p>
                 </div>
                 <button className="wa-close-btn" style={{ color: '#555' }} onClick={() => setShowInspection(false)}><X size={20}/></button>
@@ -1782,6 +1783,24 @@ ${photosSection}`;
         @media (max-width: 768px) {
           .crm-details-grid {
             grid-template-columns: 1fr;
+          }
+          .crm-detail-container {
+            padding: 0.75rem !important;
+          }
+          .crm-header-card {
+            padding: 1rem !important;
+          }
+          .crm-main-card {
+            padding: 1rem !important;
+          }
+          .inspection-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+        @media (max-width: 600px) {
+          .crm-tabs-container {
+            flex-direction: column !important;
+            gap: 4px !important;
           }
         }
       `}</style>

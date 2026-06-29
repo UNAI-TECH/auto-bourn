@@ -173,7 +173,7 @@ export default function BulkUploadPage() {
   return (
     <div className="db-page">
       <div className="db-page-header">
-        <div>
+        <div className="db-page-title-container">
           <h1 className="db-page-title">Bulk Upload Cars</h1>
           <p className="db-page-sub">Upload multiple vehicles at once using a CSV file</p>
         </div>

@@ -1133,6 +1133,9 @@ export default function EmployeeDashboard() {
   }
 }
 @media(max-width: 768px) {
+  .crextio-dashboard {
+    padding: 0.75rem 0.5rem;
+  }
   .crextio-welcome-row {
     flex-direction: column;
     align-items: flex-start;
