@@ -725,7 +725,7 @@ ${photosSection}`;
       </div>
 
       {/* Main Content Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.5rem', alignItems: 'flex-start' }} className="crm-details-grid">
+      <div className="crm-details-grid">
         {/* Left Column: Tabbed Information */}
         <div className="crm-main-card" style={{ background: 'var(--db-sf, #ffffff)', border: '1.5px solid var(--db-bd, rgba(0,0,0,0.06))', borderRadius: '24px', padding: '1.5rem', boxShadow: '0 8px 30px rgba(0,0,0,0.01)' }}>
           {/* Tab Switchers */}
@@ -1700,6 +1700,12 @@ ${photosSection}`;
       {toast && <div style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', background: '#22c55e', color: '#fff', padding: '.75rem 1.25rem', borderRadius: '12px', fontWeight: 600, zIndex: 99999, boxShadow: '0 4px 15px rgba(34, 197, 94, 0.2)' }}>{toast}</div>}
 
       <style jsx>{`
+        .crm-details-grid {
+          display: grid;
+          grid-template-columns: 2fr 1fr;
+          gap: 1.5rem;
+          align-items: flex-start;
+        }
         .hover-link:hover {
           color: #E10613 !important;
         }
@@ -1782,7 +1788,7 @@ ${photosSection}`;
         .wa-btn.send:hover { background: #1eb253; }
         @media (max-width: 768px) {
           .crm-details-grid {
-            grid-template-columns: 1fr;
+            grid-template-columns: 1fr !important;
           }
           .crm-detail-container {
             padding: 0.75rem !important;

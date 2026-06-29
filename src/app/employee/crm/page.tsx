@@ -336,7 +336,22 @@ export default function EmployeeCRMPage() {
               <motion.div 
                 key={lead.id} 
                 onClick={() => router.push(`/employee/crm/leads/${lead.id}`)}
-                className={`crm-lead-card ${isSell ? 'sell' : 'buy'}`}
+                className="crm-lead-card"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '1rem',
+                  padding: '1.25rem 1.5rem',
+                  background: isSell ? 'rgba(255, 122, 0, 0.09)' : 'rgba(59, 130, 246, 0.09)',
+                  border: isSell ? '1.5px solid rgba(255, 122, 0, 0.28)' : '1.5px solid rgba(59, 130, 246, 0.28)',
+                  borderRadius: '18px',
+                  transition: 'all 0.25s ease',
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.01)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  cursor: 'pointer'
+                }}
                 whileHover={{ y: -2, boxShadow: '0 8px 24px rgba(0,0,0,0.04)', borderColor: isSell ? '#FF7A00' : '#3b82f6' }}
                 initial={{ opacity: 0, y: 6 }} 
                 animate={{ opacity: 1, y: 0 }} 
@@ -349,7 +364,13 @@ export default function EmployeeCRMPage() {
 
                   {/* Buyer/Seller label on the left side of the lead */}
                   <div className="crm-lead-badge-container">
-                    <span className={`crm-type-badge ${isSell ? 'sell' : 'buy'}`}>
+                    <span 
+                      className="crm-type-badge"
+                      style={{
+                        background: isSell ? 'rgba(255, 122, 0, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                        border: `1px solid ${isSell ? 'rgba(255, 122, 0, 0.2)' : 'rgba(59, 130, 246, 0.2)'}`
+                      }}
+                    >
                       {isSell ? 'SELLER' : 'BUYER'}
                     </span>
                   </div>
@@ -396,27 +417,6 @@ export default function EmployeeCRMPage() {
 
       <style jsx>{`
         /* Lead list styles */
-        .crm-lead-card {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 1rem;
-          padding: 1.25rem 1.5rem;
-          border-radius: 18px;
-          transition: all 0.25s ease;
-          box-shadow: 0 4px 15px rgba(0,0,0,0.01);
-          position: relative;
-          overflow: hidden;
-          cursor: pointer;
-        }
-        .crm-lead-card.sell {
-          background: rgba(255, 122, 0, 0.09);
-          border: 1.5px solid rgba(255, 122, 0, 0.28);
-        }
-        .crm-lead-card.buy {
-          background: rgba(59, 130, 246, 0.09);
-          border: 1.5px solid rgba(59, 130, 246, 0.28);
-        }
         .crm-lead-left {
           display: flex;
           align-items: center;
