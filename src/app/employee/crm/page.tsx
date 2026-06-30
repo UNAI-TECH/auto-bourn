@@ -415,15 +415,9 @@ export default function EmployeeCRMPage() {
 
                 {/* Row 3: Contact & Budget */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '1rem' }}>
-                  {/* Phone & Vehicle info */}
-                  <div style={{ fontSize: '.8125rem', color: 'var(--db-tx2, #555)', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                  {/* Phone */}
+                  <div style={{ fontSize: '.8125rem', color: 'var(--db-tx2, #555)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <span style={{ fontWeight: 600 }}>{lead.phone}</span>
-                    {lead.interested_car && (
-                      <>
-                        <span style={{ opacity: 0.4 }}>·</span>
-                        <span style={{ fontWeight: 700, color: 'var(--db-tx, #000)' }}>{lead.interested_car}</span>
-                      </>
-                    )}
                   </div>
 
                   {/* Budget */}
