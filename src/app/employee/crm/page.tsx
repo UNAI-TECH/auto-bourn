@@ -636,9 +636,9 @@ export default function EmployeeCRMPage() {
           display: flex !important;
           flex-direction: column !important;
           align-items: stretch !important;
-          gap: 12px !important;
-          padding: 1.25rem 1.5rem !important;
-          border-radius: 18px !important;
+          gap: 8px !important;
+          padding: 0.75rem 1.25rem !important;
+          border-radius: 16px !important;
           box-shadow: 0 4px 15px rgba(0,0,0,0.01) !important;
         }
 
