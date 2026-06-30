@@ -350,22 +350,28 @@ export default function EmployeeCRMPage() {
                 animate={{ opacity: 1, y: 0 }} 
                 transition={{ delay: i * 0.02 }}
               >
-                <div className="crm-lead-card-left">
-                  {/* Left avatar */}
-                  <div style={{ width: 42, height: 42, borderRadius: '12px', background: stage?.bg, color: stage?.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 850, fontSize: '1rem', flexShrink: 0, fontFamily: "'Outfit', sans-serif" }}>
-                    {lead.customer_name.charAt(0)}
-                  </div>
+                {/* Row 1: Customer Name */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+                  <span style={{ fontWeight: 800, fontSize: '1.15rem', color: 'var(--db-tx, #000)', letterSpacing: '-0.01em' }}>
+                    {lead.customer_name}
+                  </span>
+                </div>
 
-                  {/* Customer details column (Name, Badge, Phone/Car) */}
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px', flex: 1, minWidth: 0 }}>
-                    <span style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--db-tx, #000)', lineHeight: 1.2 }}>{lead.customer_name}</span>
-                    
+                {/* Row 2: Avatar, Category, Stage, Actions */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', width: '100%' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    {/* Avatar */}
+                    <div style={{ width: 36, height: 36, borderRadius: '10px', background: stage?.bg, color: stage?.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 850, fontSize: '0.9rem', flexShrink: 0, fontFamily: "'Outfit', sans-serif" }}>
+                      {lead.customer_name.charAt(0)}
+                    </div>
+
+                    {/* Buyer/Seller label */}
                     <span style={{ 
                       fontSize: '0.625rem', 
                       fontWeight: 800, 
                       letterSpacing: '0.05em', 
                       textTransform: 'uppercase', 
-                      padding: '0.15rem 0.45rem', 
+                      padding: '0.25rem 0.5rem', 
                       borderRadius: '6px', 
                       background: isSell ? 'rgba(255, 122, 0, 0.08)' : 'rgba(59, 130, 246, 0.08)', 
                       color: isSell ? '#FF7A00' : '#3b82f6', 
@@ -374,49 +380,58 @@ export default function EmployeeCRMPage() {
                       {isSell ? 'SELLER' : 'BUYER'}
                     </span>
 
-                    <div style={{ fontSize: '.8125rem', color: 'var(--db-tx2, #555)', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                      <span>{lead.phone}</span>
-                      {lead.interested_car && (
-                        <>
-                          <span style={{ opacity: 0.4 }}>·</span>
-                          <span style={{ fontWeight: 600, color: 'var(--db-tx, #000)' }}>{lead.interested_car}</span>
-                        </>
-                      )}
-                    </div>
+                    {/* Status badge */}
+                    <span style={{ background: stage?.bg, color: stage?.color, fontSize: '.6875rem', fontWeight: 800, padding: '.25rem .625rem', borderRadius: '100px', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                      {stage?.label}
+                    </span>
+                  </div>
+
+                  {/* Call Action button */}
+                  <div>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.location.href = `tel:${lead.phone}`;
+                      }}
+                      style={{ 
+                        width: 36, 
+                        height: 36, 
+                        background: 'rgba(59,130,246,.08)', 
+                        color: '#3b82f6', 
+                        border: '1px solid rgba(59,130,246,.15)', 
+                        borderRadius: '10px', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        transition: 'all 0.2s',
+                        cursor: 'pointer'
+                      }} 
+                      className="icon-action-btn"
+                    >
+                      <Phone size={14} />
+                    </button>
                   </div>
                 </div>
 
-                <div className="crm-lead-card-right">
-                  {/* Status stage badge */}
-                  <span style={{ background: stage?.bg, color: stage?.color, fontSize: '.75rem', fontWeight: 800, padding: '.35rem .75rem', borderRadius: '100px', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                    {stage?.label}
-                  </span>
-                  <span style={{ fontSize: '.8125rem', fontWeight: 700, color: 'var(--db-tx3, #777)' }}>{formatBudget(lead.budget)}</span>
-                </div>
+                {/* Row 3: Contact & Budget */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '1rem' }}>
+                  {/* Phone & Vehicle info */}
+                  <div style={{ fontSize: '.8125rem', color: 'var(--db-tx2, #555)', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                    <span style={{ fontWeight: 600 }}>{lead.phone}</span>
+                    {lead.interested_car && (
+                      <>
+                        <span style={{ opacity: 0.4 }}>·</span>
+                        <span style={{ fontWeight: 700, color: 'var(--db-tx, #000)' }}>{lead.interested_car}</span>
+                      </>
+                    )}
+                  </div>
 
-                <div className="crm-lead-card-actions">
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      window.location.href = `tel:${lead.phone}`;
-                    }}
-                    style={{ 
-                      width: 36, 
-                      height: 36, 
-                      background: 'rgba(59,130,246,.08)', 
-                      color: '#3b82f6', 
-                      border: '1px solid rgba(59,130,246,.15)', 
-                      borderRadius: '10px', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center', 
-                      transition: 'all 0.2s',
-                      cursor: 'pointer'
-                    }} 
-                    className="icon-action-btn"
-                  >
-                    <Phone size={14} />
-                  </button>
+                  {/* Budget */}
+                  <div>
+                    <span style={{ fontSize: '.9rem', fontWeight: 800, color: 'var(--db-tx, #000)' }}>
+                      {formatBudget(lead.budget)}
+                    </span>
+                  </div>
                 </div>
               </motion.div>
             );
@@ -625,35 +640,12 @@ export default function EmployeeCRMPage() {
 
         :global(.crm-lead-card-item) {
           display: flex !important;
-          align-items: center !important;
-          justify-content: space-between !important;
-          gap: 1rem !important;
+          flex-direction: column !important;
+          align-items: stretch !important;
+          gap: 12px !important;
           padding: 1.25rem 1.5rem !important;
           border-radius: 18px !important;
           box-shadow: 0 4px 15px rgba(0,0,0,0.01) !important;
-        }
-
-        .crm-lead-card-left {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-          flex: 1;
-          min-width: 0;
-        }
-
-        .crm-lead-card-right {
-          flex-shrink: 0;
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-          gap: 4px;
-        }
-
-        .crm-lead-card-actions {
-          display: flex;
-          gap: 6px;
-          align-items: center;
-          margin-left: 0.5rem;
         }
 
         @media (max-width: 900px) {
