@@ -350,33 +350,31 @@ export default function EmployeeCRMPage() {
                 animate={{ opacity: 1, y: 0 }} 
                 transition={{ delay: i * 0.02 }}
               >
-
                 <div className="crm-lead-card-left">
                   {/* Left avatar */}
                   <div style={{ width: 42, height: 42, borderRadius: '12px', background: stage?.bg, color: stage?.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 850, fontSize: '1rem', flexShrink: 0, fontFamily: "'Outfit', sans-serif" }}>
                     {lead.customer_name.charAt(0)}
                   </div>
 
-                  {/* Customer details block */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      <span style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--db-tx, #000)' }}>{lead.customer_name}</span>
-                      <span style={{ 
-                        fontSize: '0.625rem', 
-                        fontWeight: 800, 
-                        letterSpacing: '0.05em', 
-                        textTransform: 'uppercase', 
-                        padding: '0.15rem 0.45rem', 
-                        borderRadius: '6px', 
-                        background: isSell ? 'rgba(255, 122, 0, 0.08)' : 'rgba(59, 130, 246, 0.08)', 
-                        color: isSell ? '#FF7A00' : '#3b82f6', 
-                        border: `1px solid ${isSell ? 'rgba(255, 122, 0, 0.15)' : 'rgba(59, 130, 246, 0.15)'}` 
-                      }}>
-                        {isSell ? 'SELLER' : 'BUYER'}
-                      </span>
-                    </div>
+                  {/* Customer details column (Name, Badge, Phone/Car) */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px', flex: 1, minWidth: 0 }}>
+                    <span style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--db-tx, #000)', lineHeight: 1.2 }}>{lead.customer_name}</span>
+                    
+                    <span style={{ 
+                      fontSize: '0.625rem', 
+                      fontWeight: 800, 
+                      letterSpacing: '0.05em', 
+                      textTransform: 'uppercase', 
+                      padding: '0.15rem 0.45rem', 
+                      borderRadius: '6px', 
+                      background: isSell ? 'rgba(255, 122, 0, 0.08)' : 'rgba(59, 130, 246, 0.08)', 
+                      color: isSell ? '#FF7A00' : '#3b82f6', 
+                      border: `1px solid ${isSell ? 'rgba(255, 122, 0, 0.15)' : 'rgba(59, 130, 246, 0.15)'}` 
+                    }}>
+                      {isSell ? 'SELLER' : 'BUYER'}
+                    </span>
 
-                    <div style={{ fontSize: '.8125rem', color: 'var(--db-tx2, #555)', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginTop: '3px' }}>
+                    <div style={{ fontSize: '.8125rem', color: 'var(--db-tx2, #555)', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                       <span>{lead.phone}</span>
                       {lead.interested_car && (
                         <>
@@ -388,38 +386,37 @@ export default function EmployeeCRMPage() {
                   </div>
                 </div>
 
-                <div className="crm-lead-card-right-container">
+                <div className="crm-lead-card-right">
                   {/* Status stage badge */}
                   <span style={{ background: stage?.bg, color: stage?.color, fontSize: '.75rem', fontWeight: 800, padding: '.35rem .75rem', borderRadius: '100px', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                     {stage?.label}
                   </span>
+                  <span style={{ fontSize: '.8125rem', fontWeight: 700, color: 'var(--db-tx3, #777)' }}>{formatBudget(lead.budget)}</span>
+                </div>
 
-                  {/* Budget & Action group */}
-                  <div className="crm-lead-card-price-action-group">
-                    <span style={{ fontSize: '.875rem', fontWeight: 700, color: 'var(--db-tx, #000)', whiteSpace: 'nowrap' }}>{formatBudget(lead.budget)}</span>
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        window.location.href = `tel:${lead.phone}`;
-                      }}
-                      style={{ 
-                        width: 36, 
-                        height: 36, 
-                        background: 'var(--db-sf2, #f5f5f5)', 
-                        color: 'var(--db-tx2, #555)', 
-                        border: '1px solid var(--db-bd, rgba(0,0,0,0.08))', 
-                        borderRadius: '10px', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center', 
-                        transition: 'all 0.2s',
-                        cursor: 'pointer'
-                      }} 
-                      className="icon-action-btn"
-                    >
-                      <Phone size={14} />
-                    </button>
-                  </div>
+                <div className="crm-lead-card-actions">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.location.href = `tel:${lead.phone}`;
+                    }}
+                    style={{ 
+                      width: 36, 
+                      height: 36, 
+                      background: 'rgba(59,130,246,.08)', 
+                      color: '#3b82f6', 
+                      border: '1px solid rgba(59,130,246,.15)', 
+                      borderRadius: '10px', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      transition: 'all 0.2s',
+                      cursor: 'pointer'
+                    }} 
+                    className="icon-action-btn"
+                  >
+                    <Phone size={14} />
+                  </button>
                 </div>
               </motion.div>
             );
@@ -644,17 +641,19 @@ export default function EmployeeCRMPage() {
           min-width: 0;
         }
 
-        .crm-lead-card-right-container {
-          display: flex;
-          align-items: center;
-          gap: 1.5rem;
+        .crm-lead-card-right {
           flex-shrink: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 4px;
         }
 
-        .crm-lead-card-price-action-group {
+        .crm-lead-card-actions {
           display: flex;
+          gap: 6px;
           align-items: center;
-          gap: 1.25rem;
+          margin-left: 0.5rem;
         }
 
         @media (max-width: 900px) {
@@ -665,34 +664,6 @@ export default function EmployeeCRMPage() {
           .crm-sidebar-panel, .crm-panel-widget {
             height: auto !important;
             min-height: 280px;
-          }
-        }
-
-        @media (max-width: 768px) {
-          :global(.crm-lead-card-item) {
-            flex-direction: column !important;
-            align-items: stretch !important;
-            gap: 0.75rem !important;
-            padding: 1.25rem !important;
-          }
-          .crm-lead-card-right-container {
-            flex-direction: row;
-            justify-content: space-between;
-            align-items: center;
-            border-top: 1px solid var(--db-bd, rgba(0,0,0,0.06));
-            padding-top: 0.75rem;
-            width: 100%;
-          }
-          .crm-lead-card-price-action-group {
-            gap: 0.75rem;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .crm-lead-card-left {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 0.75rem;
           }
         }
       `}</style>
