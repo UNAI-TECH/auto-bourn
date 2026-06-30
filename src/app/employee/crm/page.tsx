@@ -352,27 +352,27 @@ export default function EmployeeCRMPage() {
               >
                 {/* Row 1: Customer Name */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
-                  <span style={{ fontWeight: 800, fontSize: '1.15rem', color: 'var(--db-tx, #000)', letterSpacing: '-0.01em' }}>
+                  <span style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--db-tx, #000)', letterSpacing: '-0.01em' }}>
                     {lead.customer_name}
                   </span>
                 </div>
 
                 {/* Row 2: Avatar, Category, Stage, Actions */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', width: '100%' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                     {/* Avatar */}
-                    <div style={{ width: 36, height: 36, borderRadius: '10px', background: stage?.bg, color: stage?.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 850, fontSize: '0.9rem', flexShrink: 0, fontFamily: "'Outfit', sans-serif" }}>
+                    <div style={{ width: 30, height: 30, borderRadius: '8px', background: stage?.bg, color: stage?.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 850, fontSize: '0.8rem', flexShrink: 0, fontFamily: "'Outfit', sans-serif" }}>
                       {lead.customer_name.charAt(0)}
                     </div>
 
                     {/* Buyer/Seller label */}
                     <span style={{ 
-                      fontSize: '0.625rem', 
+                      fontSize: '0.55rem', 
                       fontWeight: 800, 
                       letterSpacing: '0.05em', 
                       textTransform: 'uppercase', 
-                      padding: '0.25rem 0.5rem', 
-                      borderRadius: '6px', 
+                      padding: '0.15rem 0.35rem', 
+                      borderRadius: '5px', 
                       background: isSell ? 'rgba(255, 122, 0, 0.08)' : 'rgba(59, 130, 246, 0.08)', 
                       color: isSell ? '#FF7A00' : '#3b82f6', 
                       border: `1px solid ${isSell ? 'rgba(255, 122, 0, 0.15)' : 'rgba(59, 130, 246, 0.15)'}` 
@@ -381,7 +381,7 @@ export default function EmployeeCRMPage() {
                     </span>
 
                     {/* Status badge */}
-                    <span style={{ background: stage?.bg, color: stage?.color, fontSize: '.6875rem', fontWeight: 800, padding: '.25rem .625rem', borderRadius: '100px', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                    <span style={{ background: stage?.bg, color: stage?.color, fontSize: '.6rem', fontWeight: 800, padding: '.15rem .5rem', borderRadius: '100px', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                       {stage?.label}
                     </span>
                   </div>
@@ -394,12 +394,12 @@ export default function EmployeeCRMPage() {
                         window.location.href = `tel:${lead.phone}`;
                       }}
                       style={{ 
-                        width: 36, 
-                        height: 36, 
+                        width: 30, 
+                        height: 30, 
                         background: 'rgba(59,130,246,.08)', 
                         color: '#3b82f6', 
                         border: '1px solid rgba(59,130,246,.15)', 
-                        borderRadius: '10px', 
+                        borderRadius: '8px', 
                         display: 'flex', 
                         alignItems: 'center', 
                         justifyContent: 'center', 
@@ -408,7 +408,7 @@ export default function EmployeeCRMPage() {
                       }} 
                       className="icon-action-btn"
                     >
-                      <Phone size={14} />
+                      <Phone size={12} />
                     </button>
                   </div>
                 </div>
@@ -416,13 +416,13 @@ export default function EmployeeCRMPage() {
                 {/* Row 3: Contact & Budget */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '1rem' }}>
                   {/* Phone */}
-                  <div style={{ fontSize: '.8125rem', color: 'var(--db-tx2, #555)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div style={{ fontSize: '.75rem', color: 'var(--db-tx2, #555)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <span style={{ fontWeight: 600 }}>{lead.phone}</span>
                   </div>
 
                   {/* Budget */}
                   <div>
-                    <span style={{ fontSize: '.9rem', fontWeight: 800, color: 'var(--db-tx, #000)' }}>
+                    <span style={{ fontSize: '.85rem', fontWeight: 800, color: 'var(--db-tx, #000)' }}>
                       {formatBudget(lead.budget)}
                     </span>
                   </div>
@@ -636,9 +636,9 @@ export default function EmployeeCRMPage() {
           display: flex !important;
           flex-direction: column !important;
           align-items: stretch !important;
-          gap: 8px !important;
-          padding: 0.75rem 1.25rem !important;
-          border-radius: 16px !important;
+          gap: 6px !important;
+          padding: 0.5rem 1rem !important;
+          border-radius: 12px !important;
           box-shadow: 0 4px 15px rgba(0,0,0,0.01) !important;
         }
 
