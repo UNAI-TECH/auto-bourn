@@ -114,7 +114,7 @@ const renderInspectionReport = (note: string) => {
       </div>
 
       {/* Grid of Sections */}
-      <div className="inspection-grid" style={{ padding: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', background: 'var(--db-sf, #fff)' }}>
+      <div style={{ padding: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', background: 'var(--db-sf, #fff)' }}>
         {sections.map((sec, idx) => {
           const isMedia = sec.title.toLowerCase().includes('media') || sec.title.toLowerCase().includes('photo');
           return (
@@ -490,28 +490,6 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
     setClaiming(false);
   };
 
-  const releaseLead = async () => {
-    if (!employee) return;
-    setClaiming(true);
-    try {
-      const res = await fetch(`/api/leads/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'release' })
-      });
-      const data = await res.json();
-      if (data.success) {
-        showToast('🔓 Lead released and set to unassigned');
-        loadAll();
-      } else {
-        showToast(data.error || 'Failed to release lead');
-      }
-    } catch (err) {
-      showToast('Error releasing lead');
-    }
-    setClaiming(false);
-  };
-
   const submitInspection = async () => {
     if (!employee) return;
     try {
@@ -686,14 +664,14 @@ ${photosSection}`;
   const isAssigned = !!lead.assigned_to;
 
   return (
-    <div className="crm-detail-container" style={{ padding: '1.5rem', maxWidth: '1280px', margin: '0 auto', fontFamily: "'Outfit', sans-serif" }}>
+    <div style={{ padding: '1.5rem', maxWidth: '1280px', margin: '0 auto', fontFamily: "'Outfit', sans-serif" }}>
       {/* Top breadcrumb */}
       <Link href="/employee/crm" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--db-tx2, #555)', textDecoration: 'none', fontSize: '.875rem', fontWeight: 600, marginBottom: '1.5rem', transition: 'color 0.2s' }} className="hover-link">
         <ArrowLeft size={16} /> Back to CRM
       </Link>
 
       {/* Main Header Card */}
-      <div className="crm-header-card" style={{ background: 'var(--db-sf, #ffffff)', border: '1.5px solid var(--db-bd, rgba(0,0,0,0.06))', borderRadius: '20px', padding: '1.5rem 2rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem', boxShadow: '0 8px 30px rgba(0,0,0,0.02)' }}>
+      <div style={{ background: 'var(--db-sf, #ffffff)', border: '1.5px solid var(--db-bd, rgba(0,0,0,0.06))', borderRadius: '20px', padding: '1.5rem 2rem', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem', boxShadow: '0 8px 30px rgba(0,0,0,0.02)' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
             <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--db-tx, #000)', margin: 0 }}>{lead.customer_name}</h1>
@@ -712,8 +690,8 @@ ${photosSection}`;
         </div>
 
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          {/* Claim / Reclaim Lead Button */}
-          {(!isAssigned || (isAssigned && employee?.role === 'admin' && lead.assigned_to !== employee?.id)) && (
+          {/* Claim Lead Button - Red Auto Bourn Theme */}
+          {!isAssigned && (
             <button 
               onClick={handleClaimClick} 
               disabled={claiming}
@@ -733,31 +711,7 @@ ${photosSection}`;
                 boxShadow: '0 4px 15px rgba(225, 6, 19, 0.25)'
               }}
             >
-              <User size={15}/> {claiming ? 'Processing...' : isAssigned ? 'Reclaim Lead (Assign to Me)' : 'Claim Lead (Assign to Me)'}
-            </button>
-          )}
-
-          {/* Release Lead Button */}
-          {isAssigned && (employee?.id === lead.assigned_to || employee?.role === 'admin') && (
-            <button 
-              onClick={releaseLead} 
-              disabled={claiming}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.625rem 1.25rem',
-                background: 'rgba(239, 68, 68, 0.08)',
-                color: '#ef4444',
-                border: '1px solid rgba(239, 68, 68, 0.2)',
-                borderRadius: '12px',
-                fontSize: '0.875rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-            >
-              <User size={15}/> {claiming ? 'Processing...' : 'Release Lead (Unassign)'}
+              <User size={15}/> {claiming ? 'Processing...' : 'Claim Lead (Assign to Me)'}
             </button>
           )}
 
@@ -771,11 +725,11 @@ ${photosSection}`;
       </div>
 
       {/* Main Content Grid */}
-      <div className="crm-details-grid">
+      <div style={{ display: 'grid', gap: '1.5rem', alignItems: 'flex-start' }} className="crm-details-grid">
         {/* Left Column: Tabbed Information */}
-        <div className="crm-main-card" style={{ background: 'var(--db-sf, #ffffff)', border: '1.5px solid var(--db-bd, rgba(0,0,0,0.06))', borderRadius: '24px', padding: '1.5rem', boxShadow: '0 8px 30px rgba(0,0,0,0.01)' }}>
+        <div style={{ background: 'var(--db-sf, #ffffff)', border: '1.5px solid var(--db-bd, rgba(0,0,0,0.06))', borderRadius: '24px', padding: '1.5rem', boxShadow: '0 8px 30px rgba(0,0,0,0.01)' }}>
           {/* Tab Switchers */}
-          <div className="crm-tabs-container" style={{ display: 'flex', gap: '8px', background: 'var(--db-sf2, #f5f5f5)', borderRadius: '14px', padding: '6px', marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', gap: '8px', background: 'var(--db-sf2, #f5f5f5)', borderRadius: '14px', padding: '6px', marginBottom: '1.5rem' }}>
             {(['info', 'followups', 'notes'] as const).map(t => (
               <button 
                 key={t} 
@@ -806,7 +760,6 @@ ${photosSection}`;
               <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--db-tx, #000)' }}>Customer Profile Details</h2>
               {[
                 { label: 'Interested Vehicle', value: lead.interested_car, icon: <Tag size={16} /> },
-                { label: 'Preferred Brand', value: lead.preferred_brand, icon: <Award size={16} /> },
                 { label: 'Estimated Budget', value: formatBudget(lead.budget), icon: <DollarSign size={16} /> },
                 { label: 'Lead Source', value: lead.source, icon: <ChevronRight size={16} /> },
                 { label: 'Purchase Timeline', value: lead.purchase_timeline, icon: <Clock size={16} /> },
@@ -815,7 +768,7 @@ ${photosSection}`;
                 { label: 'Occupation', value: lead.occupation, icon: <User size={16} /> },
                 { label: 'Location', value: `${lead.city || 'Chennai'} · ${lead.state || 'Tamil Nadu'}`, icon: <MapPin size={16} /> }
               ].map((item, index) => (
-                <div key={index} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.875rem 1rem', borderBottom: '1px solid var(--db-bd, rgba(0,0,0,0.05))', fontSize: '0.9rem' }}>
+                <div key={index} className="crm-profile-row" style={{ padding: '0.875rem 1rem', borderBottom: '1px solid var(--db-bd, rgba(0,0,0,0.05))', fontSize: '0.9rem' }}>
                   <span style={{ color: 'var(--db-tx2, #555)', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 600 }}>
                     <span style={{ color: '#E10613', opacity: 0.85 }}>{item.icon}</span>
                     {item.label}
@@ -830,7 +783,7 @@ ${photosSection}`;
           {tab === 'followups' && (
             <div>
               <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--db-tx, #000)' }}>Schedule Follow-up</h2>
-              <form onSubmit={addFollowUp} style={{ background: 'var(--db-sf2, #f9f9f9)', border: '1px solid var(--db-bd, rgba(0,0,0,0.05))', borderRadius: '16px', padding: '1.25rem', marginBottom: '1.5rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <form onSubmit={addFollowUp} className="wa-form-grid" style={{ background: 'var(--db-sf2, #f9f9f9)', border: '1px solid var(--db-bd, rgba(0,0,0,0.05))', borderRadius: '16px', padding: '1.25rem', marginBottom: '1.5rem', gap: '1rem' }}>
                 <div className="emp-field" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--db-tx2, #555)' }}>Type</label>
                   <select required value={fuForm.follow_up_type} onChange={e => setFuForm({ ...fuForm, follow_up_type: e.target.value })} style={{ padding: '0.625rem', border: '1.5px solid var(--db-bd, rgba(0,0,0,0.08))', borderRadius: '8px', fontFamily: 'inherit', background: '#fff', color: 'inherit' }}>
@@ -989,7 +942,7 @@ ${photosSection}`;
               <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid var(--db-bd, rgba(0,0,0,0.05))' }}>
                 <span style={{ color: 'var(--db-tx2, #555)', fontWeight: 600 }}>Assigned Consultant</span>
                 <span style={{ fontWeight: 700, color: isAssigned ? '#22c55e' : '#E10613' }}>
-                  {isAssigned ? (employee?.id === lead.assigned_to ? 'You' : (lead.assigned_employee?.name || 'Another Employee')) : 'Unassigned'}
+                  {isAssigned ? (employee?.id === lead.assigned_to ? 'You' : 'Another Employee') : 'Unassigned'}
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid var(--db-bd, rgba(0,0,0,0.05))' }}>
@@ -1038,7 +991,7 @@ ${photosSection}`;
                     <ShieldAlert size={20} style={{ color: '#E10613' }} /> Used Car Inspection Report
                   </h3>
                   <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: '#555' }}>
-                    Quick inspection checklist to claim lead
+                    Fill out the checklist to complete physical inspection &amp; claim seller lead
                   </p>
                 </div>
                 <button className="wa-close-btn" style={{ color: '#555' }} onClick={() => setShowInspection(false)}><X size={20}/></button>
@@ -1070,7 +1023,7 @@ ${photosSection}`;
                 {wizardStep === 1 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     <h4 style={{ margin: '0 0 0.5rem', fontWeight: 800, fontSize: '1rem', color: '#E10613' }}>Vehicle Information</h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                    <div className="wa-form-grid" style={{ gap: '1.25rem' }}>
                       <div className="wa-form-group">
                         <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Vehicle Registration Number</label>
                         <input style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} type="text" placeholder="E.g. TN-07-BY-1234" value={inspectForm.regNo} onChange={e => setInspectForm({ ...inspectForm, regNo: e.target.value })} />
@@ -1144,7 +1097,7 @@ ${photosSection}`;
                     
                     <div className="wa-form-group">
                       <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem', marginBottom: '8px' }}>Body Condition (Select defects)</label>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <div className="wa-form-grid" style={{ gap: '8px' }}>
                         {[
                           'No visible damage',
                           'Minor scratches',
@@ -1209,7 +1162,7 @@ ${photosSection}`;
                       </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                    <div className="wa-form-grid" style={{ gap: '1.25rem' }}>
                       <div className="wa-form-group">
                         <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Paint Condition</label>
                         <select style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} value={inspectForm.paintCondition} onChange={e => setInspectForm({ ...inspectForm, paintCondition: e.target.value })}>
@@ -1346,7 +1299,7 @@ ${photosSection}`;
                     </div>
 
                     <h4 style={{ margin: '1rem 0 0.5rem', fontWeight: 800, fontSize: '1rem', color: '#E10613' }}>3. Mechanical Inspection</h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                    <div className="wa-form-grid" style={{ gap: '1.25rem' }}>
                       <div className="wa-form-group">
                         <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Engine Oil Level / Quality</label>
                         <select style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} value={inspectForm.engineOil} onChange={e => setInspectForm({ ...inspectForm, engineOil: e.target.value })}>
@@ -1403,7 +1356,7 @@ ${photosSection}`;
 
                     <div className="wa-form-group">
                       <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem', marginBottom: '6px' }}>Upload Engine / Interior Photos</label>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div className="wa-form-grid" style={{ gap: '12px' }}>
                         {[
                           { label: 'Engine Bay', key: 'Engine_Bay', btnText: 'Engine Photo' },
                           { label: 'Interior Cabin', key: 'Interior_Cabin', btnText: 'Interior Photo' }
@@ -1462,7 +1415,7 @@ ${photosSection}`;
                 {wizardStep === 4 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     <h4 style={{ margin: '0 0 0.5rem', fontWeight: 800, fontSize: '1rem', color: '#E10613' }}>4. Suspension &amp; Frame</h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                    <div className="wa-form-grid" style={{ gap: '1.25rem' }}>
                       <div className="wa-form-group">
                         <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Bounce Test</label>
                         <select style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} value={inspectForm.bounceTest} onChange={e => setInspectForm({ ...inspectForm, bounceTest: e.target.value })}>
@@ -1496,7 +1449,7 @@ ${photosSection}`;
                     </div>
 
                     <h4 style={{ margin: '1rem 0 0.5rem', fontWeight: 800, fontSize: '1rem', color: '#E10613' }}>5. Test Drive Evaluation</h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                    <div className="wa-form-grid" style={{ gap: '1.25rem' }}>
                       <div className="wa-form-group">
                         <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Cold Start Performance</label>
                         <select style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} value={inspectForm.coldStart} onChange={e => setInspectForm({ ...inspectForm, coldStart: e.target.value })}>
@@ -1550,7 +1503,7 @@ ${photosSection}`;
                 {wizardStep === 5 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     <h4 style={{ margin: '0 0 0.5rem', fontWeight: 800, fontSize: '1rem', color: '#E10613' }}>6. Vehicle Category</h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                    <div className="wa-form-grid" style={{ gap: '1.25rem' }}>
                       <div className="wa-form-group">
                         <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem', marginBottom: '6px' }}>Vehicle Type</label>
                         <div style={{ display: 'flex', gap: '1rem' }}>
@@ -1579,7 +1532,7 @@ ${photosSection}`;
                     <h4 style={{ margin: '1rem 0 0.5rem', fontWeight: 800, fontSize: '1rem', color: '#E10613' }}>7. Document Verification</h4>
                     <div className="wa-form-group">
                       <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem', marginBottom: '8px' }}>Verify Documents</label>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <div className="wa-form-grid" style={{ gap: '8px' }}>
                         {[
                           'Registration Certificate (RC) Verified',
                           'VIN Matched',
@@ -1621,7 +1574,7 @@ ${photosSection}`;
                     </div>
 
                     <h4 style={{ margin: '1rem 0 0.5rem', fontWeight: 800, fontSize: '1rem', color: '#E10613' }}>Final Evaluation</h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                    <div className="wa-form-grid" style={{ gap: '1.25rem' }}>
                       <div className="wa-form-group">
                         <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Overall Vehicle Condition Rating</label>
                         <select style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} value={inspectForm.overallCondition} onChange={e => setInspectForm({ ...inspectForm, overallCondition: e.target.value })}>
@@ -1746,12 +1699,6 @@ ${photosSection}`;
       {toast && <div style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', background: '#22c55e', color: '#fff', padding: '.75rem 1.25rem', borderRadius: '12px', fontWeight: 600, zIndex: 99999, boxShadow: '0 4px 15px rgba(34, 197, 94, 0.2)' }}>{toast}</div>}
 
       <style jsx>{`
-        .crm-details-grid {
-          display: grid;
-          grid-template-columns: 2fr 1fr;
-          gap: 1.5rem;
-          align-items: flex-start;
-        }
         .hover-link:hover {
           color: #E10613 !important;
         }
@@ -1832,27 +1779,33 @@ ${photosSection}`;
         .wa-btn.cancel:hover { background: var(--db-sf2, #f5f5f5); }
         .wa-btn.send { background: #22c55e; color: #fff; boxShadow: 0 4px 15px rgba(34,197,94,0.2); }
         .wa-btn.send:hover { background: #1eb253; }
+        .crm-details-grid {
+          display: grid;
+          grid-template-columns: 2fr 1fr;
+        }
+        .crm-profile-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .wa-form-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+        }
         @media (max-width: 768px) {
           .crm-details-grid {
-            grid-template-columns: 1fr !important;
-          }
-          .crm-detail-container {
-            padding: 0.75rem !important;
-          }
-          .crm-header-card {
-            padding: 1rem !important;
-          }
-          .crm-main-card {
-            padding: 1rem !important;
-          }
-          .inspection-grid {
-            grid-template-columns: 1fr !important;
+            grid-template-columns: 1fr;
           }
         }
         @media (max-width: 600px) {
-          .crm-tabs-container {
-            flex-direction: column !important;
-            gap: 4px !important;
+          .crm-profile-row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+          }
+          .wa-form-grid {
+            grid-template-columns: 1fr;
+            gap: 0.75rem !important;
           }
         }
       `}</style>

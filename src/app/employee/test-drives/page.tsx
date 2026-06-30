@@ -146,7 +146,7 @@ export default function EmployeeTestDrivesPage() {
   return (
     <div className="db-page">
       <div className="db-page-header">
-        <div className="db-page-title-container">
+        <div>
           <h1 className="db-page-title">Test Drives</h1>
           <p className="db-page-sub">View and manage customer test drive requests from the website</p>
         </div>
@@ -707,9 +707,6 @@ export default function EmployeeTestDrivesPage() {
         }
 
         @media (max-width: 1024px) {
-          .stats-row {
-            grid-template-columns: repeat(2, 1fr) !important;
-          }
           .emp-booking-card {
             grid-template-columns: 1fr 1fr !important;
             gap: 1.25rem !important;
@@ -729,9 +726,24 @@ export default function EmployeeTestDrivesPage() {
           }
         }
 
+        @media (max-width: 1024px) {
+          .stats-row {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+        }
+
         @media (max-width: 600px) {
           .stats-row {
             grid-template-columns: 1fr !important;
+          }
+          .db-page-header {
+            position: relative;
+            padding-right: 90px !important;
+          }
+          .refresh-btn {
+            position: absolute !important;
+            top: 0px !important;
+            right: 0px !important;
           }
           .emp-booking-card {
             grid-template-columns: 1fr !important;
@@ -749,7 +761,6 @@ export default function EmployeeTestDrivesPage() {
           .act-btn { flex: 1; justify-content: center; }
           .filters-bar { flex-direction: column; align-items: stretch; }
           .tabs-container { overflow-x: auto; }
-          .search-box { min-width: 0 !important; width: 100% !important; }
         }
       `}</style>
     </div>

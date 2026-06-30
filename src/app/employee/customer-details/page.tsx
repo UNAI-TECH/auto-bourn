@@ -410,9 +410,9 @@ export default function CustomerDetailsPage() {
                   </div>
 
                   <div className="emp-field">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '20px' }}>
-                      <label style={{ margin: 0, height: '20px', display: 'inline-flex', alignItems: 'center' }}>WhatsApp Number</label>
-                      <label className="toggle-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700, margin: 0, height: '20px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label>WhatsApp Number</label>
+                      <label className="toggle-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}>
                         <input 
                           type="checkbox" 
                           checked={form.sameAsPhone}
@@ -624,14 +624,11 @@ export default function CustomerDetailsPage() {
           gap: 0.5rem;
         }
         .emp-field label {
-          display: inline-flex;
-          align-items: center;
+          display: block;
           font-size: 0.875rem;
           font-weight: 700;
           color: var(--db-tx);
           letter-spacing: -0.01em;
-          margin: 0;
-          height: 20px;
         }
         .upl-grid input,
         .emp-field input,
@@ -791,19 +788,13 @@ export default function CustomerDetailsPage() {
  
         @media (max-width: 1024px) {
           .upl-grid {
-            grid-template-columns: repeat(2, 1fr) !important;
+            grid-template-columns: 1fr 1fr;
           }
         }
-        @media (max-width: 768px) {
+        @media (max-width: 640px) {
           .upl-grid {
-            grid-template-columns: 1fr !important;
-          }
-        }
-        @media (max-width: 600px) {
-          .form-row {
             grid-template-columns: 1fr;
             gap: 1rem;
-            margin-bottom: 1rem;
           }
           .alt-actions {
             flex-direction: column;

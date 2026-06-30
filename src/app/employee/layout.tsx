@@ -1327,7 +1327,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
     display: none;
   }
   .saas-main {
-    padding-top: 60px;
+    padding-top: 80px; /* Increased from 60px to prevent header overlap on mobile */
   }
   .saas-mob-topbar {
     display: flex;
@@ -1402,6 +1402,23 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
   margin: 0;
   line-height: 1.5;
   font-weight: 500;
+}
+
+@media(max-width: 768px) {
+  .db-page-header {
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem !important;
+    padding-bottom: 1rem;
+  }
+  .db-page-title {
+    font-size: 1.4rem;
+    line-height: 1.25;
+  }
+  .db-page-sub {
+    font-size: 0.8125rem;
+    line-height: 1.4;
+  }
 }
       `}</style>
     </EmpContext.Provider>

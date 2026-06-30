@@ -17,7 +17,10 @@ export default function DashboardOverview() {
   const supabase = createClient();
   const router = useRouter();
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [uploadActivity, setUploadActivity] = useState<{ date: string; count: number }[]>([]);
+  const [timeframe, setTimeframe] = useState<'day' | 'month' | 'year'>('day');
+  const [uploadActivityDay, setUploadActivityDay] = useState<{ date: string; count: number }[]>([]);
+  const [uploadActivityMonth, setUploadActivityMonth] = useState<{ date: string; count: number }[]>([]);
+  const [uploadActivityYear, setUploadActivityYear] = useState<{ date: string; count: number }[]>([]);
   const [empPerf, setEmpPerf] = useState<EmployeePerformance[]>([]);
   const [brandData, setBrandData] = useState<BrandAnalytics[]>([]);
   const [loading, setLoading] = useState(true);
@@ -245,7 +248,7 @@ export default function DashboardOverview() {
         test_drives: testDrivesRes.count || 0,
       });
 
-      // 2. Upload activity (last 14 days)
+      // 2a. Upload activity (last 14 days)
       const days: { date: string; count: number }[] = [];
       for (let i = 13; i >= 0; i--) {
         const d = new Date(now.getTime() - i * 86400000);
@@ -260,7 +263,45 @@ export default function DashboardOverview() {
         
         days.push({ date: d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }), count });
       }
-      setUploadActivity(days);
+      setUploadActivityDay(days);
+
+      // 2b. Upload activity (last 12 months)
+      const months: { date: string; count: number }[] = [];
+      for (let i = 11; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const y = d.getFullYear();
+        const m = d.getMonth();
+        
+        const count = cars.filter(c => {
+          if (!c.created_at) return false;
+          const cDate = new Date(c.created_at);
+          return cDate.getFullYear() === y && cDate.getMonth() === m;
+        }).length;
+        
+        months.push({
+          date: d.toLocaleDateString('en-IN', { month: 'short', year: '2-digit' }),
+          count
+        });
+      }
+      setUploadActivityMonth(months);
+
+      // 2c. Upload activity (last 5 years)
+      const years: { date: string; count: number }[] = [];
+      for (let i = 4; i >= 0; i--) {
+        const y = now.getFullYear() - i;
+        
+        const count = cars.filter(c => {
+          if (!c.created_at) return false;
+          const cDate = new Date(c.created_at);
+          return cDate.getFullYear() === y;
+        }).length;
+        
+        years.push({
+          date: String(y),
+          count
+        });
+      }
+      setUploadActivityYear(years);
 
       // 3. Employee performance
       const salesStaff = employees.filter(e => e.role === 'employee');
@@ -354,9 +395,21 @@ export default function DashboardOverview() {
       {/* Charts Row */}
       <div className="db-grid-2" style={{ marginTop: '1.5rem' }}>
         <motion.div className="db-chart-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-          <h3>Upload Activity <span>(Last 14 Days)</span></h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '8px' }}>
+            <h3 style={{ margin: 0 }}>
+              Upload Activity{' '}
+              <span>
+                {timeframe === 'day' ? '(Last 14 Days)' : timeframe === 'month' ? '(Last 12 Months)' : '(Last 5 Years)'}
+              </span>
+            </h3>
+            <div className="timeframe-switch">
+              <button className={timeframe === 'day' ? 'active' : ''} onClick={() => setTimeframe('day')}>Day</button>
+              <button className={timeframe === 'month' ? 'active' : ''} onClick={() => setTimeframe('month')}>Month</button>
+              <button className={timeframe === 'year' ? 'active' : ''} onClick={() => setTimeframe('year')}>Year</button>
+            </div>
+          </div>
           <ResponsiveContainer width="100%" height={260}>
-            <AreaChart data={uploadActivity}>
+            <AreaChart data={timeframe === 'day' ? uploadActivityDay : timeframe === 'month' ? uploadActivityMonth : uploadActivityYear}>
               <defs><linearGradient id="gRed" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={BRAND_RED} stopOpacity={0.3} /><stop offset="100%" stopColor={BRAND_RED} stopOpacity={0} /></linearGradient></defs>
               <XAxis dataKey="date" tick={{ fill: 'var(--db-tx3)', fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: 'var(--db-tx3)', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
@@ -644,8 +697,11 @@ export default function DashboardOverview() {
 .db-stat-val{font-size:1.5rem;font-weight:700;font-family:'Outfit',sans-serif;display:block;line-height:1.2}
 .db-stat-lbl{font-size:.75rem;color:var(--db-tx3);text-transform:uppercase;letter-spacing:.05em}
 .db-chart-card{background:var(--db-sf);border:1px solid var(--db-bd);border-radius:14px;padding:1.5rem}
-.db-chart-card h3{font-family:'Outfit',sans-serif;font-size:1rem;font-weight:600;margin-bottom:1.25rem;color:var(--db-tx)}
+.db-chart-card h3{font-family:'Outfit',sans-serif;font-size:1rem;font-weight:600;color:var(--db-tx)}
 .db-chart-card h3 span{color:var(--db-tx3);font-weight:400;font-size:.8125rem}
+.timeframe-switch{display:flex;background:var(--db-sf2,#f5f5f5);padding:3px;border-radius:10px;border:1px solid var(--db-bd,rgba(0,0,0,0.06))}
+.timeframe-switch button{background:none;border:none;padding:5px 11px;border-radius:8px;font-size:.8125rem;font-weight:600;color:var(--db-tx2,#555);cursor:pointer;transition:all .2s;font-family:inherit}
+.timeframe-switch button.active{background:var(--db-sf,#fff);color:#E10613;box-shadow:0 2px 8px rgba(0,0,0,0.05)}
 .db-empty{color:var(--db-tx3);text-align:center;padding:3rem 0;font-size:.875rem}
 .db-skeleton-card{background:var(--db-sf);border:1px solid var(--db-bd);border-radius:14px;height:90px;animation:pulse 1.5s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
