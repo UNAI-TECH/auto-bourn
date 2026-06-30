@@ -163,7 +163,7 @@ function ProgressIndicator({ currentStep }: { currentStep: number }) {
         const isCompleted = currentStep > step.number;
         const isActive = currentStep === step.number;
         return (
-          <div key={step.number} style={{ display: 'flex', alignItems: 'center' }}>
+          <div key={step.number} style={{ display: 'flex', alignItems: 'flex-start' }}>
             {/* Circle */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
               <motion.div
@@ -191,7 +191,7 @@ function ProgressIndicator({ currentStep }: { currentStep: number }) {
                 fontSize: '0.625rem', fontWeight: 600, textTransform: 'uppercase',
                 letterSpacing: '0.08em', marginTop: '0.5rem',
                 color: isActive ? '#E10613' : isCompleted ? '#2A2A2A' : '#B0B0B0',
-                whiteSpace: 'nowrap', transition: 'color 0.3s',
+                transition: 'color 0.3s',
               }}>
                 {step.title}
               </p>
@@ -199,10 +199,11 @@ function ProgressIndicator({ currentStep }: { currentStep: number }) {
             {/* Connector line */}
             {i < STEPS.length - 1 && (
               <div style={{
-                width: 'clamp(30px, 8vw, 80px)', height: 2,
+                width: 'clamp(20px, 6vw, 80px)', height: 2,
                 background: currentStep > step.number ? '#E10613' : '#ECECEC',
                 transition: 'background 0.4s',
-                marginBottom: '1.5rem',
+                marginTop: '20px',
+                transform: 'translateY(-50%)',
                 marginLeft: 4, marginRight: 4,
               }} />
             )}
@@ -885,8 +886,25 @@ ${form.additionalDetails ? `*Additional Notes:* ${form.additionalDetails}` : ''}
         @media (max-width: 768px) {
           .sell-form { grid-template-columns: 1fr !important; }
         }
-        @media (max-width: 640px) {
-          .sell-progress-label { font-size: 0.5rem !important; }
+        .sell-progress-label {
+          white-space: nowrap;
+          text-align: center;
+          max-width: none;
+        }
+        @media (max-width: 768px) {
+          .sell-progress-label {
+            white-space: normal !important;
+            max-width: 60px !important;
+            font-size: 0.55rem !important;
+            line-height: 1.2 !important;
+            letter-spacing: 0.04em !important;
+          }
+        }
+        @media (max-width: 480px) {
+          .sell-progress-label {
+            max-width: 50px !important;
+            font-size: 0.5rem !important;
+          }
         }
         input:focus, select:focus, textarea:focus {
           border-color: #E10613 !important;

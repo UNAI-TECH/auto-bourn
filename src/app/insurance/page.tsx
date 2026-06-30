@@ -101,7 +101,7 @@ export default function InsurancePage() {
                 </div>
               ))}
             </div>
-            <Link href="/contact" className="btn btn-primary btn-lg" style={{ textDecoration: 'none', marginTop: '2rem', display: 'inline-flex' }}>Get Insurance Quote</Link>
+            <Link href="/contact?interest=Insurance" className="btn btn-primary btn-lg" style={{ textDecoration: 'none', marginTop: '2rem', display: 'inline-flex' }}>Get Insurance Quote</Link>
           </motion.div>
         </div>
       </section>

@@ -60,7 +60,7 @@ export default function FinancePage() {
             <p style={{ fontSize: '0.9375rem', color: '#8A8A8A', maxWidth: '420px', margin: '0 auto 1.5rem', lineHeight: 1.7 }}>
               Get in touch with our finance team for a personalized quote and pre-approval.
             </p>
-            <Link href="/contact" className="btn btn-primary btn-lg" style={{ textDecoration: 'none' }}>Apply for Finance</Link>
+            <Link href="/contact?interest=Finance" className="btn btn-primary btn-lg" style={{ textDecoration: 'none' }}>Apply for Finance</Link>
           </motion.div>
         </div>
       </section>

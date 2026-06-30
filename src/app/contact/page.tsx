@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AlertModal from '@/components/AlertModal';
 
@@ -40,6 +40,18 @@ export default function ContactPage() {
   const [email, setEmail] = useState('');
   const [interest, setInterest] = useState('Select');
   const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const interestParam = params.get('interest');
+      if (interestParam === 'Insurance') {
+        setInterest('Insurance');
+      } else if (interestParam === 'Finance') {
+        setInterest('Finance');
+      }
+    }
+  }, []);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [emailModalOpen, setEmailModalOpen] = useState(false);
@@ -179,10 +191,10 @@ export default function ContactPage() {
             </p>
           </motion.div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'clamp(2rem, 4vw, 4rem)', maxWidth: '1100px', margin: '0 auto' }} className="contact-grid">
+          <div className="contact-grid">
             {/* Form */}
-            <motion.div initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
-              <div style={{ background: '#FAFAFA', borderRadius: '20px', padding: 'clamp(2rem, 3vw, 2.5rem)', border: '1px solid #ECECEC' }}>
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+              <div className="contact-form-card">
                 <h2 style={{ fontFamily: 'var(--font-primary)', fontSize: '1.25rem', fontWeight: 700, color: '#2A2A2A', marginBottom: '1.5rem' }}>Send a Message</h2>
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   {success ? (
@@ -190,7 +202,7 @@ export default function ContactPage() {
                       ✓ Message sent successfully! Our team will contact you shortly.
                     </div>
                   ) : null}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div className="contact-name-phone-grid">
                     <div>
                       <label style={{ fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#8A8A8A', display: 'block', marginBottom: '0.5rem' }}>Name *</label>
                       <input required type="text" placeholder="Your name" style={inputStyle} value={name} onChange={e => setName(e.target.value)} />
@@ -228,16 +240,16 @@ export default function ContactPage() {
             </motion.div>
 
             {/* Contact Info */}
-            <motion.div initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }}
-              style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }}
+              className="contact-info-list">
               {contactInfo.map((c, i) => {
                 const isLink = !!c.link;
                 const isMail = c.link?.startsWith('mailto:');
                 const CardElement = isLink ? 'a' : 'div';
                 const extraProps = isLink ? {
                   href: isMail ? undefined : c.link,
-                  target: c.link.startsWith('http') ? '_blank' : undefined,
-                  rel: c.link.startsWith('http') ? 'noopener noreferrer' : undefined,
+                  target: c.link?.startsWith('http') ? '_blank' : undefined,
+                  rel: c.link?.startsWith('http') ? 'noopener noreferrer' : undefined,
                 } : {};
 
                 const handleClick = (e: React.MouseEvent) => {
@@ -260,20 +272,8 @@ export default function ContactPage() {
                     <CardElement
                       {...(extraProps as any)}
                       onClick={handleClick}
-                      style={{
-                        background: '#FAFAFA',
-                        borderRadius: '16px',
-                        padding: '1.5rem',
-                        border: '1px solid #ECECEC',
-                        display: 'flex',
-                        gap: '1rem',
-                        alignItems: 'flex-start',
-                        textDecoration: 'none',
-                        color: 'inherit',
-                        cursor: isLink ? 'pointer' : 'default',
-                        transition: 'border-color 0.3s ease, box-shadow 0.3s ease',
-                        height: '100%',
-                      }}
+                      className="contact-info-card"
+                      style={{ cursor: isLink ? 'pointer' : 'default' }}
                     >
                       <ContactIcon type={c.icon} />
                       <div>
@@ -286,11 +286,7 @@ export default function ContactPage() {
               })}
 
               {/* Interactive Map */}
-              <div style={{
-                borderRadius: '16px', overflow: 'hidden', aspectRatio: '16/9',
-                border: '1px solid #ECECEC', display: 'flex', flex: 1, minHeight: '250px',
-                background: '#FAFAFA'
-              }}>
+              <div className="contact-map-container">
                 <iframe
                   title="Auto Bourn Location Map"
                   src="https://maps.google.com/maps?q=137%2C%20Jawaharlal%20Nehru%20Salai%2C%20opposite%20to%20sunshine%20school%2C%20AGS%20Colony%2C%20Velachery%2C%20Chennai%2C%20Tamil%20Nadu%20600042&t=&z=15&ie=UTF8&iwloc=&output=embed"
@@ -308,8 +304,83 @@ export default function ContactPage() {
       </section>
 
       <style jsx global>{`
-        @media (max-width: 768px) { .contact-grid { grid-template-columns: 1fr !important; } }
-        input:focus, select:focus, textarea:focus { border-color: #E10613 !important; }
+        .contact-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: clamp(2rem, 4vw, 4rem);
+          max-width: 1100px;
+          margin: 0 auto;
+        }
+        .contact-form-card {
+          background: #FAFAFA;
+          border-radius: 20px;
+          padding: clamp(2rem, 3vw, 2.5rem);
+          border: 1px solid #ECECEC;
+        }
+        .contact-name-phone-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1rem;
+        }
+        .contact-info-list {
+          display: flex;
+          flex-direction: column;
+          gap: 1.5rem;
+        }
+        .contact-info-card {
+          background: #FAFAFA;
+          border-radius: 16px;
+          padding: 1.5rem;
+          border: 1px solid #ECECEC;
+          display: flex;
+          gap: 1rem;
+          align-items: flex-start;
+          text-decoration: none;
+          color: inherit;
+          transition: border-color 0.3s ease, box-shadow 0.3s ease;
+          height: 100%;
+        }
+        .contact-map-container {
+          border-radius: 16px;
+          overflow: hidden;
+          aspect-ratio: 16/9;
+          border: 1px solid #ECECEC;
+          display: flex;
+          flex: 1;
+          min-height: 250px;
+          background: #FAFAFA;
+        }
+        @media (max-width: 768px) {
+          .contact-grid {
+            grid-template-columns: 1fr !important;
+            gap: 2rem !important;
+          }
+        }
+        @media (max-width: 600px) {
+          .contact-form-card {
+            padding: 1.25rem !important;
+            border-radius: 16px !important;
+          }
+          .contact-name-phone-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .contact-info-card {
+            padding: 1.25rem !important;
+            border-radius: 12px !important;
+            gap: 0.75rem !important;
+          }
+          .contact-map-container {
+            min-height: 200px !important;
+            border-radius: 12px !important;
+          }
+          input, select, textarea {
+            font-size: 16px !important;
+          }
+        }
+        input:focus, select:focus, textarea:focus {
+          border-color: #E10613 !important;
+          box-shadow: 0 0 0 3px rgba(225, 6, 19, 0.08) !important;
+        }
       `}</style>
 
       <AnimatePresence>
