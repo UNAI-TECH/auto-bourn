@@ -282,6 +282,9 @@ export default function EmployeesPage() {
     return matchSearch && matchFilter;
   });
 
+  const maxUploads = Math.max(...employees.map(e => e.total_uploads || 0), 1);
+  const maxSold = Math.max(...employees.map(e => e.total_sold || 0), 1);
+
   return (
     <div className="db-page">
       <div className="db-page-header">
@@ -325,8 +328,22 @@ export default function EmployeesPage() {
                 <td><span className="emp-id-badge">{emp.employee_id}</span></td>
                 <td>{emp.phone || '—'}</td>
                 <td>{formatDate(emp.created_at)}</td>
-                <td className="emp-num">{emp.total_uploads}</td>
-                <td className="emp-num">{emp.total_sold}</td>
+                <td className="emp-num">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '90px' }}>
+                    <span style={{ fontWeight: 700 }}>{emp.total_uploads}</span>
+                    <div style={{ width: '100%', height: '5px', background: 'rgba(0,0,0,0.05)', borderRadius: '3px', overflow: 'hidden' }}>
+                      <div style={{ width: `${((emp.total_uploads || 0) / maxUploads) * 100}%`, height: '100%', background: '#E10613', borderRadius: '3px' }} />
+                    </div>
+                  </div>
+                </td>
+                <td className="emp-num">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '90px' }}>
+                    <span style={{ fontWeight: 700 }}>{emp.total_sold}</span>
+                    <div style={{ width: '100%', height: '5px', background: 'rgba(0,0,0,0.05)', borderRadius: '3px', overflow: 'hidden' }}>
+                      <div style={{ width: `${((emp.total_sold || 0) / maxSold) * 100}%`, height: '100%', background: '#22c55e', borderRadius: '3px' }} />
+                    </div>
+                  </div>
+                </td>
                 <td>{emp.last_upload ? timeAgo(emp.last_upload) : '—'}</td>
                 <td><span className={`emp-status ${emp.status}`}>{emp.status}</span></td>
                 <td>

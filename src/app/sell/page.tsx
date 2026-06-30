@@ -4,6 +4,7 @@ import { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import AlertModal from '@/components/AlertModal';
+import { Car, ClipboardList, Camera, User, UploadCloud, X, Check, ArrowLeft, ArrowRight } from 'lucide-react';
 
 /* ═══════════════════════════════════════════════
    Types
@@ -97,80 +98,39 @@ const fieldWrap: React.CSSProperties = {
    Inline SVG Icons
    ═══════════════════════════════════════════════ */
 function CarIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E10613" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M5 17h14M5 17a2 2 0 01-2-2V9a2 2 0 012-2h1l2-3h8l2 3h1a2 2 0 012 2v6a2 2 0 01-2 2M5 17a2 2 0 100 4 2 2 0 000-4zm14 0a2 2 0 100 4 2 2 0 000-4z" />
-    </svg>
-  );
+  return <Car size={22} color="#E10613" />;
 }
 
 function ClipboardIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E10613" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="8" y="2" width="8" height="4" rx="1" />
-      <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" />
-      <path d="M12 11h4M12 16h4M8 11h.01M8 16h.01" />
-    </svg>
-  );
+  return <ClipboardList size={22} color="#E10613" />;
 }
 
 function CameraIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E10613" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
-      <circle cx="12" cy="13" r="4" />
-    </svg>
-  );
+  return <Camera size={22} color="#E10613" />;
 }
 
 function UserIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E10613" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-      <circle cx="12" cy="7" r="4" />
-    </svg>
-  );
+  return <User size={22} color="#E10613" />;
 }
 
 function UploadCloudIcon() {
-  return (
-    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#B0B0B0" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M16 16l-4-4-4 4M12 12v9" />
-      <path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3" />
-    </svg>
-  );
+  return <UploadCloud size={48} color="#B0B0B0" strokeWidth={1.4} />;
 }
 
 function CloseIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
-  );
+  return <X size={14} strokeWidth={2.5} />;
 }
 
 function CheckIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  );
+  return <Check size={16} color="#fff" strokeWidth={3} />;
 }
 
 function ArrowLeftIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
-    </svg>
-  );
+  return <ArrowLeft size={16} strokeWidth={2} />;
 }
 
 function ArrowRightIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
-    </svg>
-  );
+  return <ArrowRight size={16} strokeWidth={2} />;
 }
 
 const stepIcons = [<CarIcon key="car" />, <ClipboardIcon key="clip" />, <CameraIcon key="cam" />, <UserIcon key="user" />];

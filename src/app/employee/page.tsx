@@ -513,6 +513,11 @@ export default function EmployeeDashboard() {
   gap: 1.5rem;
   width: 100%;
 }
+@media (max-width: 768px) {
+  .crextio-dashboard {
+    padding: 0 0.5rem 1.5rem 0.5rem;
+  }
+}
 
 .crextio-page-loading {
   min-height: 50vh;

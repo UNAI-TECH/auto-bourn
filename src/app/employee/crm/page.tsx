@@ -336,17 +336,11 @@ export default function EmployeeCRMPage() {
               <motion.div 
                 key={lead.id} 
                 onClick={() => router.push(`/employee/crm/leads/${lead.id}`)}
+                className="crm-lead-card-item"
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '1rem',
-                  padding: '1.25rem 1.5rem',
                   background: isSell ? 'rgba(255, 122, 0, 0.09)' : 'rgba(59, 130, 246, 0.09)',
                   border: isSell ? '1.5px solid rgba(255, 122, 0, 0.28)' : '1.5px solid rgba(59, 130, 246, 0.28)',
-                  borderRadius: '18px',
                   transition: 'all 0.25s ease',
-                  boxShadow: '0 4px 15px rgba(0,0,0,0.01)',
                   position: 'relative',
                   overflow: 'hidden',
                   cursor: 'pointer'
@@ -356,62 +350,76 @@ export default function EmployeeCRMPage() {
                 animate={{ opacity: 1, y: 0 }} 
                 transition={{ delay: i * 0.02 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, minWidth: 0 }}>
+
+                <div className="crm-lead-card-left">
+                  {/* Left avatar */}
                   <div style={{ width: 42, height: 42, borderRadius: '12px', background: stage?.bg, color: stage?.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 850, fontSize: '1rem', flexShrink: 0, fontFamily: "'Outfit', sans-serif" }}>
                     {lead.customer_name.charAt(0)}
                   </div>
 
-                  {/* Buyer/Seller label on the left side of the lead */}
-                  <div style={{ flexShrink: 0 }}>
-                    <span style={{ color: '#000000', fontWeight: 700, fontSize: '0.875rem', letterSpacing: '0.05em', textTransform: 'uppercase', padding: '0.375rem 0.625rem', borderRadius: '8px', background: isSell ? 'rgba(255, 122, 0, 0.1)' : 'rgba(59, 130, 246, 0.1)', border: `1px solid ${isSell ? 'rgba(255, 122, 0, 0.2)' : 'rgba(59, 130, 246, 0.2)'}` }}>
-                      {isSell ? 'SELLER' : 'BUYER'}
-                    </span>
-                  </div>
-
+                  {/* Customer details block */}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--db-tx, #000)', marginBottom: '2px' }}>{lead.customer_name}</div>
-                    <div style={{ fontSize: '.8125rem', color: 'var(--db-tx2, #555)', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--db-tx, #000)' }}>{lead.customer_name}</span>
+                      <span style={{ 
+                        fontSize: '0.625rem', 
+                        fontWeight: 800, 
+                        letterSpacing: '0.05em', 
+                        textTransform: 'uppercase', 
+                        padding: '0.15rem 0.45rem', 
+                        borderRadius: '6px', 
+                        background: isSell ? 'rgba(255, 122, 0, 0.08)' : 'rgba(59, 130, 246, 0.08)', 
+                        color: isSell ? '#FF7A00' : '#3b82f6', 
+                        border: `1px solid ${isSell ? 'rgba(255, 122, 0, 0.15)' : 'rgba(59, 130, 246, 0.15)'}` 
+                      }}>
+                        {isSell ? 'SELLER' : 'BUYER'}
+                      </span>
+                    </div>
+
+                    <div style={{ fontSize: '.8125rem', color: 'var(--db-tx2, #555)', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginTop: '3px' }}>
                       <span>{lead.phone}</span>
                       {lead.interested_car && (
                         <>
-                          <span style={{ opacity: 0.5 }}>·</span>
-                          <span style={{ fontWeight: 700, color: 'var(--db-tx, #000)' }}>{lead.interested_car}</span>
+                          <span style={{ opacity: 0.4 }}>·</span>
+                          <span style={{ fontWeight: 600, color: 'var(--db-tx, #000)' }}>{lead.interested_car}</span>
                         </>
                       )}
                     </div>
                   </div>
                 </div>
 
-                <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                <div className="crm-lead-card-right-container">
+                  {/* Status stage badge */}
                   <span style={{ background: stage?.bg, color: stage?.color, fontSize: '.75rem', fontWeight: 800, padding: '.35rem .75rem', borderRadius: '100px', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                     {stage?.label}
                   </span>
-                  <span style={{ fontSize: '.8125rem', fontWeight: 700, color: 'var(--db-tx3, #777)' }}>{formatBudget(lead.budget)}</span>
-                </div>
 
-                <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginLeft: '.5rem' }}>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      window.location.href = `tel:${lead.phone}`;
-                    }}
-                    style={{ 
-                      width: 36, 
-                      height: 36, 
-                      background: 'rgba(59,130,246,.08)', 
-                      color: '#3b82f6', 
-                      border: '1px solid rgba(59,130,246,.15)', 
-                      borderRadius: '10px', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center', 
-                      transition: 'all 0.2s',
-                      cursor: 'pointer'
-                    }} 
-                    className="icon-action-btn"
-                  >
-                    <Phone size={14} />
-                  </button>
+                  {/* Budget & Action group */}
+                  <div className="crm-lead-card-price-action-group">
+                    <span style={{ fontSize: '.875rem', fontWeight: 700, color: 'var(--db-tx, #000)', whiteSpace: 'nowrap' }}>{formatBudget(lead.budget)}</span>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.location.href = `tel:${lead.phone}`;
+                      }}
+                      style={{ 
+                        width: 36, 
+                        height: 36, 
+                        background: 'var(--db-sf2, #f5f5f5)', 
+                        color: 'var(--db-tx2, #555)', 
+                        border: '1px solid var(--db-bd, rgba(0,0,0,0.08))', 
+                        borderRadius: '10px', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        transition: 'all 0.2s',
+                        cursor: 'pointer'
+                      }} 
+                      className="icon-action-btn"
+                    >
+                      <Phone size={14} />
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             );
@@ -425,6 +433,267 @@ export default function EmployeeCRMPage() {
         .icon-action-btn:hover {
           background: rgba(59,130,246,.15) !important;
           transform: scale(1.05);
+        }
+
+        .crm-two-columns-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1.5rem;
+        }
+
+        .crm-sidebar-panel, .crm-panel-widget {
+          background: var(--db-sf, #ffffff) !important;
+          border: 1.5px solid var(--db-bd, rgba(0,0,0,0.06)) !important;
+          border-radius: 20px !important;
+          padding: 1.5rem !important;
+          display: flex;
+          flex-direction: column;
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02) !important;
+          box-sizing: border-box;
+        }
+
+        .crm-sidebar-panel-head, .crm-widget-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 1.25rem;
+          border-bottom: 1px solid var(--db-bd, rgba(0,0,0,0.06));
+          padding-bottom: 0.75rem;
+        }
+
+        .crm-sidebar-panel-head h3, .crm-widget-head h3 {
+          font-size: 0.9375rem;
+          font-weight: 700;
+          color: var(--db-tx, #000);
+          margin: 0;
+        }
+
+        .crm-timeline-body, .crm-widget-body {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          overflow-y: auto;
+        }
+
+        .crm-timeline-item {
+          display: flex;
+          gap: 12px;
+          min-height: 72px;
+        }
+
+        .crm-timeline-time {
+          font-size: 0.6875rem;
+          font-weight: 600;
+          color: var(--db-tx3, #777);
+          width: 55px;
+          text-align: right;
+          flex-shrink: 0;
+          margin-top: 2px;
+        }
+
+        .crm-timeline-indicator {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          flex-shrink: 0;
+          margin-top: 4px;
+        }
+
+        .crm-timeline-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: #E10613;
+        }
+
+        .crm-timeline-line {
+          width: 1px;
+          flex: 1;
+          background: var(--db-bd, rgba(0,0,0,0.06));
+          margin: 4px 0;
+        }
+
+        .crm-timeline-content {
+          flex: 1;
+          padding-bottom: 12px;
+        }
+
+        .crm-timeline-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+        }
+
+        .crm-timeline-name {
+          font-size: 0.8125rem;
+          font-weight: 700;
+          color: var(--db-tx, #000);
+        }
+
+        .crm-timeline-badge {
+          font-size: 0.55rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          padding: 2px 5px;
+          border-radius: 4px;
+        }
+
+        .crm-timeline-desc {
+          font-size: 0.725rem;
+          color: var(--db-tx3, #777);
+          margin: 2px 0 0 0;
+        }
+
+        .crm-badge-high { background: #FEF2F2; color: #EF4444; }
+        .crm-badge-normal { background: #EFF6FF; color: #3B82F6; }
+        .crm-badge-low { background: #F1F5F9; color: #64748B; }
+
+        .crm-widget-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 0.75rem 0;
+          border-bottom: 1px solid var(--db-bd, rgba(0,0,0,0.06));
+        }
+
+        .crm-widget-row:last-child {
+          border-bottom: none;
+        }
+
+        .crm-mini-avatar {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background: var(--db-sf2, #f5f5f5);
+          color: var(--db-tx2, #555);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.8125rem;
+          font-weight: 700;
+        }
+
+        .crm-mini-avatar.bg-blue-soft {
+          background: rgba(59,130,246,.08);
+          color: #3b82f6;
+        }
+
+        .crm-widget-info-block {
+          min-width: 0;
+          flex: 1;
+        }
+
+        .crm-row-name {
+          font-size: 0.8125rem;
+          font-weight: 700;
+          color: var(--db-tx, #000);
+          margin: 0;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .crm-row-sub {
+          font-size: 0.725rem;
+          color: var(--db-tx3, #777);
+          margin: 1px 0 0 0;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .crm-row-time {
+          font-size: 0.725rem;
+          color: var(--db-tx3, #777);
+          font-weight: 500;
+        }
+
+        .crm-row-badge {
+          font-size: 0.6rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          padding: 1px 6px;
+          border-radius: 4px;
+          letter-spacing: 0.05em;
+        }
+
+        .crm-empty-state {
+          color: var(--db-tx3, #777);
+          font-size: 0.8125rem;
+          text-align: center;
+          padding: 3rem 1rem;
+          font-weight: 500;
+        }
+
+        :global(.crm-lead-card-item) {
+          display: flex !important;
+          align-items: center !important;
+          justify-content: space-between !important;
+          gap: 1rem !important;
+          padding: 1.25rem 1.5rem !important;
+          border-radius: 18px !important;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.01) !important;
+        }
+
+        .crm-lead-card-left {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          flex: 1;
+          min-width: 0;
+        }
+
+        .crm-lead-card-right-container {
+          display: flex;
+          align-items: center;
+          gap: 1.5rem;
+          flex-shrink: 0;
+        }
+
+        .crm-lead-card-price-action-group {
+          display: flex;
+          align-items: center;
+          gap: 1.25rem;
+        }
+
+        @media (max-width: 900px) {
+          .crm-two-columns-row {
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+          }
+          .crm-sidebar-panel, .crm-panel-widget {
+            height: auto !important;
+            min-height: 280px;
+          }
+        }
+
+        @media (max-width: 768px) {
+          :global(.crm-lead-card-item) {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 0.75rem !important;
+            padding: 1.25rem !important;
+          }
+          .crm-lead-card-right-container {
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--db-bd, rgba(0,0,0,0.06));
+            padding-top: 0.75rem;
+            width: 100%;
+          }
+          .crm-lead-card-price-action-group {
+            gap: 0.75rem;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .crm-lead-card-left {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.75rem;
+          }
         }
       `}</style>
     </div>

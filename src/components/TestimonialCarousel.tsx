@@ -102,7 +102,7 @@ export default function TestimonialCarousel({ testimonials }: TestimonialCarouse
           display: flex;
           gap: 2rem;
           padding: 1rem clamp(1.5rem, 4vw, 3rem) 2rem;
-          animation: testimonialScroll 45s linear infinite;
+          animation: testimonialScroll 75s linear infinite;
           width: max-content;
         }
         .testimonial-carousel-track:hover {

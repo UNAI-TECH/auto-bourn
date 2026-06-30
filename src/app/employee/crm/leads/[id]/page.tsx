@@ -725,7 +725,7 @@ ${photosSection}`;
       </div>
 
       {/* Main Content Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.5rem', alignItems: 'flex-start' }} className="crm-details-grid">
+      <div style={{ display: 'grid', gap: '1.5rem', alignItems: 'flex-start' }} className="crm-details-grid">
         {/* Left Column: Tabbed Information */}
         <div style={{ background: 'var(--db-sf, #ffffff)', border: '1.5px solid var(--db-bd, rgba(0,0,0,0.06))', borderRadius: '24px', padding: '1.5rem', boxShadow: '0 8px 30px rgba(0,0,0,0.01)' }}>
           {/* Tab Switchers */}
@@ -768,7 +768,7 @@ ${photosSection}`;
                 { label: 'Occupation', value: lead.occupation, icon: <User size={16} /> },
                 { label: 'Location', value: `${lead.city || 'Chennai'} · ${lead.state || 'Tamil Nadu'}`, icon: <MapPin size={16} /> }
               ].map((item, index) => (
-                <div key={index} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.875rem 1rem', borderBottom: '1px solid var(--db-bd, rgba(0,0,0,0.05))', fontSize: '0.9rem' }}>
+                <div key={index} className="crm-profile-row" style={{ padding: '0.875rem 1rem', borderBottom: '1px solid var(--db-bd, rgba(0,0,0,0.05))', fontSize: '0.9rem' }}>
                   <span style={{ color: 'var(--db-tx2, #555)', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 600 }}>
                     <span style={{ color: '#E10613', opacity: 0.85 }}>{item.icon}</span>
                     {item.label}
@@ -783,7 +783,7 @@ ${photosSection}`;
           {tab === 'followups' && (
             <div>
               <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--db-tx, #000)' }}>Schedule Follow-up</h2>
-              <form onSubmit={addFollowUp} style={{ background: 'var(--db-sf2, #f9f9f9)', border: '1px solid var(--db-bd, rgba(0,0,0,0.05))', borderRadius: '16px', padding: '1.25rem', marginBottom: '1.5rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <form onSubmit={addFollowUp} className="wa-form-grid" style={{ background: 'var(--db-sf2, #f9f9f9)', border: '1px solid var(--db-bd, rgba(0,0,0,0.05))', borderRadius: '16px', padding: '1.25rem', marginBottom: '1.5rem', gap: '1rem' }}>
                 <div className="emp-field" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--db-tx2, #555)' }}>Type</label>
                   <select required value={fuForm.follow_up_type} onChange={e => setFuForm({ ...fuForm, follow_up_type: e.target.value })} style={{ padding: '0.625rem', border: '1.5px solid var(--db-bd, rgba(0,0,0,0.08))', borderRadius: '8px', fontFamily: 'inherit', background: '#fff', color: 'inherit' }}>
@@ -1023,7 +1023,7 @@ ${photosSection}`;
                 {wizardStep === 1 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     <h4 style={{ margin: '0 0 0.5rem', fontWeight: 800, fontSize: '1rem', color: '#E10613' }}>Vehicle Information</h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                    <div className="wa-form-grid" style={{ gap: '1.25rem' }}>
                       <div className="wa-form-group">
                         <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Vehicle Registration Number</label>
                         <input style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} type="text" placeholder="E.g. TN-07-BY-1234" value={inspectForm.regNo} onChange={e => setInspectForm({ ...inspectForm, regNo: e.target.value })} />
@@ -1097,7 +1097,7 @@ ${photosSection}`;
                     
                     <div className="wa-form-group">
                       <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem', marginBottom: '8px' }}>Body Condition (Select defects)</label>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <div className="wa-form-grid" style={{ gap: '8px' }}>
                         {[
                           'No visible damage',
                           'Minor scratches',
@@ -1162,7 +1162,7 @@ ${photosSection}`;
                       </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                    <div className="wa-form-grid" style={{ gap: '1.25rem' }}>
                       <div className="wa-form-group">
                         <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Paint Condition</label>
                         <select style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} value={inspectForm.paintCondition} onChange={e => setInspectForm({ ...inspectForm, paintCondition: e.target.value })}>
@@ -1299,7 +1299,7 @@ ${photosSection}`;
                     </div>
 
                     <h4 style={{ margin: '1rem 0 0.5rem', fontWeight: 800, fontSize: '1rem', color: '#E10613' }}>3. Mechanical Inspection</h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                    <div className="wa-form-grid" style={{ gap: '1.25rem' }}>
                       <div className="wa-form-group">
                         <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Engine Oil Level / Quality</label>
                         <select style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} value={inspectForm.engineOil} onChange={e => setInspectForm({ ...inspectForm, engineOil: e.target.value })}>
@@ -1356,7 +1356,7 @@ ${photosSection}`;
 
                     <div className="wa-form-group">
                       <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem', marginBottom: '6px' }}>Upload Engine / Interior Photos</label>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div className="wa-form-grid" style={{ gap: '12px' }}>
                         {[
                           { label: 'Engine Bay', key: 'Engine_Bay', btnText: 'Engine Photo' },
                           { label: 'Interior Cabin', key: 'Interior_Cabin', btnText: 'Interior Photo' }
@@ -1415,7 +1415,7 @@ ${photosSection}`;
                 {wizardStep === 4 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     <h4 style={{ margin: '0 0 0.5rem', fontWeight: 800, fontSize: '1rem', color: '#E10613' }}>4. Suspension &amp; Frame</h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                    <div className="wa-form-grid" style={{ gap: '1.25rem' }}>
                       <div className="wa-form-group">
                         <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Bounce Test</label>
                         <select style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} value={inspectForm.bounceTest} onChange={e => setInspectForm({ ...inspectForm, bounceTest: e.target.value })}>
@@ -1449,7 +1449,7 @@ ${photosSection}`;
                     </div>
 
                     <h4 style={{ margin: '1rem 0 0.5rem', fontWeight: 800, fontSize: '1rem', color: '#E10613' }}>5. Test Drive Evaluation</h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                    <div className="wa-form-grid" style={{ gap: '1.25rem' }}>
                       <div className="wa-form-group">
                         <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Cold Start Performance</label>
                         <select style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} value={inspectForm.coldStart} onChange={e => setInspectForm({ ...inspectForm, coldStart: e.target.value })}>
@@ -1503,7 +1503,7 @@ ${photosSection}`;
                 {wizardStep === 5 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     <h4 style={{ margin: '0 0 0.5rem', fontWeight: 800, fontSize: '1rem', color: '#E10613' }}>6. Vehicle Category</h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                    <div className="wa-form-grid" style={{ gap: '1.25rem' }}>
                       <div className="wa-form-group">
                         <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem', marginBottom: '6px' }}>Vehicle Type</label>
                         <div style={{ display: 'flex', gap: '1rem' }}>
@@ -1532,7 +1532,7 @@ ${photosSection}`;
                     <h4 style={{ margin: '1rem 0 0.5rem', fontWeight: 800, fontSize: '1rem', color: '#E10613' }}>7. Document Verification</h4>
                     <div className="wa-form-group">
                       <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem', marginBottom: '8px' }}>Verify Documents</label>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <div className="wa-form-grid" style={{ gap: '8px' }}>
                         {[
                           'Registration Certificate (RC) Verified',
                           'VIN Matched',
@@ -1574,7 +1574,7 @@ ${photosSection}`;
                     </div>
 
                     <h4 style={{ margin: '1rem 0 0.5rem', fontWeight: 800, fontSize: '1rem', color: '#E10613' }}>Final Evaluation</h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                    <div className="wa-form-grid" style={{ gap: '1.25rem' }}>
                       <div className="wa-form-group">
                         <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Overall Vehicle Condition Rating</label>
                         <select style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} value={inspectForm.overallCondition} onChange={e => setInspectForm({ ...inspectForm, overallCondition: e.target.value })}>
@@ -1779,9 +1779,33 @@ ${photosSection}`;
         .wa-btn.cancel:hover { background: var(--db-sf2, #f5f5f5); }
         .wa-btn.send { background: #22c55e; color: #fff; boxShadow: 0 4px 15px rgba(34,197,94,0.2); }
         .wa-btn.send:hover { background: #1eb253; }
+        .crm-details-grid {
+          display: grid;
+          grid-template-columns: 2fr 1fr;
+        }
+        .crm-profile-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .wa-form-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+        }
         @media (max-width: 768px) {
           .crm-details-grid {
             grid-template-columns: 1fr;
+          }
+        }
+        @media (max-width: 600px) {
+          .crm-profile-row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+          }
+          .wa-form-grid {
+            grid-template-columns: 1fr;
+            gap: 0.75rem !important;
           }
         }
       `}</style>

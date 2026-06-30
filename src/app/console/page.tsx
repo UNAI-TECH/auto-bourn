@@ -16,6 +16,7 @@ export default function EmployeeConsolePage() {
   const [error, setError] = useState('');
   const router = useRouter();
   const supabase = createClient();
+  const isPlaceholder = !process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL.includes('placeholder.supabase.co');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,8 +100,9 @@ export default function EmployeeConsolePage() {
           router.push('/employee');
         }
       }
-    } catch {
-      setError('An unexpected error occurred. Please try again.');
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setError('Database connection error. Please verify that your Supabase credentials are configured in your .env.local file.');
     } finally {
       setLoading(false);
     }
@@ -180,6 +182,8 @@ export default function EmployeeConsolePage() {
               <h1>Portal Access</h1>
               <p>Sign in using your administrator credentials below.</p>
             </div>
+
+
 
             <form onSubmit={handleLogin}>
               <div className="console-field">

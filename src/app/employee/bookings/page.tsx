@@ -840,7 +840,25 @@ export default function EmployeeBookingsPage() {
           }
         }
 
+        @media (max-width: 1024px) {
+          .stats-row {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+        }
+
         @media (max-width: 600px) {
+          .stats-row {
+            grid-template-columns: 1fr !important;
+          }
+          .db-page-header {
+            position: relative;
+            padding-right: 90px !important;
+          }
+          .refresh-btn {
+            position: absolute !important;
+            top: 0px !important;
+            right: 0px !important;
+          }
           .emp-booking-card {
             grid-template-columns: 1fr !important;
           }
