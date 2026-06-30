@@ -61,7 +61,7 @@ export const brands: Brand[] = [
   { name: 'Audi', logo: '/brands/6.png', count: 14, slug: 'audi' },
   { name: 'Lamborghini', logo: '/brands/4.png', count: 4, slug: 'lamborghini' },
   { name: 'Mini', logo: '/brands/10.png', count: 5, slug: 'mini' },
-  { name: 'Rolls-Royce', logo: '/images.png', count: 7, slug: 'rolls-royce' },
+  { name: 'Rolls-Royce', logo: '/RR.png', count: 7, slug: 'rolls-royce' },
 ];
 
 export const vehicles: Vehicle[] = [
