@@ -49,6 +49,11 @@ export default function LeadsPage() {
       if (emp) setMyId(emp.id);
       const { data:emps } = await supabase.from('employees').select('id,name,employee_id').eq('status','active');
       setEmployees(emps||[]);
+      
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('add') === 'true') {
+        setShowForm(true);
+      }
     };
     init();
   }, []);

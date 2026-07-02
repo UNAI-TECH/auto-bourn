@@ -820,7 +820,7 @@ export default function EmployeesPage() {
 .emp-table tr:hover{background:var(--db-sf2)}
 .emp-user{display:flex;align-items:center;gap:.75rem;cursor:pointer;user-select:none}
 .emp-user:hover .emp-name{color:var(--db-gold);text-decoration:underline}
-.emp-avatar{width:36px;height:36px;border-radius:10px;background:var(--db-gd);color:var(--db-gold);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.875rem;flex-shrink:0}
+.emp-avatar{width:36px;height:36px;border-radius:50%;background:var(--db-gd);color:var(--db-gold);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.875rem;flex-shrink:0}
 .emp-name{display:block;font-weight:600;color:var(--db-tx)}
 .emp-email{display:block;font-size:.75rem;color:var(--db-tx3)}
 .emp-id-badge{background:var(--db-gd);color:var(--db-gold);padding:.25rem .75rem;border-radius:6px;font-size:.75rem;font-weight:600;font-family:'Outfit',sans-serif}
@@ -1613,7 +1613,7 @@ export default function EmployeesPage() {
 .emp-avatar-img-wrap {
   width: 36px;
   height: 36px;
-  border-radius: 10px;
+  border-radius: 50%;
   overflow: hidden;
   position: relative;
   flex-shrink: 0;

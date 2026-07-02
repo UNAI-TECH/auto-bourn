@@ -332,7 +332,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
               <div className="saas-avatar-wrap">
                 {employee?.avatar_url ? (
                   <div style={{ position: 'relative', width: 36, height: 36 }}>
-                    <Image src={employee.avatar_url} alt={employee.name || 'Avatar'} fill style={{ objectFit: 'cover', borderRadius: '10px' }} />
+                    <Image src={employee.avatar_url} alt={employee.name || 'Avatar'} fill style={{ objectFit: 'cover', borderRadius: '50%' }} />
                   </div>
                 ) : (
                   <div className="saas-avatar">{employee?.name?.charAt(0) || 'E'}</div>
@@ -380,13 +380,41 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
           <header className="saas-mob-topbar">
             <button className="db-menu" onClick={() => setMobileOpen(true)}><Menu size={20} /></button>
             <span className="saas-mob-title">AUTO BOURN Console</span>
-            {employee?.avatar_url ? (
-              <div style={{ position: 'relative', width: 36, height: 36, borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--db-bd)' }}>
-                <Image src={employee.avatar_url} alt={employee.name || 'Avatar'} fill style={{ objectFit: 'cover' }} />
-              </div>
-            ) : (
-              <div className="saas-avatar">{employee?.name?.charAt(0) || 'E'}</div>
-            )}
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+              <button 
+                className="saas-action-btn notif-wrap mobile-notif-btn" 
+                title="Notifications & Messages" 
+                onClick={() => { setContactMessagesOpen(true); if (employee) fetchNotifications(employee.id); }}
+                style={{ 
+                  background: 'var(--db-sf2, #f5f5f5)', 
+                  border: '1px solid var(--db-bd, rgba(0,0,0,0.08))', 
+                  borderRadius: '50%', 
+                  padding: '8px', 
+                  cursor: 'pointer', 
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--db-tx2, #555)'
+                }}
+              >
+                <Mail size={16} />
+                {notifications.filter(n => !n.read).length > 0 && (
+                  <span className="saas-dot notif-count" style={{ background: '#E10613', color: '#fff', top: '-2px', right: '-2px', minWidth: '14px', height: '14px', fontSize: '0.55rem' }}>
+                    {notifications.filter(n => !n.read).length}
+                  </span>
+                )}
+              </button>
+
+              {employee?.avatar_url ? (
+                <div style={{ position: 'relative', width: 36, height: 36, borderRadius: '50%', overflow: 'hidden', border: '1px solid var(--db-bd)' }}>
+                  <Image src={employee.avatar_url} alt={employee.name || 'Avatar'} fill style={{ objectFit: 'cover', borderRadius: '50%' }} />
+                </div>
+              ) : (
+                <div className="saas-avatar" style={{ borderRadius: '50%' }}>{employee?.name?.charAt(0) || 'E'}</div>
+              )}
+            </div>
           </header>
           <main className="saas-content">{children}</main>
         </div>

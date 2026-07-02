@@ -1302,6 +1302,11 @@ export default function CRMOverviewPage() {
         .font-semibold { font-weight: 600; }
         .ml-auto { margin-left: auto; }
 
+        @media(max-width: 768px) {
+          .crm-dash-wrapper {
+            padding: 0 !important;
+          }
+        }
         @media(max-width: 900px) {
           .crm-stats-grid {
             grid-template-columns: repeat(2, 1fr);

@@ -19,9 +19,19 @@ interface CustomSelectProps {
   onChange: (value: string) => void;
   placeholder: string;
   minWidth?: string;
+  className?: string;
+  alignDropdown?: 'left' | 'right' | 'auto';
 }
 
-function CustomSelect({ options, value, onChange, placeholder, minWidth = '160px' }: CustomSelectProps) {
+function CustomSelect({ 
+  options, 
+  value, 
+  onChange, 
+  placeholder, 
+  minWidth = '160px', 
+  className,
+  alignDropdown = 'auto'
+}: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -38,7 +48,7 @@ function CustomSelect({ options, value, onChange, placeholder, minWidth = '160px
   const selectedOption = options.find(opt => opt.value === value) || { label: placeholder, value };
 
   return (
-    <div ref={containerRef} style={{ position: 'relative', minWidth, fontFamily: 'var(--font-secondary)' }}>
+    <div ref={containerRef} className={className} style={{ position: 'relative', minWidth, fontFamily: 'var(--font-secondary)' }}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -98,8 +108,11 @@ function CustomSelect({ options, value, onChange, placeholder, minWidth = '160px
             style={{
               position: 'absolute',
               top: 'calc(100% + 6px)',
-              left: 0,
-              right: 0,
+              left: alignDropdown === 'right' ? 'auto' : 0,
+              right: alignDropdown === 'left' ? 'auto' : 0,
+              width: alignDropdown === 'auto' ? '100%' : 'max-content',
+              minWidth: '100%',
+              maxWidth: 'calc(100vw - 32px)',
               background: '#FFFFFF',
               border: '1px solid #ECECEC',
               borderRadius: '12px',
@@ -316,7 +329,7 @@ function InventoryContent({ initialVehicles }: { initialVehicles: Vehicle[] }) {
               )}
             </div>
             {/* Filter row */}
-            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <div className="filter-row" style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
               <CustomSelect
                 options={[
                   { value: 'all', label: 'All Brands' },
@@ -326,6 +339,8 @@ function InventoryContent({ initialVehicles }: { initialVehicles: Vehicle[] }) {
                 onChange={handleFilterChange(setBrandFilter)}
                 placeholder="All Brands"
                 minWidth="160px"
+                className="filter-select-brand"
+                alignDropdown="left"
               />
               <CustomSelect
                 options={[
@@ -338,6 +353,8 @@ function InventoryContent({ initialVehicles }: { initialVehicles: Vehicle[] }) {
                 onChange={handleFilterChange(setBodyFilter)}
                 placeholder="All Body Types"
                 minWidth="160px"
+                className="filter-select-body"
+                alignDropdown="right"
               />
               <CustomSelect
                 options={[
@@ -350,9 +367,11 @@ function InventoryContent({ initialVehicles }: { initialVehicles: Vehicle[] }) {
                 onChange={handleFilterChange(setFuelFilter)}
                 placeholder="All Fuel Types"
                 minWidth="160px"
+                className="filter-select-fuel"
+                alignDropdown="left"
               />
               {activeFilters > 0 && (
-                <button onClick={clearFilters} style={{
+                <button onClick={clearFilters} className="filter-clear-btn" style={{
                   padding: '0.625rem 1.25rem', border: '1.5px solid #E10613', borderRadius: '12px',
                   background: 'rgba(225,6,19,0.04)', fontSize: '0.8125rem', color: '#E10613',
                   cursor: 'pointer', fontWeight: 600, transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -367,21 +386,21 @@ function InventoryContent({ initialVehicles }: { initialVehicles: Vehicle[] }) {
                   Clear Filters ({activeFilters})
                 </button>
               )}
-              <div style={{ marginLeft: 'auto' }}>
-                <CustomSelect
-                  options={[
-                    { value: 'newest', label: 'Newest First' },
-                    { value: 'price-low', label: 'Price: Low → High' },
-                    { value: 'price-high', label: 'Price: High → Low' },
-                    { value: 'year', label: 'Year' },
-                    { value: 'mileage', label: 'Mileage' }
-                  ]}
-                  value={sortBy}
-                  onChange={handleFilterChange(setSortBy)}
-                  placeholder="Newest First"
-                  minWidth="180px"
-                />
-              </div>
+              <CustomSelect
+                options={[
+                  { value: 'newest', label: 'Newest First' },
+                  { value: 'price-low', label: 'Price: Low → High' },
+                  { value: 'price-high', label: 'Price: High → Low' },
+                  { value: 'year', label: 'Year' },
+                  { value: 'mileage', label: 'Mileage' }
+                ]}
+                value={sortBy}
+                onChange={handleFilterChange(setSortBy)}
+                placeholder="Newest First"
+                minWidth="180px"
+                className="filter-select-sort"
+                alignDropdown="right"
+              />
             </div>
           </motion.div>
         </div>
@@ -500,6 +519,39 @@ function InventoryContent({ initialVehicles }: { initialVehicles: Vehicle[] }) {
           border-color: #E10613 !important;
           box-shadow: 0 10px 30px rgba(225,6,19,0.06) !important;
           transform: translateY(-1px);
+        }
+        
+        @media (min-width: 768px) {
+          .filter-select-sort {
+            margin-left: auto !important;
+          }
+        }
+        
+        @media (max-width: 767px) {
+          .filter-row {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 0.75rem !important;
+            width: 100% !important;
+          }
+          .filter-select-brand,
+          .filter-select-body,
+          .filter-select-fuel,
+          .filter-select-sort {
+            min-width: 0 !important;
+            width: 100% !important;
+            margin-left: 0 !important;
+          }
+          .filter-select-brand { order: 1 !important; }
+          .filter-select-body { order: 2 !important; }
+          .filter-select-fuel { order: 3 !important; }
+          .filter-select-sort { order: 4 !important; }
+          .filter-clear-btn {
+            order: 5 !important;
+            grid-column: span 2 !important;
+            justify-content: center !important;
+            width: 100% !important;
+          }
         }
       `}</style>
     </>

@@ -719,10 +719,12 @@ export default function BookingsPage() {
         }
         .consultant-select {
           width: 100%;
-          background: var(--db-sf2, #f9f9f9);
+          background: var(--db-sf2, #f9f9f9) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23888888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>") no-repeat;
+          background-position: right 10px center;
+          background-size: 14px;
           border: 1px solid var(--db-bd, rgba(0,0,0,0.08));
           border-radius: 8px;
-          padding: 6px 10px 6px 28px;
+          padding: 6px 26px 6px 28px;
           color: var(--db-tx, #000);
           font-size: 0.8125rem;
           font-weight: 600;
@@ -731,6 +733,8 @@ export default function BookingsPage() {
           cursor: pointer;
           transition: border-color 0.15s;
           appearance: none;
+          -webkit-appearance: none;
+          -moz-appearance: none;
         }
         .consultant-select:hover {
           border-color: var(--brand-red, #E10613);
@@ -855,11 +859,14 @@ export default function BookingsPage() {
         }
 
         @media (max-width: 1024px) {
-          .emp-booking-card {
+          .stats-row {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+          .booking-row-card {
             grid-template-columns: 1fr 1fr !important;
             gap: 1.25rem !important;
           }
-          .col-financials, .col-consultant, .col-status-actions {
+          .col-consultant, .col-status-actions {
             align-items: flex-start !important;
             grid-column: span 1;
           }
@@ -875,7 +882,19 @@ export default function BookingsPage() {
         }
 
         @media (max-width: 600px) {
-          .emp-booking-card {
+          .stats-row {
+            grid-template-columns: 1fr !important;
+          }
+          .db-page-header {
+            position: relative;
+            padding-right: 90px !important;
+          }
+          .refresh-btn {
+            position: absolute !important;
+            top: 0px !important;
+            right: 0px !important;
+          }
+          .booking-row-card {
             grid-template-columns: 1fr !important;
           }
           .col-status-actions {
@@ -889,8 +908,34 @@ export default function BookingsPage() {
             justify-content: space-between;
           }
           .act-btn { flex: 1; justify-content: center; }
-          .filters-bar { flex-direction: column; align-items: stretch; }
-          .tabs-container { overflow-x: auto; }
+          .filters-bar { flex-direction: column; align-items: stretch; gap: 1rem !important; }
+          .search-box { min-width: 0 !important; width: 100% !important; }
+          .select-container { width: 100% !important; }
+          .tabs-container {
+            display: flex !important;
+            flex-wrap: nowrap !important;
+            overflow-x: auto !important;
+            -ms-overflow-style: none !important;
+            scrollbar-width: none !important;
+            width: 100% !important;
+            gap: 8px !important;
+            padding: 4px !important;
+            background: var(--db-sf2) !important;
+            border: 1px solid var(--db-bd) !important;
+            border-radius: 12px !important;
+          }
+          .tabs-container::-webkit-scrollbar {
+            display: none !important;
+          }
+          .tab-btn {
+            flex-shrink: 0 !important;
+            white-space: nowrap !important;
+            padding: 8px 16px !important;
+            font-size: 0.8rem !important;
+            border-radius: 8px !important;
+            flex: 1 !important;
+            text-align: center !important;
+          }
         }
       `}</style>
     </div>

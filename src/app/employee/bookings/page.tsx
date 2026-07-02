@@ -873,8 +873,19 @@ export default function EmployeeBookingsPage() {
             justify-content: space-between;
           }
           .act-btn { flex: 1; justify-content: center; }
-          .filters-bar { flex-direction: column; align-items: stretch; }
-          .tabs-container { overflow-x: auto; }
+          .filters-bar { flex-direction: column; align-items: stretch; gap: 1rem !important; }
+          .search-box { min-width: 0 !important; width: 100% !important; }
+          .tabs-container {
+            overflow-x: auto !important;
+            -ms-overflow-style: none !important;
+            scrollbar-width: none !important;
+          }
+          .tabs-container::-webkit-scrollbar {
+            display: none !important;
+          }
+          .tab-btn {
+            flex-shrink: 0 !important;
+          }
         }
       `}</style>
     </div>

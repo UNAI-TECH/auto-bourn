@@ -134,14 +134,14 @@ export default function EmployeeCRMPage() {
   });
 
   return (
-    <div style={{ padding: '1.5rem', maxWidth: '1280px', margin: '0 auto', fontFamily: "'Outfit', sans-serif" }}>
+    <div style={{ padding: '1.5rem', maxWidth: '1280px', margin: '0 auto', fontFamily: "'Outfit', sans-serif" }} className="crm-page-container">
       {/* Top Welcome Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--db-tx, #000)', margin: 0 }}>Customer Relationship Management (CRM)</h1>
           <p style={{ fontSize: '.875rem', color: 'var(--db-tx2, #555)', margin: '4px 0 0' }}>Streamline your interactions with luxury buyers and sellers</p>
         </div>
-        <Link href="/employee/crm/leads/new" style={{ background: 'linear-gradient(135deg, #E10613, #c70511)', color: '#fff', border: 'none', padding: '0.625rem 1.25rem', borderRadius: '12px', fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none', boxShadow: '0 4px 15px rgba(225, 6, 19, 0.2)' }} className="btn-hover-glow">
+        <Link href="/employee/customer-details" style={{ background: 'linear-gradient(135deg, #E10613, #c70511)', color: '#fff', border: 'none', padding: '0.625rem 1.25rem', borderRadius: '12px', fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none', boxShadow: '0 4px 15px rgba(225, 6, 19, 0.2)' }} className="btn-hover-glow">
           <Plus size={16} /> Add Lead Record
         </Link>
       </div>
@@ -245,9 +245,9 @@ export default function EmployeeCRMPage() {
       </div>
 
       {/* Tabs Header and Search */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1.5px solid var(--db-bd, rgba(0,0,0,0.06))', paddingBottom: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1.5px solid var(--db-bd, rgba(0,0,0,0.06))', paddingBottom: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }} className="crm-filter-header-row">
         {/* Tabs */}
-        <div style={{ display: 'flex', background: 'var(--db-sf2, #f5f5f5)', padding: '5px', borderRadius: '12px', gap: '4px' }}>
+        <div style={{ display: 'flex', background: 'var(--db-sf2, #f5f5f5)', padding: '5px', borderRadius: '12px', gap: '4px' }} className="crm-tabs">
           <button 
             onClick={() => setActiveTab('my')} 
             style={{ 
@@ -263,8 +263,10 @@ export default function EmployeeCRMPage() {
               boxShadow: activeTab === 'my' ? '0 4px 10px rgba(0,0,0,0.03)' : 'none',
               transition: 'all 0.2s' 
             }}
+            className="crm-tab-btn"
           >
-            My Assigned Leads ({counts.my})
+            <span className="tab-txt-full">My Assigned Leads ({counts.my})</span>
+            <span className="tab-txt-short">Assigned ({counts.my})</span>
           </button>
           <button 
             onClick={() => setActiveTab('unassigned_buy')} 
@@ -281,8 +283,10 @@ export default function EmployeeCRMPage() {
               boxShadow: activeTab === 'unassigned_buy' ? '0 4px 10px rgba(0,0,0,0.03)' : 'none',
               transition: 'all 0.2s' 
             }}
+            className="crm-tab-btn"
           >
-            Unassigned Buy Leads ({counts.buy})
+            <span className="tab-txt-full">Unassigned Buy Leads ({counts.buy})</span>
+            <span className="tab-txt-short">Buy ({counts.buy})</span>
           </button>
           <button 
             onClick={() => setActiveTab('unassigned_sell')} 
@@ -299,13 +303,15 @@ export default function EmployeeCRMPage() {
               boxShadow: activeTab === 'unassigned_sell' ? '0 4px 10px rgba(0,0,0,0.03)' : 'none',
               transition: 'all 0.2s' 
             }}
+            className="crm-tab-btn"
           >
-            Unassigned Sell Leads ({counts.sell})
+            <span className="tab-txt-full">Unassigned Sell Leads ({counts.sell})</span>
+            <span className="tab-txt-short">Sell ({counts.sell})</span>
           </button>
         </div>
 
         {/* Search */}
-        <div className="db-search-inline" style={{ background: 'var(--db-sf, #ffffff)', border: '1.5px solid var(--db-bd, rgba(0,0,0,0.08))', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', width: '100%', maxWidth: '280px' }}>
+        <div style={{ background: 'var(--db-sf, #ffffff)', border: '1.5px solid var(--db-bd, rgba(0,0,0,0.08))', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', width: '100%', maxWidth: '280px' }} className="db-search-inline crm-search-inline">
           <Search size={14} style={{ color: 'var(--db-tx3, #777)' }} />
           <input placeholder="Search customer info..." value={search} onChange={e=>setSearch(e.target.value)} style={{ color: 'var(--db-tx)', background: 'none', border: 'none', outline: 'none', width: '100%', fontSize: '.875rem' }}/>
         </div>
@@ -642,6 +648,15 @@ export default function EmployeeCRMPage() {
           box-shadow: 0 4px 15px rgba(0,0,0,0.01) !important;
         }
 
+        .crm-page-container {
+          padding: 1.5rem !important;
+        }
+        .tab-txt-short {
+          display: none;
+        }
+        .tab-txt-full {
+          display: inline;
+        }
         @media (max-width: 900px) {
           .crm-two-columns-row {
             grid-template-columns: 1fr;
@@ -650,6 +665,36 @@ export default function EmployeeCRMPage() {
           .crm-sidebar-panel, .crm-panel-widget {
             height: auto !important;
             min-height: 280px;
+          }
+        }
+        @media (max-width: 768px) {
+          .crm-page-container {
+            padding: 0.75rem 0 !important;
+          }
+          .tab-txt-full {
+            display: none;
+          }
+          .tab-txt-short {
+            display: inline;
+          }
+          .crm-filter-header-row {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 12px !important;
+          }
+          .crm-tabs {
+            width: 100% !important;
+            display: flex !important;
+          }
+          .crm-tab-btn {
+            flex: 1 !important;
+            padding: 0.5rem 0.25rem !important;
+            font-size: 0.75rem !important;
+            text-align: center !important;
+          }
+          .crm-search-inline {
+            max-width: 100% !important;
+            width: 100% !important;
           }
         }
       `}</style>

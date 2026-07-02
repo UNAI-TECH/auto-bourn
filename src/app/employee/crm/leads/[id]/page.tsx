@@ -87,9 +87,9 @@ const renderInspectionReport = (note: string) => {
   }
 
   return (
-    <div style={{ background: 'var(--db-sf2, #f8fafc)', border: '1px solid var(--db-bd, #e2e8f0)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', marginTop: '0.5rem', width: '100%' }}>
+    <div style={{ background: 'var(--db-sf2, #f8fafc)', border: '1px solid var(--db-bd, #e2e8f0)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', marginTop: '0.5rem', width: '100%' }} className="inspection-report-card">
       {/* Top Header Card */}
-      <div style={{ background: 'linear-gradient(135deg, #1e293b, #0f172a)', color: '#fff', padding: '1rem 1.25rem' }}>
+      <div style={{ background: 'linear-gradient(135deg, #1e293b, #0f172a)', color: '#fff', padding: '1rem 1.25rem' }} className="inspection-report-header">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
           <div>
             <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', color: '#fff' }}>
@@ -114,11 +114,11 @@ const renderInspectionReport = (note: string) => {
       </div>
 
       {/* Grid of Sections */}
-      <div style={{ padding: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', background: 'var(--db-sf, #fff)' }}>
+      <div style={{ padding: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', background: 'var(--db-sf, #fff)' }} className="inspection-report-grid">
         {sections.map((sec, idx) => {
           const isMedia = sec.title.toLowerCase().includes('media') || sec.title.toLowerCase().includes('photo');
           return (
-            <div key={idx} style={{ background: 'var(--db-sf2, #f8fafc)', padding: '0.875rem', borderRadius: '8px', border: '1px solid var(--db-bd, #e2e8f0)' }}>
+            <div key={idx} style={{ background: 'var(--db-sf2, #f8fafc)', padding: '0.875rem', borderRadius: '8px', border: '1px solid var(--db-bd, #e2e8f0)' }} className="inspection-report-section">
               <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', fontWeight: 750, color: '#e10613', borderBottom: '1.5px solid var(--db-bd, #f1f5f9)', paddingBottom: '4px' }}>
                 {sec.title}
               </h4>
@@ -664,7 +664,7 @@ ${photosSection}`;
   const isAssigned = !!lead.assigned_to;
 
   return (
-    <div style={{ padding: '1.5rem', maxWidth: '1280px', margin: '0 auto', fontFamily: "'Outfit', sans-serif" }}>
+    <div style={{ padding: '1.5rem', maxWidth: '1280px', margin: '0 auto', fontFamily: "'Outfit', sans-serif" }} className="crm-details-container">
       {/* Top breadcrumb */}
       <Link href="/employee/crm" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--db-tx2, #555)', textDecoration: 'none', fontSize: '.875rem', fontWeight: 600, marginBottom: '1.5rem', transition: 'color 0.2s' }} className="hover-link">
         <ArrowLeft size={16} /> Back to CRM
@@ -840,7 +840,7 @@ ${photosSection}`;
           {tab === 'notes' && (
             <div>
               <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--db-tx, #000)' }}>Customer Timeline Notes</h2>
-              <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', alignItems: 'stretch' }}>
+              <div className="notes-form-container">
                 <textarea 
                   value={newNote} 
                   onChange={e => setNewNote(e.target.value)} 
@@ -848,14 +848,14 @@ ${photosSection}`;
                   rows={2} 
                   style={{ flex: 1, padding: '0.75rem 1rem', background: 'var(--db-sf2, #f9f9f9)', border: '1.5px solid var(--db-bd, rgba(0,0,0,0.08))', borderRadius: '12px', color: 'inherit', fontFamily: 'inherit', fontSize: '.875rem', resize: 'none', outline: 'none' }}
                 />
-                <button onClick={addNote} style={{ background: 'linear-gradient(135deg, #E10613, #c70511)', color: '#fff', border: 'none', padding: '0 1.25rem', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 15px rgba(225, 6, 19, 0.2)' }} className="btn-hover-glow">
+                <button onClick={addNote} className="notes-submit-btn">
                   <Plus size={20} />
                 </button>
               </div>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {notes.map(n => (
-                  <div key={n.id} style={{ background: 'var(--db-sf2, #fafafa)', border: '1.5px solid var(--db-bd, rgba(0,0,0,0.04))', borderLeft: n.note.includes('Inspection Report') ? '4px solid #E10613' : '4px solid #6366f1', borderRadius: '14px', padding: '1rem' }}>
+                  <div key={n.id} style={{ background: 'var(--db-sf2, #fafafa)', border: '1.5px solid var(--db-bd, rgba(0,0,0,0.04))', borderLeft: n.note.includes('Inspection Report') ? '4px solid #E10613' : '4px solid #6366f1', borderRadius: '14px' }} className="timeline-note-item">
                     <div style={{ fontSize: '.9rem', lineHeight: 1.5, color: 'var(--db-tx, #000)', fontWeight: 500 }}>{renderInspectionReport(n.note)}</div>
                     <div style={{ fontSize: '.75rem', color: 'var(--db-tx3, #777)', marginTop: '6px', display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
                       <span>👤 {(n.employee as {name:string}|null)?.name || 'Admin'}</span>
@@ -1792,7 +1792,35 @@ ${photosSection}`;
           display: grid;
           grid-template-columns: 1fr 1fr;
         }
+        .crm-details-container {
+          padding: 1.5rem !important;
+        }
+        .timeline-note-item {
+          padding: 1rem;
+        }
+        .notes-form-container {
+          display: flex;
+          gap: 0.75rem;
+          margin-bottom: 1.5rem;
+          align-items: stretch;
+        }
+        .notes-submit-btn {
+          background: linear-gradient(135deg, #E10613, #c70511);
+          color: #fff;
+          border: none;
+          padding: 0 1.25rem;
+          border-radius: 12px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 4px 15px rgba(225, 6, 19, 0.2);
+          transition: all 0.2s;
+        }
         @media (max-width: 768px) {
+          .crm-details-container {
+            padding: 0.75rem 0 !important;
+          }
           .crm-details-grid {
             grid-template-columns: 1fr;
           }
@@ -1806,6 +1834,29 @@ ${photosSection}`;
           .wa-form-grid {
             grid-template-columns: 1fr;
             gap: 0.75rem !important;
+          }
+          .notes-form-container {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 8px !important;
+          }
+          .notes-submit-btn {
+            padding: 0.75rem !important;
+            border-radius: 10px !important;
+          }
+          .timeline-note-item {
+            padding: 0.75rem !important;
+            border-radius: 10px !important;
+          }
+          .inspection-report-grid {
+            padding: 0.5rem !important;
+            gap: 0.5rem !important;
+          }
+          .inspection-report-section {
+            padding: 0.5rem !important;
+          }
+          .inspection-report-header {
+            padding: 0.75rem 0.5rem !important;
           }
         }
       `}</style>

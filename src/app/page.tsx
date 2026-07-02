@@ -107,22 +107,22 @@ export default function HomePage() {
   return (
     <>
       {/* ═══ HERO ═══ */}
-      <section style={{ minHeight: '90vh', display: 'flex', alignItems: 'center', background: '#FFFFFF', position: 'relative', overflow: 'hidden' }}>
+      <section className="hero-section">
         {/* Subtle background accents */}
         <div style={{ position: 'absolute', top: '-20%', right: '-10%', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(225,6,19,0.03) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none', zIndex: 1 }} />
         <div style={{ position: 'absolute', bottom: '-30%', left: '-10%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(245,245,245,0.8) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none', zIndex: 1 }} />
 
-        <div className="container-wide" style={{ position: 'relative', zIndex: 2, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'clamp(2rem, 6vw, 6rem)', alignItems: 'center', width: '100%', padding: 'clamp(2rem, 4vw, 4rem) clamp(1.5rem, 4vw, 3rem)' }}>
+        <div className="container-wide hero-grid">
           {/* Left */}
           <div>
             <motion.div initial={{ opacity: 0, x: -60 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}>
               <p style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.2em', color: '#E10613', marginBottom: '1.5rem' }}>
                 Premium Pre-Owned Collection
               </p>
-              <h1 style={{ fontFamily: 'var(--font-primary)', fontSize: 'clamp(3rem, 7vw, 6.5rem)', fontWeight: 800, lineHeight: 0.95, letterSpacing: '-0.04em', color: '#2A2A2A', marginBottom: '1.5rem' }}>
+              <h1 style={{ fontFamily: 'var(--font-primary)', fontSize: 'clamp(2.25rem, 6vw, 6.5rem)', fontWeight: 800, lineHeight: 0.95, letterSpacing: '-0.04em', color: '#2A2A2A', marginBottom: '1.5rem' }}>
                 DRIVE<br />BEYOND<br /><span style={{ color: '#E10613' }}>LUXURY</span>
               </h1>
-              <p style={{ fontSize: 'clamp(1rem, 1.5vw, 1.125rem)', lineHeight: 1.7, color: '#4A4A4A', maxWidth: '480px', marginBottom: '2.5rem' }}>
+              <p className="hero-desc">
                 Curated collection of certified premium pre-owned vehicles. 
                 Every car inspected, every detail perfected, every drive exceptional.
               </p>
@@ -154,10 +154,7 @@ export default function HomePage() {
             className="hero-vehicle-container"
             style={{ position: 'relative' }}
           >
-            <div className="animate-float-slow" style={{
-              width: '100%', aspectRatio: '4/3', borderRadius: '24px',
-              overflow: 'hidden', position: 'relative',
-            }}>
+            <div className="animate-float-slow hero-image-card">
               <Image
                 src="/home.png"
                 alt="Auto Bourn Premium Showroom"
@@ -457,9 +454,61 @@ export default function HomePage() {
           }
         }
 
+        .hero-section {
+          min-height: 90vh;
+          display: flex;
+          align-items: center;
+          background: #FFFFFF;
+          position: relative;
+          overflow: hidden;
+        }
+        .hero-grid {
+          position: relative;
+          z-index: 2;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: clamp(2rem, 6vw, 6rem);
+          align-items: center;
+          width: 100%;
+          padding: clamp(4rem, 6vw, 6rem) clamp(1.5rem, 4vw, 3rem);
+        }
+        .hero-desc {
+          font-size: clamp(0.9375rem, 1.5vw, 1.125rem);
+          line-height: 1.7;
+          color: #4A4A4A;
+          max-width: 480px;
+          margin-bottom: 2.5rem;
+        }
+        .hero-image-card {
+          width: 100%;
+          aspect-ratio: 4/3;
+          border-radius: 24px;
+          overflow: hidden;
+          position: relative;
+        }
         @media (max-width: 768px) {
-          .hero-vehicle-container { display: none; }
-          section:first-of-type > div { grid-template-columns: 1fr !important; }
+          .hero-section {
+            min-height: auto !important;
+            padding: 2.5rem 0 !important;
+          }
+          .hero-grid {
+            grid-template-columns: 1fr !important;
+            gap: 2.5rem !important;
+            padding-top: 1.5rem !important;
+            padding-bottom: 1.5rem !important;
+          }
+          .hero-desc {
+            margin-bottom: 1.5rem !important;
+          }
+          .hero-vehicle-container {
+            display: block !important;
+            width: 100% !important;
+            max-width: 480px;
+            margin: 0 auto !important;
+          }
+          .hero-image-card {
+            border-radius: 16px !important;
+          }
           .brand-logo-card { width: 110px; height: 100px; padding: 1rem; }
           .featured-carousel-item { width: 280px; }
         }

@@ -698,6 +698,7 @@ export default function EmployeeDashboard() {
 }
 .profile-avatar-img {
   object-fit: cover;
+  border-radius: 50%;
 }
 .profile-overlay-gradient {
   position: absolute;
@@ -1139,7 +1140,10 @@ export default function EmployeeDashboard() {
 }
 @media(max-width: 768px) {
   .crextio-dashboard {
-    padding: 0.75rem 0.5rem;
+    padding: 0.75rem 0 !important;
+  }
+  .crextio-welcome-title {
+    font-size: 1.5rem !important;
   }
   .crextio-welcome-row {
     flex-direction: column;
@@ -1148,7 +1152,21 @@ export default function EmployeeDashboard() {
   }
   .crextio-welcome-r {
     width: 100%;
-    justify-content: space-between;
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+  .crextio-counter-item {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    gap: 0.25rem !important;
+  }
+  .counter-text {
+    align-items: center !important;
+  }
+  .crextio-grid {
+    gap: 1rem !important;
   }
 }
       `}</style>

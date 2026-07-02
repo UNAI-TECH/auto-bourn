@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState, useEffect, createContext, useContext, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -46,6 +46,8 @@ const crmNavItems = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [employee, setEmployee] = useState<Employee | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [updatingAvatar, setUpdatingAvatar] = useState(false);
   const darkMode = false;
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -77,6 +79,53 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       message,
       type,
     });
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !employee) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      showAlert('Error', 'Image size must be less than 5MB', 'error');
+      return;
+    }
+
+    setUpdatingAvatar(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `avatar-${employee.employee_id || 'temp'}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('car-images')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        throw new Error(`Avatar upload failed: ${uploadError.message}`);
+      }
+
+      const { data } = supabase.storage
+        .from('car-images')
+        .getPublicUrl(filePath);
+
+      const uploadedAvatarUrl = data.publicUrl;
+
+      const { error: updateError } = await supabase
+        .from('employees')
+        .update({ avatar_url: uploadedAvatarUrl })
+        .eq('id', employee.id);
+
+      if (updateError) {
+        throw new Error(`Failed to update profile: ${updateError.message}`);
+      }
+
+      setEmployee({ ...employee, avatar_url: uploadedAvatarUrl });
+      showAlert('Success', 'Profile photo updated successfully!', 'success');
+    } catch (err: any) {
+      showAlert('Error', err.message || 'Failed to update profile photo', 'error');
+    } finally {
+      setUpdatingAvatar(false);
+    }
   };
 
   const fetchContactMessages = async () => {
@@ -276,13 +325,40 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </span>
                 )}
               </button>
-              {employee?.avatar_url ? (
-                <div style={{ position: 'relative', width: 36, height: 36 }}>
-                  <Image src={employee.avatar_url} alt={employee.name || 'Avatar'} fill style={{ objectFit: 'cover', borderRadius: '10px' }} />
-                </div>
-              ) : (
-                <div className="db-avatar">{employee?.name?.charAt(0) || 'A'}</div>
-              )}
+              <div 
+                onClick={() => fileInputRef.current?.click()} 
+                title="Change Photo"
+                style={{ 
+                  position: 'relative', 
+                  width: 36, 
+                  height: 36, 
+                  cursor: 'pointer',
+                  borderRadius: '50%',
+                  overflow: 'hidden',
+                  border: '2px solid var(--db-bd)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'transform 0.2s',
+                  flexShrink: 0
+                }}
+                className="admin-avatar-btn"
+              >
+                {updatingAvatar ? (
+                  <div className="avatar-spinner-small" style={{ width: 16, height: 16, border: '2px solid var(--db-gold)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                ) : employee?.avatar_url ? (
+                  <Image src={employee.avatar_url} alt={employee.name || 'Avatar'} fill style={{ objectFit: 'cover', borderRadius: '50%' }} />
+                ) : (
+                  <div className="db-avatar" style={{ width: '100%', height: '100%', borderRadius: '50%', margin: 0 }}>{employee?.name?.charAt(0) || 'A'}</div>
+                )}
+              </div>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleAvatarChange}
+                accept="image/*"
+                style={{ display: 'none' }}
+              />
             </div>
           </header>
           <main className="db-content">{children}</main>
@@ -358,7 +434,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 .db-icon-btn{background:0;border:0;color:var(--db-tx2);cursor:pointer;padding:8px;border-radius:10px;display:flex;position:relative;transition:all .2s}
 .db-icon-btn:hover{background:var(--db-gd);color:var(--db-gold)}
 .db-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;background:var(--db-rd);border-radius:50%}
-.db-avatar{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#e10613,#c70511);display:flex;align-items:center;justify-content:center;color:#ffffff;font-weight:700;font-size:.875rem;font-family:'Outfit',sans-serif}
+.db-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#e10613,#c70511);display:flex;align-items:center;justify-content:center;color:#ffffff;font-weight:700;font-size:.875rem;font-family:'Outfit',sans-serif}
 .db-content{flex:1;padding:1.5rem;overflow-y:auto;overflow-x:hidden;min-width:0;display:flex;flex-direction:column}
 @media(max-width:768px){.db-sidebar{transform:translateX(-100%);width:280px}.db-sidebar.mobile-open{transform:translateX(0)}.db-mob-close{display:flex}.db-overlay{display:block}.db-main,.db-main.expanded{margin-left:0!important}.db-search{display:none}.db-topbar{padding:0 1rem}.db-content{padding:1rem}}
       `}</style>

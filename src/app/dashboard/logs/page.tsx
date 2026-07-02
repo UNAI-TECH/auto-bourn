@@ -389,7 +389,10 @@ export default function LogsPage() {
         }
 
         @media(max-width: 768px) {
+          .db-page { padding: 0 !important; }
           .rp-stats-row { flex-direction: column; gap: 0.75rem; }
+          .filter-tabs { gap: 6px; margin-bottom: 16px; }
+          .filter-tabs button { padding: 6px 12px; font-size: 0.8rem; }
         }
       `}</style>
     </div>
