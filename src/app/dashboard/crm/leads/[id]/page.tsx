@@ -3,6 +3,7 @@ import { useState, useEffect, use } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import DateTimePicker from '@/components/DateTimePicker';
 import { ArrowLeft, Phone, MessageCircle, Mail, Edit, Plus, Check, X, Clock, Car } from 'lucide-react';
 import { LEAD_STAGES, FOLLOW_UP_TYPE_LABELS, formatBudget, type Lead, type LeadStatus, type FollowUp, type CustomerNote, type TestDrive, type Booking } from '@/types/crm';
 
@@ -183,13 +184,14 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
   const [tab, setTab] = useState('Timeline');
   const [loading, setLoading] = useState(true);
   const [myId, setMyId] = useState<string|null>(null);
-  const [employees, setEmployees] = useState<{id:string;name:string}[]>([]);
+  const [employees, setEmployees] = useState<{id:string;name:string;role?:string}[]>([]);
 
   // form state
   const [newNote, setNewNote] = useState('');
   const [fuForm, setFuForm] = useState({ follow_up_type:'', scheduled_at:'', notes:'', priority:'' });
   const [tdForm, setTdForm] = useState({ car_name:'', scheduled_at:'', location:'', notes:'' });
   const [editStatus, setEditStatus] = useState(false);
+  const [editAssignee, setEditAssignee] = useState(false);
   const [toast, setToast] = useState('');
 
   const supabase = createClient();
@@ -214,7 +216,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
       if (!user) return;
       supabase.from('employees').select('id').eq('auth_user_id',user.id).single().then(({data})=>{ if(data) setMyId(data.id); });
     });
-    supabase.from('employees').select('id,name').eq('status','active').then(({data})=>setEmployees(data||[]));
+    supabase.from('employees').select('id,name,role').eq('status','active').then(({data})=>setEmployees(data||[]));
   }, [id]);
 
   const addNote = async () => {
@@ -235,9 +237,18 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
       showToast('Please select a priority');
       return;
     }
-    await supabase.from('follow_ups').insert({ lead_id:id, employee_id:myId, ...fuForm });
+    if (!fuForm.scheduled_at) {
+      showToast('Please select date and time');
+      return;
+    }
+    if (new Date(fuForm.scheduled_at) < new Date()) {
+      showToast('Cannot schedule follow-up in the past');
+      return;
+    }
+    const targetEmployeeId = lead?.assigned_to || myId;
+    await supabase.from('follow_ups').insert({ lead_id:id, employee_id:targetEmployeeId, ...fuForm });
     await supabase.from('leads').update({ lead_status:'follow_up_pending', updated_at:new Date().toISOString() }).eq('id',id);
-    await supabase.from('crm_activity_logs').insert({ lead_id:id, employee_id:myId, action:'follow_up_scheduled', details:`${fuForm.follow_up_type} on ${fuForm.scheduled_at}` });
+    await supabase.from('crm_activity_logs').insert({ lead_id:id, employee_id:targetEmployeeId, action:'follow_up_scheduled', details:`${fuForm.follow_up_type} on ${fuForm.scheduled_at}` });
     setFuForm({ follow_up_type:'', scheduled_at:'', notes:'', priority:'' });
     loadAll(); showToast('Follow-up scheduled');
   };
@@ -250,6 +261,14 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
   const addTestDrive = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!myId) return;
+    if (!tdForm.scheduled_at) {
+      showToast('Please select date and time');
+      return;
+    }
+    if (new Date(tdForm.scheduled_at) < new Date()) {
+      showToast('Cannot schedule test drive in the past');
+      return;
+    }
     await supabase.from('test_drives').insert({ lead_id:id, employee_id:myId, ...tdForm });
     await supabase.from('leads').update({ lead_status:'test_drive_scheduled', updated_at:new Date().toISOString() }).eq('id',id);
     setTdForm({ car_name:'', scheduled_at:'', location:'', notes:'' });
@@ -260,6 +279,48 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
     await supabase.from('leads').update({ lead_status:s, updated_at:new Date().toISOString() }).eq('id',id);
     await supabase.from('crm_activity_logs').insert({ lead_id:id, employee_id:myId, action:'status_change', details:`Status → ${s}` });
     setEditStatus(false); loadAll(); showToast('Status updated');
+  };
+
+  const changeAssignee = async (newAssigneeId: string | null) => {
+    if (!myId) return;
+    try {
+      const payload: any = {
+        updateData: { assigned_to: newAssigneeId || null },
+        activityLog: {
+          action: 'reassign',
+          details: newAssigneeId 
+            ? `Assigned to ${employees.find(e => e.id === newAssigneeId)?.name || 'Employee'}`
+            : 'Lead released (unassigned)'
+        }
+      };
+
+      const res = await fetch(`/api/leads/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to update assignment');
+      }
+
+      if (newAssigneeId) {
+        await supabase.from('notifications').insert({
+          recipient_role: 'employee',
+          recipient_employee_id: newAssigneeId,
+          type: 'lead_assigned',
+          title: '📞 New Lead Assigned',
+          message: `You have been assigned a new lead: ${lead?.customer_name} (${lead?.interested_car || 'Luxury car interest'}).`,
+          metadata: { lead_id: id }
+        });
+      }
+
+      setEditAssignee(false);
+      loadAll();
+      showToast('Assignment updated');
+    } catch (err: any) {
+      showToast(err.message || 'Error updating assignee');
+    }
   };
 
   // WhatsApp composer state
@@ -323,16 +384,22 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
   return (
     <div className="db-page" style={{padding:0}}>
       {/* Header */}
-      <div style={{display:'flex',alignItems:'flex-start',gap:'1rem',marginBottom:'1.5rem',flexWrap:'wrap'}}>
-        <Link href="/dashboard/crm/leads" style={{color:'var(--db-tx3)',textDecoration:'none',display:'flex',alignItems:'center',gap:4,fontSize:'.875rem',marginTop:4}}><ArrowLeft size={16}/>Back</Link>
-        <div style={{flex:1}}>
-          <h1 className="db-page-title">{lead.customer_name}</h1>
-          <p className="db-page-sub">{lead.phone} {lead.city&&`· ${lead.city}`} {lead.interested_car&&`· ${lead.interested_car}`}</p>
-        </div>
-        <div style={{display:'flex',gap:'.5rem',flexWrap:'wrap'}}>
-          <a href={`tel:${lead.phone}`} className="crm-action-btn call"><Phone size={15}/>Call</a>
-          <button onClick={() => openWhatsAppComposer('welcome')} className="crm-action-btn wa" style={{cursor:'pointer'}}><MessageCircle size={15}/>WhatsApp</button>
-          {lead.email&&<a href={`mailto:${lead.email}`} className="crm-action-btn email"><Mail size={15}/>Email</a>}
+      <div style={{ marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            <Link href="/dashboard/crm/leads" className="crm-back-btn">
+              <ArrowLeft size={15} /> Back
+            </Link>
+            <div>
+              <h1 className="db-page-title" style={{ margin: 0, fontSize: '1.75rem' }}>{lead.customer_name}</h1>
+              <p className="db-page-sub" style={{ margin: '0.25rem 0 0' }}>{lead.phone} {lead.city && `· ${lead.city}`} {lead.interested_car && `· ${lead.interested_car}`}</p>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
+            <a href={`tel:${lead.phone}`} className="crm-action-btn call"><Phone size={15} />Call</a>
+            <button onClick={() => openWhatsAppComposer('welcome')} className="crm-action-btn wa" style={{ cursor: 'pointer' }}><MessageCircle size={15} />WhatsApp</button>
+            {lead.email && <a href={`mailto:${lead.email}`} className="crm-action-btn email"><Mail size={15} />Email</a>}
+          </div>
         </div>
       </div>
 
@@ -353,7 +420,46 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
                 ))}
               </div>
             )}
-            <div className="crm-info-row"><span>Assigned</span><span>{emp?.name||'—'}</span></div>
+            <div className="crm-info-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '4px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <span style={{ color: 'var(--db-tx3)' }}>Assigned</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ color: 'var(--db-tx)', fontWeight: 500 }}>{emp?.name || '—'}</span>
+                  <button onClick={() => setEditAssignee(!editAssignee)} style={{ background: 0, border: 0, color: 'var(--db-tx3)', cursor: 'pointer', display: 'flex', padding: 0 }}><Edit size={14} /></button>
+                </div>
+              </div>
+              {editAssignee && (
+                <div style={{ marginTop: '0.25rem', width: '100%' }}>
+                  <select
+                    value={lead?.assigned_to || ''}
+                    onChange={(e) => changeAssignee(e.target.value || null)}
+                    style={{
+                      width: '100%',
+                      padding: '0.4rem 0.5rem',
+                      background: 'var(--db-sf2)',
+                      border: '1px solid var(--db-bd)',
+                      borderRadius: '8px',
+                      color: 'var(--db-tx)',
+                      fontSize: '0.8125rem',
+                      outline: 'none'
+                    }}
+                  >
+                    <option value="">Unassigned</option>
+                    <option value={myId || ''}>Assign to Me (Personal Lead)</option>
+                    <optgroup label="Admins">
+                      {employees.filter(e => e.role === 'admin' && e.id !== myId).map(e => (
+                        <option key={e.id} value={e.id}>{e.name}</option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Employees">
+                      {employees.filter(e => e.role === 'employee' && e.id !== myId).map(e => (
+                        <option key={e.id} value={e.id}>{e.name}</option>
+                      ))}
+                    </optgroup>
+                  </select>
+                </div>
+              )}
+            </div>
             <div className="crm-info-row"><span>Budget</span><span>{formatBudget(lead.budget)}</span></div>
             <div className="crm-info-row"><span>Source</span><span>{lead.source}</span></div>
             <div className="crm-info-row"><span>Timeline</span><span>{lead.purchase_timeline||'—'}</span></div>
@@ -403,7 +509,14 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
                     {Object.entries(FOLLOW_UP_TYPE_LABELS).map(([k,v])=><option key={k} value={k}>{v}</option>)}
                   </select>
                 </div>
-                <div className="emp-field"><label>Date &amp; Time</label><input type="datetime-local" required value={fuForm.scheduled_at} onChange={e=>setFuForm({...fuForm,scheduled_at:e.target.value})}/></div>
+                <div className="emp-field">
+                  <label>Date &amp; Time</label>
+                  <DateTimePicker
+                    value={fuForm.scheduled_at}
+                    onChange={(val) => setFuForm({ ...fuForm, scheduled_at: val })}
+                    required
+                  />
+                </div>
                 <div className="emp-field"><label>Priority</label>
                   <select required value={fuForm.priority} onChange={e=>setFuForm({...fuForm,priority:e.target.value})}>
                     <option value="" disabled>Select an option</option>
@@ -456,7 +569,14 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
             <div className="crm-panel">
               <form onSubmit={addTestDrive} style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'.75rem',marginBottom:'1.5rem',padding:'1rem',background:'var(--db-sf2)',borderRadius:12}}>
                 <div className="emp-field"><label>Car Name</label><input required value={tdForm.car_name} onChange={e=>setTdForm({...tdForm,car_name:e.target.value})}/></div>
-                <div className="emp-field"><label>Date &amp; Time</label><input type="datetime-local" required value={tdForm.scheduled_at} onChange={e=>setTdForm({...tdForm,scheduled_at:e.target.value})}/></div>
+                <div className="emp-field">
+                  <label>Date &amp; Time</label>
+                  <DateTimePicker
+                    value={tdForm.scheduled_at}
+                    onChange={(val) => setTdForm({ ...tdForm, scheduled_at: val })}
+                    required
+                  />
+                </div>
                 <div className="emp-field"><label>Location</label><input value={tdForm.location} onChange={e=>setTdForm({...tdForm,location:e.target.value})}/></div>
                 <div className="emp-field"><label>Notes</label><input value={tdForm.notes} onChange={e=>setTdForm({...tdForm,notes:e.target.value})}/></div>
                 <button type="submit" className="crm-add-btn" style={{gridColumn:'1/-1'}}><Car size={14}/>Schedule Test Drive</button>
@@ -649,6 +769,26 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
 .crm-card-btn{width:28px;height:28px;background:var(--db-sf);border:1px solid var(--db-bd);border-radius:7px;display:flex;align-items:center;justify-content:center;color:var(--db-tx3);cursor:pointer;transition:all .2s;flex-shrink:0}
 .crm-card-btn:hover{border-color:var(--db-gold);color:var(--db-gold)}
 .crm-status-badge{font-size:.6875rem;font-weight:600;padding:.25rem .625rem;border-radius:99px;white-space:nowrap}
+.crm-back-btn {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+  padding: .5rem .875rem;
+  border-radius: 9px;
+  font-size: .8125rem;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid var(--db-bd);
+  color: var(--db-tx2);
+  transition: all 0.2s;
+  background: var(--db-sf);
+  cursor: pointer;
+}
+.crm-back-btn:hover {
+  background: var(--db-sf2);
+  border-color: var(--db-gold);
+  color: var(--db-gold);
+}
 @media(max-width:768px){.crm-detail-layout{grid-template-columns:1fr}}
       `}</style>
     </div>

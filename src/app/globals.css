@@ -681,4 +681,206 @@ body:has(.db-root) main {
   }
 }
 
+html:has(.modal-backdrop),
+body:has(.modal-backdrop),
+html:has(.emp-modal-bg),
+body:has(.emp-modal-bg),
+html:has(.confirm-modal-bg),
+body:has(.confirm-modal-bg),
+html:has(.prompt-modal-bg),
+body:has(.prompt-modal-bg),
+html:has(.alert-modal-bg),
+body:has(.alert-modal-bg),
+html:has(.wa-modal-overlay),
+body:has(.wa-modal-overlay),
+html:has(.rp-overlay),
+body:has(.rp-overlay),
+html:has(.report-modal-overlay),
+body:has(.report-modal-overlay),
+html:has(.calendar-modal-overlay),
+body:has(.calendar-modal-overlay) {
+  overflow: hidden !important;
+  overscroll-behavior: contain !important;
+}
+
+body:has(.modal-backdrop) .db-content,
+body:has(.emp-modal-bg) .db-content,
+body:has(.confirm-modal-bg) .db-content,
+body:has(.prompt-modal-bg) .db-content,
+body:has(.alert-modal-bg) .db-content,
+body:has(.wa-modal-overlay) .db-content,
+body:has(.rp-overlay) .db-content,
+body:has(.report-modal-overlay) .db-content,
+body:has(.calendar-modal-overlay) .db-content {
+  overflow-y: hidden !important;
+  overscroll-behavior: contain !important;
+}
+
+/* Contain scroll events within modals and their components to prevent background scroll chaining */
+.modal-backdrop,
+.modal-card,
+.emp-modal,
+.modal-body-scroll,
+.wa-modal-overlay,
+.wa-modal-content,
+.rp-overlay,
+.rp-modal,
+.confirm-modal-bg,
+.prompt-modal-bg,
+.alert-modal-bg,
+.report-modal-overlay,
+.report-modal-card,
+.calendar-modal-overlay,
+.calendar-modal-card,
+.modal-right-body {
+  overscroll-behavior: contain !important;
+}
+
+.db-toast,
+.toast-alert {
+  z-index: 99999 !important;
+}
+
+/* Premium Select Wrapper styling used across Dashboard and CRM pages */
+.car-select-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--db-sf, #ffffff);
+  border: 1.5px solid var(--db-bd, rgba(0,0,0,0.08));
+  border-radius: 10px;
+  padding: 0.4rem 0.75rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.car-select-wrap:hover {
+  border-color: #E10613;
+  box-shadow: 0 4px 12px rgba(225, 6, 19, 0.06);
+}
+
+.car-select-wrap svg {
+  color: var(--db-tx3, rgba(0,0,0,0.4));
+  flex-shrink: 0;
+}
+
+.car-select-wrap select {
+  background: transparent;
+  border: none;
+  color: var(--db-tx, #000000);
+  font-size: 0.8125rem;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+  padding-right: 0.25rem;
+  font-weight: 600;
+}
+
+.car-select-wrap select option {
+  background: var(--db-sf, #ffffff);
+  color: var(--db-tx, #000000);
+}
+
+/* Premium Custom Stateful Select Dropdown (Dashboard & CRM) */
+.custom-status-container {
+  display: inline-block;
+  position: relative;
+}
+.custom-status-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--db-sf, #ffffff);
+  border: 1.5px solid var(--db-bd, rgba(0,0,0,0.08));
+  border-radius: 10px;
+  padding: 0.5rem 0.85rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+  cursor: pointer;
+  color: var(--db-tx, #000000);
+  font-size: 0.875rem;
+  font-family: inherit;
+  font-weight: 600;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+}
+.custom-status-trigger:hover {
+  border-color: #E10613;
+  box-shadow: 0 4px 12px rgba(225, 6, 19, 0.06);
+}
+.custom-status-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 190px;
+  background: var(--db-sf, #ffffff);
+  border: 1.5px solid var(--db-bd, rgba(0,0,0,0.08));
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+  z-index: 1000;
+  padding: 6px;
+  box-sizing: border-box;
+}
+.custom-status-option {
+  width: 100%;
+  text-align: left;
+  padding: 0.625rem 0.875rem;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--db-tx2, #475569);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+  outline: none;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  margin-bottom: 2px;
+}
+.custom-status-option:last-child {
+  margin-bottom: 0;
+}
+.custom-status-option:hover {
+  background: var(--db-sf2, #f8fafc);
+  color: #E10613;
+}
+.custom-status-option.active {
+  background: rgba(225, 6, 19, 0.08);
+  color: #E10613;
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .leads-filter-bar,
+  .car-filters {
+    flex-direction: column;
+    align-items: stretch !important;
+    width: 100%;
+    gap: 0.75rem;
+  }
+  .car-filter-group {
+    flex-direction: column;
+    align-items: stretch !important;
+    width: 100%;
+    gap: 0.75rem;
+  }
+  .custom-status-container {
+    width: 100%;
+  }
+  .custom-status-trigger {
+    width: 100%;
+    justify-content: space-between;
+    padding: 0.65rem 1rem;
+    font-size: 16px;
+  }
+  .custom-status-dropdown {
+    width: 100%;
+    left: 0;
+    right: 0;
+  }
+}
+
+
+
 

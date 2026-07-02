@@ -101,6 +101,15 @@ export async function PATCH(
 
     if (updateErr) throw updateErr;
 
+    // Sync pending follow-ups with the new assignee
+    if (updatePayload.assigned_to) {
+      await serviceClient
+        .from('follow_ups')
+        .update({ employee_id: updatePayload.assigned_to })
+        .eq('lead_id', id)
+        .eq('status', 'pending');
+    }
+
     // 5. Insert note if provided
     if (note) {
       const { error: noteErr } = await serviceClient

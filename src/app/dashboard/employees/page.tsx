@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UserPlus, Search, MoreVertical, X, Shield, Ban, RotateCcw, Trash2, Key, Check, AlertCircle, Copy, CheckCheck, Mail, PhoneCall, CalendarClock, Upload, ShoppingCart, TrendingUp, Camera } from 'lucide-react';
+import { UserPlus, Search, MoreVertical, X, Shield, Ban, RotateCcw, Trash2, Key, Check, AlertCircle, Copy, CheckCheck, Mail, PhoneCall, CalendarClock, Upload, ShoppingCart, TrendingUp, Camera, ChevronDown } from 'lucide-react';
 import Image from 'next/image';
 import { formatDate, timeAgo, generateEmployeeId } from '@/lib/utils';
 import type { Employee } from '@/types/database';
@@ -27,8 +27,9 @@ export default function EmployeesPage() {
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [resetTarget, setResetTarget] = useState<Employee | null>(null);
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
-  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', employee_id: generateEmployeeId() });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', employee_id: generateEmployeeId(), role: 'employee' });
   const [submitting, setSubmitting] = useState(false);
+  const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
   const [credentials, setCredentials] = useState<CredentialsModal | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -101,7 +102,7 @@ export default function EmployeesPage() {
   };
 
   const fetchEmployees = async () => {
-    const { data } = await supabase.from('employees').select('*').eq('role', 'employee').order('created_at', { ascending: false });
+    const { data } = await supabase.from('employees').select('*').in('role', ['employee', 'admin']).order('created_at', { ascending: false });
     if (data) {
       const enriched = await Promise.all(data.map(async (emp) => {
         const { count: uploads } = await supabase.from('cars').select('id', { count: 'exact', head: true }).eq('employee_id', emp.id);
@@ -160,7 +161,8 @@ export default function EmployeesPage() {
     setShowAdd(false);
     setAvatarFile(null);
     setAvatarPreview(null);
-    setForm({ name: '', email: '', phone: '', password: '', employee_id: generateEmployeeId() });
+    setForm({ name: '', email: '', phone: '', password: '', employee_id: generateEmployeeId(), role: 'employee' });
+    setRoleDropdownOpen(false);
   };
 
   const handleAdd = async (e: React.FormEvent) => {
@@ -209,12 +211,20 @@ export default function EmployeesPage() {
       setShowAdd(false);
       setAvatarFile(null);
       setAvatarPreview(null);
-      setForm({ name: '', email: '', phone: '', password: '', employee_id: generateEmployeeId() });
+      setForm({ name: '', email: '', phone: '', password: '', employee_id: generateEmployeeId(), role: 'employee' });
+      setRoleDropdownOpen(false);
       fetchEmployees();
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Failed to add employee', 'error');
     }
     setSubmitting(false);
+  };
+
+  const updateRole = async (id: string, role: string) => {
+    await supabase.from('employees').update({ role }).eq('id', id);
+    showToast(`Employee role updated to ${role}`);
+    setMenuOpen(null);
+    fetchEmployees();
   };
 
   const updateStatus = async (id: string, status: string) => {
@@ -305,12 +315,12 @@ export default function EmployeesPage() {
       {/* Table */}
       <div className="emp-table-wrap">
         <table className="emp-table">
-          <thead><tr><th>Employee</th><th>ID</th><th>Phone</th><th>Joined</th><th>Uploads</th><th>Sold</th><th>Last Upload</th><th>Status</th><th></th></tr></thead>
+          <thead><tr><th>Employee</th><th>Role</th><th>ID</th><th>Phone</th><th>Joined</th><th>Uploads</th><th>Sold</th><th>Last Upload</th><th>Status</th><th></th></tr></thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={9} className="emp-empty" style={{ fontStyle: 'normal' }}>Loading employee list...</td></tr>
+              <tr><td colSpan={10} className="emp-empty" style={{ fontStyle: 'normal' }}>Loading employee list...</td></tr>
             ) : filtered.length === 0 ? (
-              <tr><td colSpan={9} className="emp-empty">No employees found</td></tr>
+              <tr><td colSpan={10} className="emp-empty">No employees found</td></tr>
             ) : filtered.map(emp => (
               <tr key={emp.id}>
                 <td>
@@ -324,6 +334,11 @@ export default function EmployeesPage() {
                     )}
                     <div><span className="emp-name">{emp.name}</span><span className="emp-email">{emp.email}</span></div>
                   </div>
+                </td>
+                <td>
+                  <span className={`emp-role-badge ${emp.role === 'admin' ? 'admin' : 'employee'}`}>
+                    {emp.role === 'admin' ? 'Admin' : 'Employee'}
+                  </span>
                 </td>
                 <td><span className="emp-id-badge">{emp.employee_id}</span></td>
                 <td>{emp.phone || '—'}</td>
@@ -354,6 +369,11 @@ export default function EmployeesPage() {
                         {emp.status !== 'active' && <button onClick={() => updateStatus(emp.id, 'active')}><Check size={14} />Activate</button>}
                         {emp.status !== 'suspended' && <button onClick={() => updateStatus(emp.id, 'suspended')}><Ban size={14} />Suspend</button>}
                         {emp.status !== 'inactive' && <button onClick={() => updateStatus(emp.id, 'inactive')}><Shield size={14} />Deactivate</button>}
+                        {emp.role === 'admin' ? (
+                          <button onClick={() => updateRole(emp.id, 'employee')}><Shield size={14} />Make Employee</button>
+                        ) : (
+                          <button onClick={() => updateRole(emp.id, 'admin')}><Shield size={14} />Make Admin</button>
+                        )}
                         <button onClick={() => { setResetTarget(emp); setMenuOpen(null); }}><Key size={14} />Reset Password</button>
                         <button className="emp-del" onClick={() => removeEmployee(emp.id)}><Trash2 size={14} />Remove</button>
                       </div>
@@ -465,7 +485,46 @@ export default function EmployeesPage() {
                     </div>
                   </div>
 
-                  <div className="inspo-field">
+                  <div className="inspo-field" style={{ position: 'relative' }}>
+                    <label>Access Role <span className="required">*</span></label>
+                    <div
+                      className="custom-role-select-trigger"
+                      onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
+                    >
+                      <span>{form.role === 'admin' ? 'Admin' : 'Employee'}</span>
+                      <ChevronDown size={18} style={{ color: '#475569', transition: 'transform 0.2s', transform: roleDropdownOpen ? 'rotate(180deg)' : 'none' }} />
+                    </div>
+
+                    <AnimatePresence>
+                      {roleDropdownOpen && (
+                        <>
+                          <div className="custom-role-dropdown-overlay" onClick={() => setRoleDropdownOpen(false)} />
+                          <motion.div
+                            className="custom-role-dropdown-menu"
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.15 }}
+                          >
+                            <div
+                              className={`custom-role-option ${form.role === 'employee' ? 'selected' : ''}`}
+                              onClick={() => { setForm({ ...form, role: 'employee' }); setRoleDropdownOpen(false); }}
+                            >
+                              Employee
+                            </div>
+                            <div
+                              className={`custom-role-option ${form.role === 'admin' ? 'selected' : ''}`}
+                              onClick={() => { setForm({ ...form, role: 'admin' }); setRoleDropdownOpen(false); }}
+                            >
+                              Admin
+                            </div>
+                          </motion.div>
+                        </>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  <div className="inspo-field full-width">
                     <label>Password <span className="required">*</span></label>
                     <input
                       type="password"
@@ -829,6 +888,9 @@ export default function EmployeesPage() {
 .emp-status.active{background:rgba(34,197,94,.1);color:#22c55e}
 .emp-status.inactive{background:rgba(156,163,175,.1);color:#9ca3af}
 .emp-status.suspended{background:rgba(239,68,68,.1);color:#ef4444}
+.emp-role-badge{padding:.25rem .75rem;border-radius:20px;font-size:.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.emp-role-badge.admin{background:rgba(225,6,19,.1);color:#e10613}
+.emp-role-badge.employee{background:rgba(59,130,246,.1);color:#3b82f6}
 .emp-menu-wrap{position:relative}
 .emp-menu-btn{background:0;border:0;color:var(--db-tx3);cursor:pointer;padding:4px;border-radius:6px}
 .emp-menu-btn:hover{background:var(--db-gd);color:var(--db-gold)}
@@ -1333,7 +1395,7 @@ export default function EmployeesPage() {
   max-width: 600px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
   position: relative;
-  overflow: hidden;
+  overflow-y: auto; /* Fix for mobile cutoff: make modal scrollable */
   padding: 2.5rem;
   display: flex;
   flex-direction: column;
@@ -1479,6 +1541,10 @@ export default function EmployeesPage() {
 }
 
 @media (max-width: 640px) {
+  :global(.inspo-card-modal) {
+    padding: 1.5rem;
+    max-height: 95vh;
+  }
   :global(.inspo-grid) {
     grid-template-columns: 1fr;
   }
@@ -1500,7 +1566,8 @@ export default function EmployeesPage() {
   color: #E10613;
 }
 
-:global(.inspo-field) input {
+:global(.inspo-field) input,
+:global(.inspo-field) select {
   width: 100%;
   padding: 0.75rem 1rem;
   background: #ffffff;
@@ -1513,7 +1580,19 @@ export default function EmployeesPage() {
   transition: all 0.2s;
 }
 
-:global(.inspo-field) input:focus {
+:global(.inspo-field) select {
+  height: 45px;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23475569' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1.25rem;
+  padding-right: 2.5rem;
+}
+
+:global(.inspo-field) input:focus,
+:global(.inspo-field) select:focus {
   border-color: #E10613;
   box-shadow: 0 0 0 3px rgba(225, 6, 19, 0.1);
 }
@@ -1648,6 +1727,67 @@ export default function EmployeesPage() {
 @keyframes pulse {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+:global(.custom-role-select-trigger) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  color: #0f172a;
+  font-size: 0.875rem;
+  font-family: inherit;
+  cursor: pointer;
+  user-select: none;
+  height: 45px;
+  transition: all 0.2s;
+}
+
+:global(.custom-role-select-trigger):hover {
+  border-color: #E10613;
+}
+
+:global(.custom-role-dropdown-overlay) {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+}
+
+:global(.custom-role-dropdown-menu) {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  overflow: hidden;
+}
+
+:global(.custom-role-option) {
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+:global(.custom-role-option):hover {
+  background: #f1f5f9;
+  color: #E10613;
+}
+
+:global(.custom-role-option.selected) {
+  background: rgba(225, 6, 19, 0.05);
+  color: #E10613;
+  font-weight: 600;
 }
       `}</style>
     </div>

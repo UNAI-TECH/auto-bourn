@@ -48,6 +48,7 @@ export default function PromptModal({
     <AnimatePresence>
       {isOpen && (
         <motion.div
+          className="prompt-modal-bg"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -56,7 +57,7 @@ export default function PromptModal({
             position: 'fixed',
             inset: 0,
             background: 'rgba(0, 0, 0, 0.75)',
-            zIndex: 2000,
+            zIndex: 8500,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

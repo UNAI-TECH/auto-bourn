@@ -35,6 +35,7 @@ export default function AlertModal({
     <AnimatePresence>
       {isOpen && (
         <motion.div
+          className="alert-modal-bg"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -43,7 +44,7 @@ export default function AlertModal({
             position: 'fixed',
             inset: 0,
             background: 'rgba(0, 0, 0, 0.75)',
-            zIndex: 3000,
+            zIndex: 9000,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

@@ -3,7 +3,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { Plus, Search, Filter, LayoutGrid, List, X, Phone, MessageCircle, ChevronDown, ArrowRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Plus, Search, Filter, LayoutGrid, List, X, Phone, MessageCircle, ChevronDown } from 'lucide-react';
 import { LEAD_STAGES, SOURCE_LABELS, formatBudget, type Lead, type LeadStatus, type LeadSource } from '@/types/crm';
 
 const SOURCES: LeadSource[] = ['website','instagram','facebook','whatsapp','walk_in','referral','olx','cardekho','manual'];
@@ -13,11 +14,14 @@ const BRANDS = ['Mercedes-Benz','BMW','Audi','Jaguar','Land Rover','Volvo','Lexu
 const emptyForm = { customer_name:'', phone:'', whatsapp:'', email:'', city:'', state:'', occupation:'', source:'manual' as LeadSource, interested_car:'', preferred_brand:'', budget:'', purchase_timeline:'', lead_status:'new' as LeadStatus, assigned_to:'', notes:'' };
 
 export default function LeadsPage() {
+  const router = useRouter();
   const [view, setView] = useState<'kanban'|'list'>('kanban');
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [employees, setEmployees] = useState<{id:string;name:string;employee_id:string}[]>([]);
+  const [employees, setEmployees] = useState<{id:string;name:string;employee_id:string;role:string}[]>([]);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [isStatusOpen, setIsStatusOpen] = useState(false);
+  const statusRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -47,8 +51,8 @@ export default function LeadsPage() {
       if (!user) return;
       const { data:emp } = await supabase.from('employees').select('id').eq('auth_user_id',user.id).single();
       if (emp) setMyId(emp.id);
-      const { data:emps } = await supabase.from('employees').select('id,name,employee_id').eq('status','active');
-      setEmployees(emps||[]);
+      const { data:emps } = await supabase.from('employees').select('id,name,employee_id,role').eq('status','active');
+      setEmployees((emps || []) as any[]);
       
       const params = new URLSearchParams(window.location.search);
       if (params.get('add') === 'true') {
@@ -56,6 +60,16 @@ export default function LeadsPage() {
       }
     };
     init();
+  }, []);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (statusRef.current && !statusRef.current.contains(event.target as Node)) {
+        setIsStatusOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -184,13 +198,77 @@ export default function LeadsPage() {
       </div>
 
       {/* Filters */}
-      <div style={{display:'flex',gap:'.75rem',marginBottom:'1.25rem',flexWrap:'wrap',alignItems:'center'}}>
+      <div className="leads-filter-bar" style={{display:'flex',gap:'.75rem',marginBottom:'1.25rem',flexWrap:'wrap',alignItems:'center'}}>
         <div className="db-search-inline"><Search size={15}/><input placeholder="Search name, phone, car…" value={search} onChange={e=>setSearch(e.target.value)}/></div>
-        <div className="car-select-wrap"><Filter size={13}/>
-          <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}>
-            <option value="all">All Status</option>
-            {LEAD_STAGES.map(s=><option key={s.key} value={s.key}>{s.label}</option>)}
-          </select>
+        
+        <div ref={statusRef} className="custom-status-container">
+          <button
+            type="button"
+            onClick={() => setIsStatusOpen(!isStatusOpen)}
+            className="custom-status-trigger"
+          >
+            <Filter size={13} style={{ color: 'var(--db-tx3)' }} />
+            <span>
+              {filterStatus === 'all'
+                ? 'All Status'
+                : LEAD_STAGES.find(s => s.key === filterStatus)?.label || filterStatus}
+            </span>
+            <ChevronDown
+              size={13}
+              style={{
+                color: 'var(--db-tx3)',
+                transform: isStatusOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                transition: 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                marginLeft: '0.25rem'
+              }}
+            />
+          </button>
+
+          <AnimatePresence>
+            {isStatusOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 8 }}
+                transition={{ duration: 0.2 }}
+                className="custom-status-dropdown"
+              >
+                <button
+                  type="button"
+                  className={`custom-status-option ${filterStatus === 'all' ? 'active' : ''}`}
+                  onClick={() => {
+                    setFilterStatus('all');
+                    setIsStatusOpen(false);
+                  }}
+                >
+                  All Status
+                </button>
+                {LEAD_STAGES.map(s => (
+                  <button
+                    key={s.key}
+                    type="button"
+                    className={`custom-status-option ${filterStatus === s.key ? 'active' : ''}`}
+                    onClick={() => {
+                      setFilterStatus(s.key);
+                      setIsStatusOpen(false);
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: '8px',
+                        height: '8px',
+                        borderRadius: '50%',
+                        background: s.color,
+                        display: 'inline-block',
+                        marginRight: '8px'
+                      }}
+                    />
+                    {s.label}
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
@@ -215,7 +293,13 @@ export default function LeadsPage() {
                       return (
                         <div key={lead.id} className="crm-card" draggable
                           onDragStart={()=>setDraggingId(lead.id)}
-                          onDragEnd={()=>setDraggingId(null)}>
+                          onDragEnd={()=>setDraggingId(null)}
+                          style={{ cursor: 'pointer' }}
+                          onClick={(e) => {
+                            if ((e.target as HTMLElement).closest('.crm-card-btn')) return;
+                            router.push(`/dashboard/crm/leads/${lead.id}`);
+                          }}
+                        >
                           <div style={{fontWeight:700,fontSize:'.875rem',color:'var(--db-tx)',marginBottom:'.25rem'}}>{lead.customer_name}</div>
                           <div style={{fontSize:'.75rem',color:'var(--db-tx3)',marginBottom:'.5rem'}}>{lead.phone} {lead.city&&`· ${lead.city}`}</div>
                           {lead.interested_car&&<div style={{fontSize:'.75rem',color:'var(--db-tx2)',marginBottom:'.4rem'}}>🚗 {lead.interested_car}</div>}
@@ -225,7 +309,6 @@ export default function LeadsPage() {
                             <div style={{display:'flex',gap:4}}>
                               <a href={`tel:${lead.phone}`} className="crm-card-btn" title="Call"><Phone size={11}/></a>
                               <a href={`https://wa.me/${(lead.whatsapp||lead.phone).replace(/\D/g,'')}`} target="_blank" className="crm-card-btn" title="WhatsApp"><MessageCircle size={11}/></a>
-                              <Link href={`/dashboard/crm/leads/${lead.id}`} className="crm-card-btn" title="View"><ArrowRight size={11}/></Link>
                             </div>
                           </div>
                         </div>
@@ -272,7 +355,15 @@ export default function LeadsPage() {
                     const stage = LEAD_STAGES.find(s=>s.key===lead.lead_status);
                     const emp = lead.assigned_employee as {name:string}|null;
                     return (
-                      <tr key={lead.id} className="crm-table-row-hover" style={{ transition: 'background 0.2s' }}>
+                      <tr 
+                        key={lead.id} 
+                        className="crm-table-row-hover" 
+                        style={{ transition: 'background 0.2s', cursor: 'pointer' }}
+                        onClick={(e) => {
+                          if ((e.target as HTMLElement).closest('.crm-action-icon-btn')) return;
+                          router.push(`/dashboard/crm/leads/${lead.id}`);
+                        }}
+                      >
                         <td style={{ paddingLeft: '1.5rem', verticalAlign: 'middle' }}>
                           <div className="crm-customer-cell">
                             <div className="crm-customer-avatar" style={{ background: stage?.bg, color: stage?.color }}>
@@ -298,7 +389,6 @@ export default function LeadsPage() {
                         <td style={{ paddingRight: '1.5rem', verticalAlign: 'middle' }}>
                           <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                             <a href={`tel:${lead.phone}`} className="crm-action-icon-btn" title="Call"><Phone size={13}/></a>
-                            <Link href={`/dashboard/crm/leads/${lead.id}`} className="crm-action-icon-btn" title="View details"><ArrowRight size={13}/></Link>
                           </div>
                         </td>
                       </tr>
@@ -459,7 +549,17 @@ export default function LeadsPage() {
                       className="inspo-select"
                     >
                       <option value="">Select employee</option>
-                      {employees.map(emp => <option key={emp.id} value={emp.id}>{emp.name}</option>)}
+                      <option value={myId || ''}>Assign to Me (Personal Lead)</option>
+                      <optgroup label="Admins">
+                        {employees.filter(emp => emp.role === 'admin' && emp.id !== myId).map(emp => (
+                          <option key={emp.id} value={emp.id}>{emp.name}</option>
+                        ))}
+                      </optgroup>
+                      <optgroup label="Employees">
+                        {employees.filter(emp => emp.role === 'employee' && emp.id !== myId).map(emp => (
+                          <option key={emp.id} value={emp.id}>{emp.name}</option>
+                        ))}
+                      </optgroup>
                     </select>
                   </div>
 
@@ -515,10 +615,11 @@ export default function LeadsPage() {
   -webkit-overflow-scrolling: touch;
 }
 .crm-kanban-wrap::-webkit-scrollbar {
-  height: 6px;
+  height: 12px;
 }
 .crm-kanban-wrap::-webkit-scrollbar-track {
   background: transparent;
+  border-top: 1px solid var(--db-bd);
 }
 .crm-kanban-wrap::-webkit-scrollbar-thumb {
   background: var(--db-bd);
@@ -543,7 +644,7 @@ export default function LeadsPage() {
   border: 1px solid var(--db-bd);
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - 250px);
+  max-height: calc(100vh - 290px);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
 }
 .crm-col-head {

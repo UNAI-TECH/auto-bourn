@@ -44,6 +44,7 @@ export default function CRMOverviewPage() {
   });
   const [recentLeads, setRecentLeads] = useState<Lead[]>([]);
   const [upcomingFollowUps, setUpcomingFollowUps] = useState<FollowUp[]>([]);
+  const [todayFollowUps, setTodayFollowUps] = useState<FollowUp[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Filter & dropdown state
@@ -98,7 +99,8 @@ export default function CRMOverviewPage() {
         { count: countContacted },
         { count: countNegotiation },
         { count: countLost },
-        { data: upcoming },
+        { data: todayList },
+        { data: upcomingList },
       ] = await Promise.all([
         supabase.from('leads').select('id', { count: 'exact', head: true }),
         supabase.from('leads').select('id', { count: 'exact', head: true }).not('lead_status', 'in', '(sold,lost)'),
@@ -109,7 +111,8 @@ export default function CRMOverviewPage() {
         supabase.from('leads').select('id', { count: 'exact', head: true }).eq('lead_status', 'contacted'),
         supabase.from('leads').select('id', { count: 'exact', head: true }).eq('lead_status', 'negotiation'),
         supabase.from('leads').select('id', { count: 'exact', head: true }).eq('lead_status', 'lost'),
-        supabase.from('follow_ups').select('*, lead:leads!lead_id(customer_name, phone, interested_car), employee:employees!employee_id(name)').eq('status', 'pending').gte('scheduled_at', now.toISOString()).order('scheduled_at').limit(15),
+        supabase.from('follow_ups').select('*, lead:leads!lead_id(customer_name, phone, interested_car), employee:employees!employee_id(name)').eq('status', 'pending').gte('scheduled_at', todayStart.toISOString()).lte('scheduled_at', todayEnd.toISOString()).order('scheduled_at'),
+        supabase.from('follow_ups').select('*, lead:leads!lead_id(customer_name, phone, interested_car), employee:employees!employee_id(name)').eq('status', 'pending').gt('scheduled_at', todayEnd.toISOString()).order('scheduled_at').limit(15),
       ]);
 
       const totalVal = totalLeads || 0;
@@ -138,7 +141,8 @@ export default function CRMOverviewPage() {
         lost: countLost || 0
       });
 
-      setUpcomingFollowUps((upcoming || []) as FollowUp[]);
+      setTodayFollowUps((todayList || []) as FollowUp[]);
+      setUpcomingFollowUps((upcomingList || []) as FollowUp[]);
       setLoading(false);
     } catch (e) {
       console.error(e);
@@ -382,15 +386,15 @@ export default function CRMOverviewPage() {
               <Link href="/dashboard/crm/follow-ups" className="crm-widget-link">View All</Link>
             </div>
             <div className="crm-timeline-body" style={{ flex: 1, overflowY: 'auto' }}>
-              {upcomingFollowUps.length === 0 ? (
+              {todayFollowUps.length === 0 ? (
                 <p className="crm-empty-state">No scheduled follow-ups today</p>
               ) : (
-                upcomingFollowUps.map((fu, idx) => (
+                todayFollowUps.map((fu, idx) => (
                   <div key={fu.id} className="crm-timeline-item">
                     <div className="crm-timeline-time">{getFollowUpTime(fu)}</div>
                     <div className="crm-timeline-indicator">
                       <div className="crm-timeline-dot"></div>
-                      {idx < upcomingFollowUps.length - 1 && <div className="crm-timeline-line"></div>}
+                      {idx < todayFollowUps.length - 1 && <div className="crm-timeline-line"></div>}
                     </div>
                     <div className="crm-timeline-content">
                       <div className="crm-timeline-top">

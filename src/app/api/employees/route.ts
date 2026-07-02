@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
 
     // 2. Parse body
     const body = await request.json();
-    const { name, email, phone, password, employee_id, avatar_url } = body;
+    const { name, email, phone, password, employee_id, avatar_url, role } = body;
 
     if (!name || !email || !password || !employee_id) {
       return NextResponse.json(
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
         email,
         phone: phone || null,
         avatar_url: avatar_url || null,
-        role: 'employee',
+        role: role === 'admin' ? 'admin' : 'employee',
         status: 'active',
         auth_user_id: authData.user.id,
       })

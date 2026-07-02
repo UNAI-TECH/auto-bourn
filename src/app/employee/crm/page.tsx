@@ -63,19 +63,16 @@ export default function EmployeeCRMPage() {
         fetch('/api/leads?assigned_to=unassigned'),
         supabase
           .from('follow_ups')
-          .select('*, lead:leads!lead_id(customer_name,phone,interested_car)')
-          .eq('employee_id', employee.id)
+          .select('*, lead:leads!lead_id(customer_name,phone,interested_car,assigned_to)')
           .eq('status', 'pending')
           .lte('scheduled_at', todayEnd.toISOString())
           .order('scheduled_at'),
         supabase
           .from('follow_ups')
-          .select('*, lead:leads!lead_id(customer_name,phone,interested_car)')
-          .eq('employee_id', employee.id)
+          .select('*, lead:leads!lead_id(customer_name,phone,interested_car,assigned_to)')
           .eq('status', 'pending')
           .gt('scheduled_at', todayEnd.toISOString())
           .order('scheduled_at')
-          .limit(10)
       ]);
 
       const assignedData = await assignedRes.json();
@@ -110,10 +107,16 @@ export default function EmployeeCRMPage() {
       }
 
       if (todayFURes.data) {
-        setTodayFollowUps(todayFURes.data as any[]);
+        const filteredToday = (todayFURes.data as any[]).filter(
+          fu => fu.employee_id === employee.id || fu.lead?.assigned_to === employee.id
+        );
+        setTodayFollowUps(filteredToday);
       }
       if (upcomingFURes.data) {
-        setUpcomingFollowUps(upcomingFURes.data as any[]);
+        const filteredUpcoming = (upcomingFURes.data as any[])
+          .filter(fu => fu.employee_id === employee.id || fu.lead?.assigned_to === employee.id)
+          .slice(0, 10);
+        setUpcomingFollowUps(filteredUpcoming);
       }
     } catch (e) {
       console.error(e);
@@ -134,14 +137,14 @@ export default function EmployeeCRMPage() {
   });
 
   return (
-    <div style={{ padding: '1.5rem', maxWidth: '1280px', margin: '0 auto', fontFamily: "'Outfit', sans-serif" }} className="crm-page-container">
+    <div style={{ maxWidth: '1280px', margin: '0 auto', fontFamily: "'Outfit', sans-serif" }} className="crm-page-container">
       {/* Top Welcome Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+      <div className="crm-welcome-header">
         <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--db-tx, #000)', margin: 0 }}>Customer Relationship Management (CRM)</h1>
-          <p style={{ fontSize: '.875rem', color: 'var(--db-tx2, #555)', margin: '4px 0 0' }}>Streamline your interactions with luxury buyers and sellers</p>
+          <h1 className="crm-welcome-title">Customer Relationship Management (CRM)</h1>
+          <p className="crm-welcome-subtitle">Streamline your interactions with luxury buyers and sellers</p>
         </div>
-        <Link href="/employee/customer-details" style={{ background: 'linear-gradient(135deg, #E10613, #c70511)', color: '#fff', border: 'none', padding: '0.625rem 1.25rem', borderRadius: '12px', fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none', boxShadow: '0 4px 15px rgba(225, 6, 19, 0.2)' }} className="btn-hover-glow">
+        <Link href="/employee/customer-details" className="crm-add-lead-btn btn-hover-glow">
           <Plus size={16} /> Add Lead Record
         </Link>
       </div>
@@ -649,7 +652,52 @@ export default function EmployeeCRMPage() {
         }
 
         .crm-page-container {
-          padding: 1.5rem !important;
+          padding: 1.5rem;
+        }
+
+        :global(.crm-welcome-header) {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 2rem;
+          flex-wrap: wrap;
+          gap: 1rem;
+        }
+
+        :global(.crm-welcome-title) {
+          font-size: 1.5rem;
+          font-weight: 800;
+          color: var(--db-tx, #000);
+          margin: 0;
+          line-height: 1.25;
+        }
+
+        :global(.crm-welcome-subtitle) {
+          font-size: .875rem;
+          color: var(--db-tx2, #555);
+          margin: 4px 0 0;
+        }
+
+        :global(.crm-add-lead-btn) {
+          background: linear-gradient(135deg, #E10613, #c70511);
+          color: #fff;
+          border: none;
+          padding: 0.625rem 1.25rem;
+          border-radius: 12px;
+          font-size: 0.875rem;
+          font-weight: 700;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          text-decoration: none;
+          box-shadow: 0 4px 15px rgba(225, 6, 19, 0.2);
+          transition: all 0.2s ease;
+        }
+
+        :global(.crm-add-lead-btn):hover {
+          transform: translateY(-1px);
+          box-shadow: 0 6px 20px rgba(225, 6, 19, 0.3);
         }
         .tab-txt-short {
           display: none;
@@ -669,7 +717,25 @@ export default function EmployeeCRMPage() {
         }
         @media (max-width: 768px) {
           .crm-page-container {
-            padding: 0.75rem 0 !important;
+            padding: 0.75rem 1rem !important;
+          }
+          :global(.crm-welcome-header) {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.875rem;
+            margin-bottom: 1.5rem;
+          }
+          :global(.crm-welcome-title) {
+            font-size: 1.25rem;
+            line-height: 1.35;
+          }
+          :global(.crm-welcome-subtitle) {
+            font-size: 0.8125rem;
+          }
+          :global(.crm-add-lead-btn) {
+            width: 100%;
+            justify-content: center;
+            padding: 0.75rem 1.25rem;
           }
           .tab-txt-full {
             display: none;

@@ -100,9 +100,9 @@ export default function HomePage() {
     load();
   }, []);
 
-  const section2 = useScrollReveal();
-  const section3 = useScrollReveal();
-  const section4 = useScrollReveal();
+  const { ref: section2Ref } = useScrollReveal();
+  const { ref: section3Ref } = useScrollReveal();
+  const { ref: section4Ref } = useScrollReveal();
 
   return (
     <>
@@ -182,7 +182,7 @@ export default function HomePage() {
 
       {/* ═══ FEATURED INVENTORY — AUTO-SCROLLING CAROUSEL ═══ */}
       {(loading || vehiclesList.length > 0) && (
-        <section ref={section2.ref} className="section" style={{ background: '#FFFFFF', overflow: 'hidden' }}>
+        <section ref={section2Ref} className="section" style={{ background: '#FFFFFF', overflow: 'hidden' }}>
           <div className="container">
             <motion.div initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}
               style={{ textAlign: 'center', marginBottom: 'clamp(3rem, 5vw, 4rem)' }}>
@@ -262,7 +262,7 @@ export default function HomePage() {
       )}
 
       {/* ═══ BRAND SHOWCASE — CAROUSEL ═══ */}
-      <section ref={section3.ref} className="section" style={{ background: '#F5F5F5', overflow: 'hidden' }}>
+      <section ref={section3Ref} className="section" style={{ background: '#F5F5F5', overflow: 'hidden' }}>
         <div className="container">
           <motion.div initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}
             style={{ textAlign: 'center', marginBottom: 'clamp(3rem, 5vw, 4rem)' }}>
@@ -297,7 +297,7 @@ export default function HomePage() {
 
 
       {/* ═══ WHY AUTO BOURN ═══ */}
-      <section ref={section4.ref} className="section" style={{ background: '#FFFFFF' }}>
+      <section ref={section4Ref} className="section" style={{ background: '#FFFFFF' }}>
         <div className="container">
           <motion.div initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }}
             style={{ textAlign: 'center', marginBottom: 'clamp(3rem, 5vw, 4rem)' }}>

@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, Edit, Trash2, Eye, Star, Check, AlertCircle, X, ChevronLeft, ChevronRight, Upload } from 'lucide-react';
+import { Search, Filter, Edit, Trash2, Eye, Star, Check, AlertCircle, X, ChevronLeft, ChevronRight, Upload, ChevronDown } from 'lucide-react';
 import { formatPrice, formatDate, timeAgo } from '@/lib/utils';
 import type { Car } from '@/types/database';
 import ConfirmModal from '@/components/ConfirmModal';
@@ -27,6 +27,10 @@ function CarsPageContent() {
   const [brandFilter, setBrandFilter] = useState(brandParam);
   const [brands, setBrands] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isStatusOpen, setIsStatusOpen] = useState(false);
+  const [isBrandOpen, setIsBrandOpen] = useState(false);
+  const statusRef = useRef<HTMLDivElement>(null);
+  const brandRef = useRef<HTMLDivElement>(null);
   
   // Edit Modal States
   const [editCar, setEditCar] = useState<Car | null>(null);
@@ -62,6 +66,19 @@ function CarsPageContent() {
   }, [search, statusFilter, brandFilter, page]);
 
   useEffect(() => { fetchCars(); }, [fetchCars]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (statusRef.current && !statusRef.current.contains(event.target as Node)) {
+        setIsStatusOpen(false);
+      }
+      if (brandRef.current && !brandRef.current.contains(event.target as Node)) {
+        setIsBrandOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const handleFocus = () => {
@@ -240,23 +257,147 @@ function CarsPageContent() {
       <div className="car-filters">
         <div className="db-search-inline"><Search size={16} /><input placeholder="Search brand, model..." value={search} onChange={e => setSearch(e.target.value)} /></div>
         <div className="car-filter-group">
-          <div className="car-select-wrap"><Filter size={14} />
-            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-              <option value="all">All Status</option><option value="available">Available</option><option value="sold">Sold</option><option value="reserved">Reserved</option>
-            </select>
+          
+          {/* Status Dropdown */}
+          <div ref={statusRef} className="custom-status-container">
+            <button
+              type="button"
+              onClick={() => setIsStatusOpen(!isStatusOpen)}
+              className="custom-status-trigger"
+            >
+              <Filter size={13} style={{ color: 'var(--db-tx3)' }} />
+              <span>
+                {statusFilter === 'all'
+                  ? 'All Status'
+                  : statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}
+              </span>
+              <ChevronDown
+                size={13}
+                style={{
+                  color: 'var(--db-tx3)',
+                  transform: isStatusOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                  marginLeft: '0.25rem'
+                }}
+              />
+            </button>
+
+            <AnimatePresence>
+              {isStatusOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 8 }}
+                  transition={{ duration: 0.2 }}
+                  className="custom-status-dropdown"
+                  style={{ right: 'auto', left: 0 }}
+                >
+                  <button
+                    type="button"
+                    className={`custom-status-option ${statusFilter === 'all' ? 'active' : ''}`}
+                    onClick={() => {
+                      setStatusFilter('all');
+                      setIsStatusOpen(false);
+                    }}
+                  >
+                    All Status
+                  </button>
+                  {['available', 'sold', 'reserved'].map(st => (
+                    <button
+                      key={st}
+                      type="button"
+                      className={`custom-status-option ${statusFilter === st ? 'active' : ''}`}
+                      onClick={() => {
+                        setStatusFilter(st);
+                        setIsStatusOpen(false);
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: '8px',
+                          height: '8px',
+                          borderRadius: '50%',
+                          background: st === 'available' ? '#22c55e' : st === 'sold' ? '#ef4444' : '#f59e0b',
+                          display: 'inline-block',
+                          marginRight: '8px'
+                        }}
+                      />
+                      {st.charAt(0).toUpperCase() + st.slice(1)}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-          <div className="car-select-wrap">
-            <select value={brandFilter} onChange={e => {
-              const val = e.target.value;
-              setBrandFilter(val);
-              const params = new URLSearchParams(window.location.search);
-              if (val) params.set('brand', val);
-              else params.delete('brand');
-              router.push(`/dashboard/cars?${params.toString()}`);
-            }}>
-              <option value="">All Brands</option>{brands.map(b => <option key={b} value={b}>{b}</option>)}
-            </select>
+
+          {/* Brand Dropdown */}
+          <div ref={brandRef} className="custom-status-container">
+            <button
+              type="button"
+              onClick={() => setIsBrandOpen(!isBrandOpen)}
+              className="custom-status-trigger"
+            >
+              <span>{brandFilter || 'All Brands'}</span>
+              <ChevronDown
+                size={13}
+                style={{
+                  color: 'var(--db-tx3)',
+                  transform: isBrandOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                  marginLeft: '0.25rem'
+                }}
+              />
+            </button>
+
+            <AnimatePresence>
+              {isBrandOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 8 }}
+                  transition={{ duration: 0.2 }}
+                  className="custom-status-dropdown"
+                  style={{
+                    maxHeight: '260px',
+                    overflowY: 'auto',
+                    right: 'auto',
+                    left: 0
+                  }}
+                >
+                  <button
+                    type="button"
+                    className={`custom-status-option ${!brandFilter ? 'active' : ''}`}
+                    onClick={() => {
+                      setBrandFilter('');
+                      setIsBrandOpen(false);
+                      const params = new URLSearchParams(window.location.search);
+                      params.delete('brand');
+                      router.push(`/dashboard/cars?${params.toString()}`);
+                    }}
+                  >
+                    All Brands
+                  </button>
+                  {brands.map(b => (
+                    <button
+                      key={b}
+                      type="button"
+                      className={`custom-status-option ${brandFilter === b ? 'active' : ''}`}
+                      onClick={() => {
+                        setBrandFilter(b);
+                        setIsBrandOpen(false);
+                        const params = new URLSearchParams(window.location.search);
+                        params.set('brand', b);
+                        router.push(`/dashboard/cars?${params.toString()}`);
+                      }}
+                    >
+                      {b}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
+
         </div>
       </div>
 
@@ -513,10 +654,6 @@ function CarsPageContent() {
 .db-search-inline input::placeholder{color:var(--db-tx3)}
 .car-filters{display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap;align-items:center}
 .car-filter-group{display:flex;gap:.5rem}
-.car-select-wrap{display:flex;align-items:center;gap:.5rem;background:var(--db-sf);border:1px solid var(--db-bd);border-radius:10px;padding:.5rem .75rem}
-.car-select-wrap svg{color:var(--db-tx3);flex-shrink:0}
-.car-select-wrap select{background:0;border:0;color:var(--db-tx);font-size:.8125rem;font-family:inherit;outline:0;cursor:pointer}
-.car-select-wrap select option{background:var(--db-sf);color:var(--db-tx)}
 .car-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1rem}
 .car-card{background:var(--db-sf);border:1px solid var(--db-bd);border-radius:14px;overflow:hidden;transition:all .2s}
 .car-card:hover{border-color:var(--db-gold);box-shadow:0 4px 20px var(--db-gg)}

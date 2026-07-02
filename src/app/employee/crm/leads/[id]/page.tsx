@@ -3,10 +3,11 @@ import { useState, useEffect, use } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import DateTimePicker from '@/components/DateTimePicker';
 import { 
   ArrowLeft, Phone, MessageCircle, Plus, CheckCircle2, X, 
   Calendar, User, Mail, MapPin, DollarSign, Clock, FileText, ChevronRight, Tag,
-  Upload, Check, ShieldAlert, Award
+  Upload, Check, ShieldAlert, Award, ChevronDown
 } from 'lucide-react';
 import { useEmpContext } from '../../../layout';
 import { LEAD_STAGES, FOLLOW_UP_TYPE_LABELS, type Lead, type LeadStatus, type FollowUp, type CustomerNote, formatBudget } from '@/types/crm';
@@ -200,6 +201,8 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
   // Used Car Inspection Modal States
   const [showInspection, setShowInspection] = useState(false);
   const [wizardStep, setWizardStep] = useState(1);
+  const [brandDropdownOpen, setBrandDropdownOpen] = useState(false);
+  const [yearDropdownOpen, setYearDropdownOpen] = useState(false);
   const [uploads, setUploads] = useState<Record<string, string>>({});
   const [inspectForm, setInspectForm] = useState({
     // Section 1: Vehicle Information
@@ -449,6 +452,17 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
 
   useEffect(() => { loadAll(); }, [id]);
 
+  useEffect(() => {
+    if (showInspection || waModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showInspection, waModal]);
+
   const addNote = async () => {
     if (!newNote.trim()||!employee) return;
     // Auto-claim if unassigned
@@ -633,6 +647,14 @@ ${photosSection}`;
       showToast('Please select a priority');
       return;
     }
+    if (!fuForm.scheduled_at) {
+      showToast('Please select date and time');
+      return;
+    }
+    if (new Date(fuForm.scheduled_at) < new Date()) {
+      showToast('Cannot schedule follow-up in the past');
+      return;
+    }
     // Auto-claim if unassigned
     if (!lead?.assigned_to) {
       await claimLeadSilent();
@@ -793,7 +815,11 @@ ${photosSection}`;
                 </div>
                 <div className="emp-field" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--db-tx2, #555)' }}>Date &amp; Time</label>
-                  <input type="datetime-local" required value={fuForm.scheduled_at} onChange={e => setFuForm({ ...fuForm, scheduled_at: e.target.value })} style={{ padding: '0.625rem', border: '1.5px solid var(--db-bd, rgba(0,0,0,0.08))', borderRadius: '8px', fontFamily: 'inherit', background: '#fff', color: 'inherit' }} />
+                  <DateTimePicker
+                    value={fuForm.scheduled_at}
+                    onChange={(val) => setFuForm({ ...fuForm, scheduled_at: val })}
+                    required
+                  />
                 </div>
                 <div className="emp-field" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--db-tx2, #555)' }}>Priority</label>
@@ -967,9 +993,9 @@ ${photosSection}`;
         {showInspection && (
           <div className="wa-modal-overlay">
             <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               style={{ 
                 maxWidth: '850px', 
                 width: '95%', 
@@ -985,7 +1011,7 @@ ${photosSection}`;
                 zIndex: 99999
               }}
             >
-              <div className="wa-modal-header" style={{ padding: '1.25rem 1.75rem', background: '#ffffff', borderBottom: '1.5px solid rgba(0, 0, 0, 0.08)' }}>
+              <div className="wa-modal-header inspection-modal-header" style={{ background: '#ffffff', borderBottom: '1.5px solid rgba(0, 0, 0, 0.08)' }}>
                 <div>
                   <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#E10613' }}>
                     <ShieldAlert size={20} style={{ color: '#E10613' }} /> Used Car Inspection Report
@@ -998,7 +1024,7 @@ ${photosSection}`;
               </div>
 
               {/* Progress Indicator Ring / bar */}
-              <div style={{ background: '#f8f9fa', padding: '0.75rem 1.75rem', display: 'flex', gap: '1.5rem', borderBottom: '1.5px solid rgba(0,0,0,0.08)', overflowX: 'auto' }}>
+              <div className="inspection-modal-progress" style={{ borderBottom: '1.5px solid rgba(0,0,0,0.08)' }}>
                 {[
                   { step: 1, label: 'Vehicle Info' },
                   { step: 2, label: 'Exterior' },
@@ -1032,12 +1058,53 @@ ${photosSection}`;
                         <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Vehicle Identification Number (VIN)</label>
                         <input style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} type="text" placeholder="17 digit chassis number" value={inspectForm.vin} onChange={e => setInspectForm({ ...inspectForm, vin: e.target.value })} />
                       </div>
-                      <div className="wa-form-group">
+                      <div className="wa-form-group" style={{ position: 'relative', zIndex: brandDropdownOpen ? 1000001 : 1 }}>
                         <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Brand / Manufacturer</label>
-                        <select style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} value={inspectForm.brand} onChange={e => setInspectForm({ ...inspectForm, brand: e.target.value })}>
-                          <option value="">Select Brand</option>
-                          {BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
-                        </select>
+                        <div
+                          className="custom-role-select-trigger"
+                          onClick={() => setBrandDropdownOpen(!brandDropdownOpen)}
+                        >
+                          <span>{inspectForm.brand || 'Select Brand'}</span>
+                          <ChevronDown size={18} style={{ color: '#555', transition: 'transform 0.2s', transform: brandDropdownOpen ? 'rotate(180deg)' : 'none' }} />
+                        </div>
+                        <AnimatePresence>
+                          {brandDropdownOpen && (
+                            <>
+                              <div className="custom-role-dropdown-overlay" onClick={() => setBrandDropdownOpen(false)} />
+                              <motion.div
+                                className="custom-role-dropdown-menu"
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.15 }}
+                                onWheel={e => e.stopPropagation()}
+                                onTouchMove={e => e.stopPropagation()}
+                                style={{ 
+                                  maxHeight: '200px', 
+                                  overflowY: 'auto', 
+                                  WebkitOverflowScrolling: 'touch',
+                                  backgroundColor: '#ffffff',
+                                  border: '1.5px solid rgba(0,0,0,0.15)',
+                                  borderRadius: '10px',
+                                  boxShadow: '0 10px 25px rgba(0, 0, 0, 0.15)'
+                                }}
+                              >
+                                {BRANDS.map(b => (
+                                  <div
+                                    key={b}
+                                    className={`custom-role-option ${inspectForm.brand === b ? 'selected' : ''}`}
+                                    onClick={() => {
+                                      setInspectForm({ ...inspectForm, brand: b });
+                                      setBrandDropdownOpen(false);
+                                    }}
+                                  >
+                                    {b}
+                                  </div>
+                                ))}
+                              </motion.div>
+                            </>
+                          )}
+                        </AnimatePresence>
                       </div>
                       <div className="wa-form-group">
                         <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Model</label>
@@ -1047,12 +1114,53 @@ ${photosSection}`;
                         <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Variant</label>
                         <input style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} type="text" placeholder="E.g. C220d Progressive / 530d M Sport" value={inspectForm.variant} onChange={e => setInspectForm({ ...inspectForm, variant: e.target.value })} />
                       </div>
-                      <div className="wa-form-group">
+                      <div className="wa-form-group" style={{ position: 'relative', zIndex: yearDropdownOpen ? 1000001 : 1 }}>
                         <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Manufacturing Year</label>
-                        <select style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} value={inspectForm.year} onChange={e => setInspectForm({ ...inspectForm, year: e.target.value })}>
-                          <option value="">Select Year</option>
-                          {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
-                        </select>
+                        <div
+                          className="custom-role-select-trigger"
+                          onClick={() => setYearDropdownOpen(!yearDropdownOpen)}
+                        >
+                          <span>{inspectForm.year || 'Select Year'}</span>
+                          <ChevronDown size={18} style={{ color: '#555', transition: 'transform 0.2s', transform: yearDropdownOpen ? 'rotate(180deg)' : 'none' }} />
+                        </div>
+                        <AnimatePresence>
+                          {yearDropdownOpen && (
+                            <>
+                              <div className="custom-role-dropdown-overlay" onClick={() => setYearDropdownOpen(false)} />
+                              <motion.div
+                                className="custom-role-dropdown-menu"
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.15 }}
+                                onWheel={e => e.stopPropagation()}
+                                onTouchMove={e => e.stopPropagation()}
+                                style={{ 
+                                  maxHeight: '200px', 
+                                  overflowY: 'auto', 
+                                  WebkitOverflowScrolling: 'touch',
+                                  backgroundColor: '#ffffff',
+                                  border: '1.5px solid rgba(0,0,0,0.15)',
+                                  borderRadius: '10px',
+                                  boxShadow: '0 10px 25px rgba(0, 0, 0, 0.15)'
+                                }}
+                              >
+                                {YEARS.map(y => (
+                                  <div
+                                    key={y}
+                                    className={`custom-role-option ${inspectForm.year === y ? 'selected' : ''}`}
+                                    onClick={() => {
+                                      setInspectForm({ ...inspectForm, year: y });
+                                      setYearDropdownOpen(false);
+                                    }}
+                                  >
+                                    {y}
+                                  </div>
+                                ))}
+                              </motion.div>
+                            </>
+                          )}
+                        </AnimatePresence>
                       </div>
                       <div className="wa-form-group">
                         <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Current Odometer Reading (KM)</label>
@@ -1614,7 +1722,7 @@ ${photosSection}`;
               </div>
 
               {/* Wizard Footer buttons */}
-              <div className="wa-modal-footer" style={{ display: 'flex', justifyContent: 'space-between', padding: '1.25rem 1.75rem', background: '#f8f9fa', borderTop: '1.5px solid rgba(0, 0, 0, 0.08)' }}>
+              <div className="wa-modal-footer inspection-modal-footer" style={{ display: 'flex', justifyContent: 'space-between', background: '#f8f9fa', borderTop: '1.5px solid rgba(0, 0, 0, 0.08)' }}>
                 <button 
                   className="wa-btn cancel" 
                   disabled={claiming}
@@ -1858,6 +1966,93 @@ ${photosSection}`;
           .inspection-report-header {
             padding: 0.75rem 0.5rem !important;
           }
+          .inspection-modal-header {
+            padding: 1rem 1rem !important;
+          }
+          .inspection-modal-progress {
+            padding: 0.75rem 1rem !important;
+            gap: 1rem !important;
+          }
+          .inspection-modal-body {
+            padding: 1rem !important;
+          }
+          .inspection-modal-footer {
+            padding: 1rem 1rem !important;
+          }
+          .wa-modal-overlay {
+            padding: 0.5rem !important;
+          }
+        }
+        .inspection-modal-header {
+          padding: 1.25rem 1.75rem;
+        }
+        .inspection-modal-progress {
+          background: #f8f9fa;
+          padding: 0.75rem 1.75rem;
+          display: flex;
+          gap: 1.5rem;
+          overflow-x: auto;
+        }
+        .inspection-modal-body {
+          padding: 1.75rem;
+        }
+        .inspection-modal-footer {
+          padding: 1.25rem 1.75rem;
+        }
+        :global(.custom-role-select-trigger) {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          width: 100%;
+          padding: 0.75rem 1rem;
+          background: #ffffff;
+          border: 1.5px solid rgba(0,0,0,0.15);
+          border-radius: 10px;
+          color: #000000;
+          font-size: 0.875rem;
+          font-family: inherit;
+          cursor: pointer;
+          user-select: none;
+          height: 45px;
+          transition: all 0.2s;
+        }
+        :global(.custom-role-select-trigger:hover) {
+          border-color: #E10613;
+        }
+        :global(.custom-role-dropdown-overlay) {
+          position: fixed;
+          inset: 0;
+          z-index: 999999;
+        }
+        :global(.custom-role-dropdown-menu) {
+          position: absolute;
+          top: 100%;
+          left: 0;
+          right: 0;
+          margin-top: 4px;
+          background: #ffffff;
+          border: 1.5px solid rgba(0,0,0,0.15);
+          border-radius: 10px;
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+          z-index: 1000000;
+          overflow: hidden;
+        }
+        :global(.custom-role-option) {
+          padding: 0.75rem 1rem;
+          font-size: 0.875rem;
+          color: #333333;
+          cursor: pointer;
+          transition: all 0.15s;
+          text-align: left;
+        }
+        :global(.custom-role-option:hover) {
+          background: #f1f5f9;
+          color: #E10613;
+        }
+        :global(.custom-role-option.selected) {
+          background: rgba(225, 6, 19, 0.05);
+          color: #E10613;
+          font-weight: 600;
         }
       `}</style>
     </div>

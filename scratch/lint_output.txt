@@ -1,0 +1,429 @@
+
+> auto-bourn@0.1.0 lint
+> eslint
+
+
+/home/admin-system/Documents/auto-bourn/seed_vehicles.js
+  1:26  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+  2:12  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+/home/admin-system/Documents/auto-bourn/src/app/api/analytics/route.ts
+  4:27  warning  'request' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/admin-system/Documents/auto-bourn/src/app/api/bookings/route.ts
+  103:27  warning  'request' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/admin-system/Documents/auto-bourn/src/app/api/test-drives/route.ts
+  103:27  warning  'request' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/admin-system/Documents/auto-bourn/src/app/body-shop/page.tsx
+  7:27  warning  'AlertTriangle' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/admin-system/Documents/auto-bourn/src/app/console/page.tsx
+   7:29  warning  'Mail' is defined but never used                    @typescript-eslint/no-unused-vars
+  19:9   warning  'isPlaceholder' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/admin-system/Documents/auto-bourn/src/app/dashboard/bookings/page.tsx
+   7:16  warning  'User' is defined but never used                                                                                                       @typescript-eslint/no-unused-vars
+   8:3   warning  'FileText' is defined but never used                                                                                                   @typescript-eslint/no-unused-vars
+   9:49  warning  'HelpCircle' is defined but never used                                                                                                 @typescript-eslint/no-unused-vars
+  84:6   warning  React Hook useEffect has missing dependencies: 'loadEmployees' and 'loadRequests'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/admin-system/Documents/auto-bourn/src/app/dashboard/cars/page.tsx
+    8:45  warning  'Star' is defined but never used                                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+    9:23  warning  'formatDate' is defined but never used                                                                                                                                                                                                                                                   @typescript-eslint/no-unused-vars
+   62:6   warning  React Hook useCallback has a missing dependency: 'supabase'. Either include it or remove the dependency array                                                                                                                                                                            react-hooks/exhaustive-deps
+  100:6   warning  React Hook useEffect has a missing dependency: 'supabase'. Either include it or remove the dependency array                                                                                                                                                                              react-hooks/exhaustive-deps
+  122:6   warning  React Hook useEffect has a missing dependency: 'supabase'. Either include it or remove the dependency array                                                                                                                                                                              react-hooks/exhaustive-deps
+  133:9   warning  'toggleFeatured' is assigned a value but never used                                                                                                                                                                                                                                      @typescript-eslint/no-unused-vars
+  270:34  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  330:25  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  337:25  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  423:27  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  437:27  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/home/admin-system/Documents/auto-bourn/src/app/dashboard/crm/analytics/page.tsx
+  76:6  warning  React Hook useEffect has a missing dependency: 'supabase'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/admin-system/Documents/auto-bourn/src/app/dashboard/crm/follow-ups/page.tsx
+   5:8  warning  'Link' is defined but never used                                                                               @typescript-eslint/no-unused-vars
+  44:6  warning  React Hook useCallback has a missing dependency: 'supabase'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  53:6  warning  React Hook useEffect has a missing dependency: 'supabase'. Either include it or remove the dependency array    react-hooks/exhaustive-deps
+
+/home/admin-system/Documents/auto-bourn/src/app/dashboard/crm/leads/[id]/page.tsx
+    6:71  warning  'Clock' is defined but never used                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+   32:7   error    'headerInfo' is never reassigned. Use 'const' instead                                                                                                                                                                                                                                    prefer-const
+  139:31  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  186:10  warning  'employees' is assigned a value but never used                                                                                                                                                                                                                                           @typescript-eslint/no-unused-vars
+  218:6   warning  React Hook useEffect has missing dependencies: 'loadAll' and 'supabase'. Either include them or remove the dependency array                                                                                                                                                              react-hooks/exhaustive-deps
+
+/home/admin-system/Documents/auto-bourn/src/app/dashboard/crm/leads/page.tsx
+   2:44  warning  'useRef' is defined but never used                                                                             @typescript-eslint/no-unused-vars
+   6:75  warning  'ChevronDown' is defined but never used                                                                        @typescript-eslint/no-unused-vars
+  40:6   warning  React Hook useCallback has a missing dependency: 'supabase'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  59:6   warning  React Hook useEffect has a missing dependency: 'supabase'. Either include it or remove the dependency array    react-hooks/exhaustive-deps
+
+/home/admin-system/Documents/auto-bourn/src/app/dashboard/crm/page.tsx
+   10:13  warning  'Phone' is defined but never used                                                                              @typescript-eslint/no-unused-vars
+   52:10  warning  'loadingLeads' is assigned a value but never used                                                              @typescript-eslint/no-unused-vars
+  147:6   warning  React Hook useCallback has a missing dependency: 'supabase'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/admin-system/Documents/auto-bourn/src/app/dashboard/employees/page.tsx
+   60:66  error    Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+/home/admin-system/Documents/auto-bourn/src/app/dashboard/employees/page.tsx:60:66
+  58 |     try {
+  59 |       const fileExt = file.name.split('.').pop();
+> 60 |       const fileName = `avatar-${selectedEmployee.employee_id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+     |                                                                  ^^^^^^^^^^^^^ Cannot call impure function
+  61 |       const filePath = `avatars/${fileName}`;
+  62 |
+  63 |       const { error: uploadError } = await supabase.storage                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 react-hooks/purity
+   96:21  error    Error: Cannot access variable before it is declared
+
+`fetchEmployees` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+/home/admin-system/Documents/auto-bourn/src/app/dashboard/employees/page.tsx:96:21
+  94 |   };
+  95 |
+> 96 |   useEffect(() => { fetchEmployees(); }, []);
+     |                     ^^^^^^^^^^^^^^ `fetchEmployees` accessed before it is declared
+  97 |
+  98 |   const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
+  99 |     setToast({ msg, type });
+
+/home/admin-system/Documents/auto-bourn/src/app/dashboard/employees/page.tsx:103:3
+  101 |   };
+  102 |
+> 103 |   const fetchEmployees = async () => {
+      |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 104 |     const { data } = await supabase.from('employees').select('*').eq('role', 'employee').order('created_at', { ascending: false });
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 105 |     if (data) {
+      …
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 114 |     setLoading(false);
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 115 |   };
+      | ^^^^^ `fetchEmployees` is declared here
+  116 |
+  117 |   const copyToClipboard = async (text: string, key: string) => {
+  118 |     await navigator.clipboard.writeText(text);  react-hooks/immutability
+   96:42  warning  React Hook useEffect has a missing dependency: 'fetchEmployees'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             react-hooks/exhaustive-deps
+  173:56  error    Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+/home/admin-system/Documents/auto-bourn/src/app/dashboard/employees/page.tsx:173:56
+  171 |       if (avatarFile) {
+  172 |         const fileExt = avatarFile.name.split('.').pop();
+> 173 |         const fileName = `avatar-${form.employee_id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      |                                                        ^^^^^^^^^^^^^ Cannot call impure function
+  174 |         const filePath = `avatars/${fileName}`;
+  175 |
+  176 |         const { error: uploadError } = await supabase.storage                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   react-hooks/purity
+
+/home/admin-system/Documents/auto-bourn/src/app/dashboard/layout.tsx
+   13:34  warning  'Moon' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-unused-vars
+   13:40  warning  'Sun' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+   58:10  warning  'notifOpen' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             @typescript-eslint/no-unused-vars
+   58:21  warning  'setNotifOpen' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          @typescript-eslint/no-unused-vars
+   61:10  warning  'unreadContactsCount' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   @typescript-eslint/no-unused-vars
+   62:10  warning  'loadingContacts' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+   96:68  error    Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+/home/admin-system/Documents/auto-bourn/src/app/dashboard/layout.tsx:96:68
+  94 |     try {
+  95 |       const fileExt = file.name.split('.').pop();
+> 96 |       const fileName = `avatar-${employee.employee_id || 'temp'}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+     |                                                                    ^^^^^^^^^^^^^ Cannot call impure function
+  97 |       const filePath = `avatars/${fileName}`;
+  98 |
+  99 |       const { error: uploadError } = await supabase.storage  react-hooks/purity
+  131:9   warning  'fetchContactMessages' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  @typescript-eslint/no-unused-vars
+  151:9   warning  'markContactStatus' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-unused-vars
+  230:6   warning  React Hook useEffect has missing dependencies: 'fetchNotifications', 'fetchUnreadCount', 'router', and 'supabase'. Either include them or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      react-hooks/exhaustive-deps
+
+/home/admin-system/Documents/auto-bourn/src/app/dashboard/logs/page.tsx
+   5:10  warning  'motion' is defined but never used                                                                           @typescript-eslint/no-unused-vars
+  54:6   warning  React Hook useEffect has a missing dependency: 'supabase'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/admin-system/Documents/auto-bourn/src/app/dashboard/page.tsx
+    7:15  warning  'Users' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+    7:56  warning  'Calendar' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      @typescript-eslint/no-unused-vars
+    7:73  warning  'BarChart3' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-unused-vars
+   83:7   error    Error: Cannot access variable before it is declared
+
+`fetchAll` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+/home/admin-system/Documents/auto-bourn/src/app/dashboard/page.tsx:83:7
+  81 |
+  82 |       setSelectedEmployee({ ...selectedEmployee, avatar_url: uploadedAvatarUrl });
+> 83 |       fetchAll();
+     |       ^^^^^^^^ `fetchAll` accessed before it is declared
+  84 |       showToast('Profile photo updated successfully!', 'success');
+  85 |     } catch (err: any) {
+  86 |       showToast(err.message || 'Failed to update profile photo', 'error');
+
+/home/admin-system/Documents/auto-bourn/src/app/dashboard/page.tsx:214:3
+  212 |   }, []);
+  213 |
+> 214 |   const fetchAll = async () => {
+      |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 215 |     try {
+      | ^^^^^^^^^
+> 216 |       const now = new Date();
+      …
+      | ^^^^^^^^^
+> 345 |     }
+      | ^^^^^^^^^
+> 346 |   };
+      | ^^^^^ `fetchAll` is declared here
+  347 |
+  348 |   const statCards = stats ? [
+  349 |     { label: 'Total Cars', value: stats.total_cars, icon: Car, color: BRAND_RED, link: '/dashboard/cars' },                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   react-hooks/immutability
+  212:6   warning  React Hook useEffect has a missing dependency: 'fetchAll'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               react-hooks/exhaustive-deps
+  443:62  error    Error: Cannot create components during render
+
+Components created during render will reset their state each time they are created. Declare components outside of render.
+
+/home/admin-system/Documents/auto-bourn/src/app/dashboard/page.tsx:443:62
+  441 |               <BarChart data={empPerf.slice(0, 8)} layout="vertical" style={{ cursor: 'pointer' }}>
+  442 |                 <XAxis type="number" tick={{ fill: 'var(--db-tx3)', fontSize: 11 }} axisLine={false} tickLine={false} />
+> 443 |                 <YAxis type="category" dataKey="name" tick={<CustomYAxisTick />} axisLine={false} tickLine={false} width={100} />
+      |                                                              ^^^^^^^^^^^^^^^ This component is created during render
+  444 |                 <Tooltip contentStyle={{ background: 'var(--db-sf)', border: '1px solid var(--db-bd)', borderRadius: 10, color: 'var(--db-tx)', fontSize: 13 }} />
+  445 |                 <Bar dataKey="total_uploads" fill={BRAND_RED} radius={[0, 6, 6, 0]} name="Uploads" onClick={(data) => handleBarClick(data)} />
+  446 |                 <Bar dataKey="total_sold" fill="#22c55e" radius={[0, 6, 6, 0]} name="Sold" onClick={(data) => handleBarClick(data)} />
+
+/home/admin-system/Documents/auto-bourn/src/app/dashboard/page.tsx:185:27
+  183 |   };
+  184 |
+> 185 |   const CustomYAxisTick = (props: any) => {
+      |                           ^^^^^^^^^^^^^^^^^
+> 186 |     const { x, y, payload } = props;
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 187 |     const empName = payload.value;
+      …
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 207 |     );
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 208 |   };
+      | ^^^^ The component is created during render here
+  209 |
+  210 |   useEffect(() => {
+  211 |     fetchAll();  react-hooks/static-components
+  457:47  error    Error: Cannot create components during render
+
+Components created during render will reset their state each time they are created. Declare components outside of render.
+
+/home/admin-system/Documents/auto-bourn/src/app/dashboard/page.tsx:457:47
+  455 |             <ResponsiveContainer width="100%" height={260}>
+  456 |               <BarChart data={brandData.slice(0, 8)} style={{ cursor: 'pointer' }}>
+> 457 |                 <XAxis dataKey="brand" tick={<CustomXAxisTick />} axisLine={false} tickLine={false} />
+      |                                               ^^^^^^^^^^^^^^^ This component is created during render
+  458 |                 <YAxis tick={{ fill: 'var(--db-tx3)', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
+  459 |                 <Tooltip contentStyle={{ background: 'var(--db-sf)', border: '1px solid var(--db-bd)', borderRadius: 10, color: 'var(--db-tx)', fontSize: 13 }} />
+  460 |                 <Bar dataKey="total" fill={BRAND_RED} radius={[6, 6, 0, 0]} name="Total" onClick={(data) => handleBrandClick(data)} />
+
+/home/admin-system/Documents/auto-bourn/src/app/dashboard/page.tsx:161:27
+  159 |   };
+  160 |
+> 161 |   const CustomXAxisTick = (props: any) => {
+      |                           ^^^^^^^^^^^^^^^^^
+> 162 |     const { x, y, payload } = props;
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 163 |     const brandName = payload.value;
+      …
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 182 |     );
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 183 |   };
+      | ^^^^ The component is created during render here
+  184 |
+  185 |   const CustomYAxisTick = (props: any) => {
+  186 |     const { x, y, payload } = props;                                                                                        react-hooks/static-components
+
+/home/admin-system/Documents/auto-bourn/src/app/dashboard/reports/page.tsx
+    6:63  warning  'BarChart3' is defined but never used                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+   32:10  warning  'expandedId' is assigned a value but never used                                                                                                                                                                                                                                          @typescript-eslint/no-unused-vars
+   32:22  warning  'setExpandedId' is assigned a value but never used                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+   55:6   warning  React Hook useCallback has a missing dependency: 'supabase'. Either include it or remove the dependency array                                                                                                                                                                            react-hooks/exhaustive-deps
+  303:19  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/home/admin-system/Documents/auto-bourn/src/app/dashboard/test-drives/page.tsx
+    7:11  warning  'Filter' is defined but never used                                                                                            @typescript-eslint/no-unused-vars
+    8:10  warning  'FileText' is defined but never used                                                                                          @typescript-eslint/no-unused-vars
+    9:39  warning  'ShieldAlert' is defined but never used                                                                                       @typescript-eslint/no-unused-vars
+    9:52  warning  'Award' is defined but never used                                                                                             @typescript-eslint/no-unused-vars
+   46:10  warning  'currentAdminId' is assigned a value but never used                                                                           @typescript-eslint/no-unused-vars
+   93:6   warning  React Hook useEffect has missing dependencies: 'loadData' and 'supabase'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  169:9   warning  'cancelledCount' is assigned a value but never used                                                                           @typescript-eslint/no-unused-vars
+
+/home/admin-system/Documents/auto-bourn/src/app/dashboard/uploads/page.tsx
+  56:30  error    Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+/home/admin-system/Documents/auto-bourn/src/app/dashboard/uploads/page.tsx:56:30
+  54 |
+  55 |   const daysAgo = (d: string) => {
+> 56 |     const diff = Math.floor((Date.now() - new Date(d).getTime()) / 86400000);
+     |                              ^^^^^^^^^^ Cannot call impure function
+  57 |     return diff === 0 ? 'Today' : diff === 1 ? '1 day ago' : `${diff} days ago`;
+  58 |   };
+  59 |  react-hooks/purity
+  96:21  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element                                                                                                                                                                                                                                                                                                                                                                                                                                                      @next/next/no-img-element
+
+/home/admin-system/Documents/auto-bourn/src/app/employee/bookings/page.tsx
+   7:16  warning  'User' is defined but never used                                                                                 @typescript-eslint/no-unused-vars
+   8:3   warning  'FileText' is defined but never used                                                                             @typescript-eslint/no-unused-vars
+   9:49  warning  'HelpCircle' is defined but never used                                                                           @typescript-eslint/no-unused-vars
+  46:9   warning  'supabase' is assigned a value but never used                                                                    @typescript-eslint/no-unused-vars
+  69:6   warning  React Hook useEffect has a missing dependency: 'loadRequests'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/admin-system/Documents/auto-bourn/src/app/employee/cars/page.tsx
+  237:35  error    Error: Cannot access variable before it is declared
+
+`fetchCars` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+/home/admin-system/Documents/auto-bourn/src/app/employee/cars/page.tsx:237:35
+  235 |   };
+  236 |
+> 237 |   useEffect(() => { if (employee) fetchCars(); }, [employee]);
+      |                                   ^^^^^^^^^ `fetchCars` accessed before it is declared
+  238 |
+  239 |   useEffect(() => {
+  240 |     if (!employee) return;
+
+/home/admin-system/Documents/auto-bourn/src/app/employee/cars/page.tsx:254:3
+  252 |   }, [employee, supabase]);
+  253 |
+> 254 |   const fetchCars = async () => {
+      |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 255 |     if (!employee) return;
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 256 |     const { data } = await supabase
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 257 |       .from('cars')
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 258 |       .select('*, employee:employees!employee_id(name, employee_id)')
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 259 |       .order('created_at', { ascending: false });
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 260 |     setCars(data || []);
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 261 |     setLoading(false);
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 262 |   };
+      | ^^^^^ `fetchCars` is declared here
+  263 |
+  264 |   const updateStatus = async (id: string, status: string) => {
+  265 |     const updates: Record<string, unknown> = { status };  react-hooks/immutability
+  237:51  warning  React Hook useEffect has a missing dependency: 'fetchCars'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           react-hooks/exhaustive-deps
+  490:23  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @next/next/no-img-element
+  492:23  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @next/next/no-img-element
+  524:27  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @next/next/no-img-element
+  534:25  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @next/next/no-img-element
+  598:38  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @next/next/no-img-element
+
+/home/admin-system/Documents/auto-bourn/src/app/employee/crm/leads/[id]/page.tsx
+     8:3   warning  'Calendar' is defined but never used                                                                                                                                                                                                                                                     @typescript-eslint/no-unused-vars
+     8:52  warning  'FileText' is defined but never used                                                                                                                                                                                                                                                     @typescript-eslint/no-unused-vars
+     9:11  warning  'Check' is defined but never used                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+    35:7   error    'headerInfo' is never reassigned. Use 'const' instead                                                                                                                                                                                                                                    prefer-const
+   142:31  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+   445:14  warning  'e' is defined but never used                                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+   450:35  warning  React Hook useEffect has a missing dependency: 'loadAll'. Either include it or remove the dependency array                                                                                                                                                                               react-hooks/exhaustive-deps
+   487:14  warning  'err' is defined but never used                                                                                                                                                                                                                                                          @typescript-eslint/no-unused-vars
+  1145:37  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  1388:35  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/home/admin-system/Documents/auto-bourn/src/app/employee/crm/page.tsx
+    4:18  warning  'AnimatePresence' is defined but never used                                                                    @typescript-eslint/no-unused-vars
+    7:31  warning  'Clock' is defined but never used                                                                              @typescript-eslint/no-unused-vars
+    9:23  warning  'FOLLOW_UP_TYPE_LABELS' is defined but never used                                                              @typescript-eslint/no-unused-vars
+  123:6   warning  React Hook useCallback has a missing dependency: 'supabase'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/admin-system/Documents/auto-bourn/src/app/employee/customer-details/page.tsx
+    3:31  warning  'useCallback' is defined but never used                                                                      @typescript-eslint/no-unused-vars
+    8:3   warning  'FileText' is defined but never used                                                                         @typescript-eslint/no-unused-vars
+    8:13  warning  'User' is defined but never used                                                                             @typescript-eslint/no-unused-vars
+    8:19  warning  'Phone' is defined but never used                                                                            @typescript-eslint/no-unused-vars
+    8:26  warning  'MessageSquare' is defined but never used                                                                    @typescript-eslint/no-unused-vars
+    8:41  warning  'Car' is defined but never used                                                                              @typescript-eslint/no-unused-vars
+    8:46  warning  'IndianRupee' is defined but never used                                                                      @typescript-eslint/no-unused-vars
+    9:3   warning  'Calendar' is defined but never used                                                                         @typescript-eslint/no-unused-vars
+    9:13  warning  'Briefcase' is defined but never used                                                                        @typescript-eslint/no-unused-vars
+    9:24  warning  'Plus' is defined but never used                                                                             @typescript-eslint/no-unused-vars
+    9:77  warning  'X' is defined but never used                                                                                @typescript-eslint/no-unused-vars
+  240:6   warning  React Hook useEffect has a missing dependency: 'supabase'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/admin-system/Documents/auto-bourn/src/app/employee/layout.tsx
+   11:57   warning  'Bell' is defined but never used                                                                                                                                                                       @typescript-eslint/no-unused-vars
+   11:106  warning  'PhoneCall' is defined but never used                                                                                                                                                                  @typescript-eslint/no-unused-vars
+   11:117  warning  'Bookmark' is defined but never used                                                                                                                                                                   @typescript-eslint/no-unused-vars
+   38:10   warning  'notifOpen' is assigned a value but never used                                                                                                                                                         @typescript-eslint/no-unused-vars
+   38:21   warning  'setNotifOpen' is assigned a value but never used                                                                                                                                                      @typescript-eslint/no-unused-vars
+   64:10   warning  'unreadContactsCount' is assigned a value but never used                                                                                                                                               @typescript-eslint/no-unused-vars
+   65:10   warning  'loadingContacts' is assigned a value but never used                                                                                                                                                   @typescript-eslint/no-unused-vars
+   67:9    warning  'fetchContactMessages' is assigned a value but never used                                                                                                                                              @typescript-eslint/no-unused-vars
+   87:9    warning  'markContactStatus' is assigned a value but never used                                                                                                                                                 @typescript-eslint/no-unused-vars
+  157:6    warning  React Hook useEffect has missing dependencies: 'checkTodayReport', 'fetchNotifications', 'fetchUnreadContactsCountOnly', 'router', and 'supabase'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/admin-system/Documents/auto-bourn/src/app/employee/page.tsx
+    8:29  warning  'Upload' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  @typescript-eslint/no-unused-vars
+    9:17  warning  'Calendar' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-unused-vars
+    9:27  warning  'User' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+    9:55  warning  'Eye' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-unused-vars
+   40:58  error    Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+/home/admin-system/Documents/auto-bourn/src/app/employee/page.tsx:40:58
+  38 |     try {
+  39 |       const fileExt = file.name.split('.').pop();
+> 40 |       const fileName = `avatar-${employee.employee_id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+     |                                                          ^^^^^^^^^^^^^ Cannot call impure function
+  41 |       const filePath = `avatars/${fileName}`;
+  42 |
+  43 |       const { error: uploadError } = await supabase.storage  react-hooks/purity
+   84:10  warning  'copied' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+  128:6   warning  React Hook useEffect has a missing dependency: 'supabase'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         react-hooks/exhaustive-deps
+  217:9   warning  'handleCopyReport' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-unused-vars
+  415:25  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             @next/next/no-img-element
+
+/home/admin-system/Documents/auto-bourn/src/app/employee/test-drives/page.tsx
+   7:16  warning  'User' is defined but never used                                                                                 @typescript-eslint/no-unused-vars
+   8:3   warning  'FileText' is defined but never used                                                                             @typescript-eslint/no-unused-vars
+   8:36  warning  'AlertCircle' is defined but never used                                                                          @typescript-eslint/no-unused-vars
+   9:3   warning  'BookmarkCheck' is defined but never used                                                                        @typescript-eslint/no-unused-vars
+  44:9   warning  'supabase' is assigned a value but never used                                                                    @typescript-eslint/no-unused-vars
+  67:6   warning  React Hook useEffect has a missing dependency: 'loadRequests'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/home/admin-system/Documents/auto-bourn/src/app/employee/upload/page.tsx
+  409:33  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  416:17  warning  Image elements must have an alt prop, either with meaningful text, or an empty string for decorative images                                                                                                                                                                              jsx-a11y/alt-text
+  423:23  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/home/admin-system/Documents/auto-bourn/src/app/inventory/InventoryClient.tsx
+  180:19  warning  'setLoading' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/admin-system/Documents/auto-bourn/src/app/page.tsx
+  8:8  warning  'VehicleCard' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/admin-system/Documents/auto-bourn/src/app/sell/page.tsx
+  278:9   warning  'supabase' is assigned a value but never used                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+  601:15  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/home/admin-system/Documents/auto-bourn/src/app/vehicle/[id]/page.tsx
+  20:10  warning  'formSent' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  20:20  warning  'setFormSent' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+✖ 148 problems (14 errors, 134 warnings)
+  2 errors and 0 warnings potentially fixable with the `--fix` option.
+
