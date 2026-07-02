@@ -827,12 +827,11 @@ export default function AdminTestDrivesPage() {
             display: none !important;
           }
           .tab-btn {
-            flex-shrink: 0 !important;
             white-space: nowrap !important;
             padding: 8px 16px !important;
             font-size: 0.8rem !important;
             border-radius: 8px !important;
-            flex: 1 !important;
+            flex: 1 0 auto !important;
             text-align: center !important;
           }
         }

@@ -2,11 +2,12 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Trophy, TrendingUp, Target, Users2, Phone } from 'lucide-react';
 import { LEAD_STAGES } from '@/types/crm';
 
-interface EmpStat { id:string; name:string; employee_id:string; total:number; sold:number; followUps:number; conversion:number; }
+interface EmpStat { id:string; name:string; employee_id:string; total:number; sold:number; followUps:number; conversion:number; avatar_url?:string; }
 
 export default function CRMAnalyticsPage() {
   const [empStats, setEmpStats] = useState<EmpStat[]>([]);
@@ -56,9 +57,9 @@ export default function CRMAnalyticsPage() {
       setTotalFollowUps(fuCount || 0);
 
       // Employee stats
-      const { data:emps } = await supabase.from('employees').select('id,name,employee_id').eq('status','active');
+      const { data:emps } = await supabase.from('employees').select('id,name,employee_id,avatar_url').eq('status','active');
       if (!emps) { setLoading(false); return; }
-      const stats = await Promise.all(emps.map(async (e:{id:string;name:string;employee_id:string}) => {
+      const stats = await Promise.all(emps.map(async (e:{id:string;name:string;employee_id:string;avatar_url?:string}) => {
         const [{ count:total },{ count:sold },{ count:fu }] = await Promise.all([
           supabase.from('leads').select('id',{count:'exact',head:true}).eq('assigned_to',e.id),
           supabase.from('leads').select('id',{count:'exact',head:true}).eq('assigned_to',e.id).eq('lead_status','sold'),
@@ -67,6 +68,7 @@ export default function CRMAnalyticsPage() {
         const t=total||0, s=sold||0;
         return { ...e, total:t, sold:s, followUps:fu||0, conversion:t>0?Math.round((s/t)*100):0 };
       }));
+      console.log('Leaderboard empStats:', stats);
       setEmpStats(stats.sort((a,b)=>b.sold-a.sold));
       setLoading(false);
     };
@@ -220,7 +222,13 @@ export default function CRMAnalyticsPage() {
                     </td>
                     <td>
                       <div className="crm-emp-info">
-                        <div className="crm-emp-av">{emp.name.charAt(0)}</div>
+                        {emp.avatar_url ? (
+                          <div className="crm-emp-av" style={{ position: 'relative', overflow: 'hidden' }}>
+                            <Image src={emp.avatar_url} alt={emp.name} fill style={{ objectFit: 'cover', borderRadius: '50%' }} />
+                          </div>
+                        ) : (
+                          <div className="crm-emp-av">{emp.name.charAt(0)}</div>
+                        )}
                         <div>
                           <div className="crm-emp-name">{emp.name}</div>
                           <div className="crm-emp-id">{emp.employee_id}</div>

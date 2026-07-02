@@ -762,15 +762,28 @@ export default function EmployeeTestDrivesPage() {
           .filters-bar { flex-direction: column; align-items: stretch; gap: 1rem !important; }
           .search-box { min-width: 0 !important; width: 100% !important; }
           .tabs-container {
+            display: flex !important;
+            flex-wrap: nowrap !important;
             overflow-x: auto !important;
             -ms-overflow-style: none !important;
             scrollbar-width: none !important;
+            width: 100% !important;
+            gap: 8px !important;
+            padding: 4px !important;
+            background: var(--db-sf2) !important;
+            border: 1px solid var(--db-bd) !important;
+            border-radius: 12px !important;
           }
           .tabs-container::-webkit-scrollbar {
             display: none !important;
           }
           .tab-btn {
-            flex-shrink: 0 !important;
+            white-space: nowrap !important;
+            padding: 8px 16px !important;
+            font-size: 0.8rem !important;
+            border-radius: 8px !important;
+            flex: 1 0 auto !important;
+            text-align: center !important;
           }
         }
       `}</style>

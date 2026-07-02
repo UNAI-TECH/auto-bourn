@@ -698,7 +698,6 @@ export default function EmployeeDashboard() {
 }
 .profile-avatar-img {
   object-fit: cover;
-  border-radius: 50%;
 }
 .profile-overlay-gradient {
   position: absolute;
