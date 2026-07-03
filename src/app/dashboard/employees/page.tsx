@@ -21,6 +21,7 @@ export default function EmployeesPage() {
   const [employees, setEmployees] = useState<(Employee & { total_uploads?: number; total_sold?: number; last_upload?: string | null })[]>([]);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest'>('newest');
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
@@ -318,6 +319,10 @@ export default function EmployeesPage() {
     const matchSearch = emp.name.toLowerCase().includes(search.toLowerCase()) || emp.employee_id.toLowerCase().includes(search.toLowerCase()) || emp.email.toLowerCase().includes(search.toLowerCase());
     const matchFilter = filter === 'all' || emp.status === filter;
     return matchSearch && matchFilter;
+  }).sort((a, b) => {
+    const timeA = new Date(a.created_at || 0).getTime();
+    const timeB = new Date(b.created_at || 0).getTime();
+    return sortBy === 'newest' ? timeB - timeA : timeA - timeB;
   });
 
   const maxUploads = Math.max(...employees.map(e => e.total_uploads || 0), 1);
@@ -331,12 +336,42 @@ export default function EmployeesPage() {
       </div>
 
       {/* Filters */}
-      <div className="emp-filters">
+      <div className="emp-filters" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div className="db-search-inline"><Search size={16} /><input placeholder="Search employees..." value={search} onChange={e => setSearch(e.target.value)} /></div>
-        <div className="emp-tabs">
-          {['all', 'active', 'inactive', 'suspended'].map(f => (
-            <button key={f} className={`emp-tab ${filter === f ? 'active' : ''}`} onClick={() => setFilter(f)}>{f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}</button>
-          ))}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+          <div className="emp-tabs">
+            {['all', 'active', 'inactive', 'suspended'].map(f => (
+              <button key={f} className={`emp-tab ${filter === f ? 'active' : ''}`} onClick={() => setFilter(f)}>{f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}</button>
+            ))}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <select 
+              value={sortBy} 
+              onChange={e => setSortBy(e.target.value as 'newest' | 'oldest')}
+              style={{
+                background: 'var(--db-sf)',
+                border: '1px solid var(--db-bd)',
+                color: 'var(--db-tx2)',
+                borderRadius: '8px',
+                padding: '0.375rem 1.75rem 0.375rem 0.75rem',
+                fontSize: '0.8125rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                outline: 'none',
+                appearance: 'none',
+                backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 0.5rem center',
+                backgroundSize: '1rem',
+                transition: 'border-color 0.2s',
+                fontFamily: 'inherit'
+              }}
+              className="emp-sort-select"
+            >
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+            </select>
+          </div>
         </div>
       </div>
 
