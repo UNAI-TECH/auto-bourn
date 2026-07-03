@@ -61,7 +61,7 @@ export const metadata: Metadata = {
       "Chennai's most trusted pre-owned luxury car dealership in Velachery. Certified used BMW, Mercedes-Benz, Audi, Jaguar, Land Rover & Porsche.",
     images: [
       {
-        url: "https://www.autobourncars.com/home.png",
+        url: "https://www.autobourncars.com/home.jpg",
         width: 1200,
         height: 630,
         alt: "AUTOBOURN Cars - Premium Pre-Owned Luxury Car Showroom Chennai",
@@ -73,7 +73,7 @@ export const metadata: Metadata = {
     title: "AUTOBOURN Cars | Luxury Pre-Owned Cars Chennai",
     description:
       "Certified pre-owned BMW, Mercedes, Audi, Jaguar & more at AUTOBOURN Cars, Velachery, Chennai.",
-    images: ["https://www.autobourncars.com/home.png"],
+    images: ["https://www.autobourncars.com/home.jpg"],
   },
   robots: {
     index: true,

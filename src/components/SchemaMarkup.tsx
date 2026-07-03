@@ -31,7 +31,7 @@ export default function SchemaMarkup() {
     "@type": ["AutoDealer", "LocalBusiness"],
     "@id": "https://www.autobourncars.com/#organization",
     name: "AUTOBOURN Cars",
-    image: "https://www.autobourncars.com/home.png",
+    image: "https://www.autobourncars.com/home.jpg",
     url: "https://www.autobourncars.com",
     telephone: "+91-91767-77222",
     email: "hello@autobourncars.com",

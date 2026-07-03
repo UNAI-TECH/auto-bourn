@@ -156,7 +156,7 @@ export default function HomePage() {
           >
             <div className="animate-float-slow hero-image-card">
               <Image
-                src="/home.png"
+                src="/home.webp"
                 alt="Auto Bourn Premium Showroom"
                 fill
                 style={{ objectFit: 'cover' }}
