@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Vehicle, brands } from '@/data/vehicles';
 import VehicleCard from '@/components/VehicleCard';
 
-const ITEMS_PER_PAGE = 8;
+const ITEMS_PER_PAGE = 9;
 
 interface Option {
   value: string;
