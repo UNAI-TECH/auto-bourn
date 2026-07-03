@@ -159,6 +159,19 @@ export default function PromptModal({
                         display: 'flex'
                       }}
                     >
+                      <span style={{
+                        position: 'absolute',
+                        width: '1px',
+                        height: '1px',
+                        padding: 0,
+                        margin: '-1px',
+                        overflow: 'hidden',
+                        clip: 'rect(0, 0, 0, 0)',
+                        whiteSpace: 'nowrap',
+                        border: 0
+                      }}>
+                        {showPassword ? 'Hide password' : 'Show password'}
+                      </span>
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   )}

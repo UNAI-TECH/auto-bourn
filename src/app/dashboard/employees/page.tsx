@@ -452,7 +452,7 @@ export default function EmployeesPage() {
                       value={form.email}
                       onChange={e => setForm({ ...form, email: e.target.value })}
                       required
-                      placeholder="employee@autobourn.com"
+                      placeholder="employee@autobourncars.com"
                     />
                   </div>
 

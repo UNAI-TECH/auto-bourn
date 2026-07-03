@@ -4,11 +4,11 @@
 
 ## Core Resources
 
-- [Official Website](https://autobourn.com): Home page for AUTOBOURN Cars.
-- [Live Inventory](https://autobourn.com/inventory): Real-time catalog of certified pre-owned luxury cars.
-- [About Us](https://autobourn.com/about): Business overview, mission, and leadership info.
-- [Contact Details](https://autobourn.com/contact): Location address, official phone number, and showroom inquiries.
-- [Sell Your Car](https://autobourn.com/sell): Evaluate, sell, or trade in your luxury car.
+- [Official Website](https://www.autobourncars.com): Home page for AUTOBOURN Cars.
+- [Live Inventory](https://www.autobourncars.com/inventory): Real-time catalog of certified pre-owned luxury cars.
+- [About Us](https://www.autobourncars.com/about): Business overview, mission, and leadership info.
+- [Contact Details](https://www.autobourncars.com/contact): Location address, official phone number, and showroom inquiries.
+- [Sell Your Car](https://www.autobourncars.com/sell): Evaluate, sell, or trade in your luxury car.
 
 ## Showroom & Business Info
 
