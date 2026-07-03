@@ -30,7 +30,41 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  // Helper to redirect while preserving any updated or cleared cookies in supabaseResponse
+  const redirect = (toPath: string) => {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = toPath;
+    const redirectResponse = NextResponse.redirect(redirectUrl);
+    
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie.name, cookie.value, {
+        path: cookie.path,
+        domain: cookie.domain,
+        maxAge: cookie.maxAge,
+        secure: cookie.secure,
+        httpOnly: cookie.httpOnly,
+        sameSite: cookie.sameSite,
+      });
+    });
+    
+    return redirectResponse;
+  };
+
+  let user = null;
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    if (error) {
+      // If there is an auth error (e.g. invalid refresh token), sign out to clear cookies
+      await supabase.auth.signOut();
+    } else {
+      user = data?.user;
+    }
+  } catch (err) {
+    try {
+      await supabase.auth.signOut();
+    } catch (_) {}
+  }
+
   const pathname = request.nextUrl.pathname;
 
   const isProtectedDashboard = pathname.startsWith('/dashboard');
@@ -39,9 +73,7 @@ export async function updateSession(request: NextRequest) {
   // ── 1. Unauthenticated user hitting protected routes ───────────────────────
   if (!user) {
     if (isProtectedDashboard || isProtectedEmployee) {
-      const url = request.nextUrl.clone();
-      url.pathname = '/console';
-      return NextResponse.redirect(url);
+      return redirect('/console');
     }
     return supabaseResponse;
   }
@@ -56,38 +88,28 @@ export async function updateSession(request: NextRequest) {
   // Suspended, inactive, or non-existent employee accounts — force logout and back to console
   if (!employee || employee.status === 'suspended' || employee.status === 'inactive') {
     await supabase.auth.signOut();
-    const url = request.nextUrl.clone();
-    url.pathname = '/console';
-    return NextResponse.redirect(url);
+    return redirect('/console');
   }
 
-  // ── 3. Any authenticated user visiting /admin → redirect to right place ─────
+  // ── 3. Any authenticated user visiting /admin or /console → redirect to right place
   if (pathname === '/admin' || pathname === '/console') {
-    const url = request.nextUrl.clone();
-    url.pathname = employee?.role === 'admin' ? '/dashboard' : '/employee';
-    return NextResponse.redirect(url);
+    return redirect(employee?.role === 'admin' ? '/dashboard' : '/employee');
   }
 
-  // ── 4. Logged-in employee visiting /console → go to employee panel ──────────
+  // ── 4. Logged-in employee visiting /console → go to employee panel
   if (pathname === '/console' && employee?.role === 'employee') {
-    const url = request.nextUrl.clone();
-    url.pathname = '/employee';
-    return NextResponse.redirect(url);
+    return redirect('/employee');
   }
 
   // ── 5. Logged-in user visiting old /login route ──────────────────────────────
   if (pathname === '/login') {
-    const url = request.nextUrl.clone();
-    url.pathname = employee?.role === 'admin' ? '/dashboard' : '/employee';
-    return NextResponse.redirect(url);
+    return redirect(employee?.role === 'admin' ? '/dashboard' : '/employee');
   }
 
   // ── 6. Role enforcement on protected routes ──────────────────────────────────
   // Non-admin trying to access /dashboard
   if (isProtectedDashboard && employee?.role !== 'admin') {
-    const url = request.nextUrl.clone();
-    url.pathname = '/employee';
-    return NextResponse.redirect(url);
+    return redirect('/employee');
   }
 
   // Non-employee (i.e. admin) trying to access /employee — allow it
