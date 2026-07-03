@@ -301,7 +301,7 @@ export default function AdminReportsPage() {
               <div className="report-modal-left">
                 <div className="modal-avatar-container">
                   <img 
-                    src={selectedReport.employees?.avatar_url || '/employee_avatar.png'} 
+                    src={selectedReport.employees?.avatar_url || '/DEFAULT IMAGE.PNG'} 
                     alt={selectedReport.employees?.name}
                     className="modal-emp-avatar-img"
                   />

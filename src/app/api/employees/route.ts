@@ -155,17 +155,13 @@ export async function PUT(request: NextRequest) {
 
     // 2. Parse body
     const body = await request.json();
-    const { id, password } = body;
+    const { id, password, name, email, phone, employee_id, role, status } = body;
 
-    if (!id || !password) {
+    if (!id) {
       return NextResponse.json(
-        { error: 'Missing required fields: id, password' },
+        { error: 'Missing required field: id' },
         { status: 400 }
       );
-    }
-
-    if (password.length < 6) {
-      return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 });
     }
 
     // 3. Check for service role key
@@ -190,31 +186,104 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
     }
 
-    if (!emp.auth_user_id) {
-      return NextResponse.json({ error: 'Employee has no associated auth user' }, { status: 400 });
+    if (password !== undefined) {
+      if (password.length < 6) {
+        return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 });
+      }
+
+      if (!emp.auth_user_id) {
+        return NextResponse.json({ error: 'Employee has no associated auth user' }, { status: 400 });
+      }
+
+      // 5. Update user password in Supabase auth (requires service role client)
+      const { error: authUpdateError } = await serviceClient.auth.admin.updateUserById(
+        emp.auth_user_id,
+        { password }
+      );
+
+      if (authUpdateError) {
+        return NextResponse.json({ error: `Auth update failed: ${authUpdateError.message}` }, { status: 400 });
+      }
+
+      // 6. Log the admin activity
+      await serviceClient.from('activity_logs').insert({
+        employee_id: admin.id,
+        action: 'employee_password_reset',
+        details: `Admin reset password for employee ${emp.name} (ID: ${emp.employee_id})`,
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: 'Password updated successfully',
+      });
+    } else {
+      // General details update path
+      if (!name || !email || !employee_id || !role || !status) {
+        return NextResponse.json(
+          { error: 'Missing required fields: name, email, employee_id, role, status' },
+          { status: 400 }
+        );
+      }
+
+      // Check duplicate employee_id or email excluding current employee
+      const { data: existing } = await serviceClient
+        .from('employees')
+        .select('id, employee_id, email')
+        .or(`employee_id.eq.${employee_id},email.eq.${email}`)
+        .neq('id', id)
+        .maybeSingle();
+
+      if (existing) {
+        if (existing.email === email) {
+          return NextResponse.json({ error: `Email "${email}" is already registered` }, { status: 400 });
+        }
+        if (existing.employee_id === employee_id) {
+          return NextResponse.json({ error: `Employee ID "${employee_id}" is already taken` }, { status: 400 });
+        }
+      }
+
+      // Update email in Auth if it has changed
+      if (emp.email !== email && emp.auth_user_id) {
+        const { error: authUpdateError } = await serviceClient.auth.admin.updateUserById(
+          emp.auth_user_id,
+          { email }
+        );
+        if (authUpdateError) {
+          return NextResponse.json({ error: `Auth update failed: ${authUpdateError.message}` }, { status: 400 });
+        }
+      }
+
+      // Update in employees database
+      const { data: updatedEmp, error: updateError } = await serviceClient
+        .from('employees')
+        .update({
+          name,
+          email,
+          phone: phone || null,
+          employee_id,
+          role,
+          status,
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (updateError) {
+        return NextResponse.json({ error: `DB update failed: ${updateError.message}` }, { status: 400 });
+      }
+
+      // Log the edit activity
+      await serviceClient.from('activity_logs').insert({
+        employee_id: admin.id,
+        action: 'edit',
+        details: `Admin updated employee details for ${name} (ID: ${employee_id}, Email: ${email})`,
+      });
+
+      return NextResponse.json({
+        success: true,
+        employee: updatedEmp,
+      });
     }
-
-    // 5. Update user password in Supabase auth (requires service role client)
-    const { error: authUpdateError } = await serviceClient.auth.admin.updateUserById(
-      emp.auth_user_id,
-      { password }
-    );
-
-    if (authUpdateError) {
-      return NextResponse.json({ error: `Auth update failed: ${authUpdateError.message}` }, { status: 400 });
-    }
-
-    // 6. Log the admin activity
-    await serviceClient.from('activity_logs').insert({
-      employee_id: admin.id,
-      action: 'employee_password_reset',
-      details: `Admin reset password for employee ${emp.name} (ID: ${emp.employee_id})`,
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: 'Password updated successfully',
-    });
   } catch (err: unknown) {
     console.error('[PUT /api/employees] Unexpected error:', err);
     const message = err instanceof Error ? err.message : 'Unknown error';

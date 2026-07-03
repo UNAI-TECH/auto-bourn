@@ -330,13 +330,9 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
                 <span>Sign Out</span>
               </button>
               <div className="saas-avatar-wrap">
-                {employee?.avatar_url ? (
-                  <div style={{ position: 'relative', width: 36, height: 36 }}>
-                    <Image src={employee.avatar_url} alt={employee.name || 'Avatar'} fill style={{ objectFit: 'cover', borderRadius: '50%' }} />
-                  </div>
-                ) : (
-                  <div className="saas-avatar">{employee?.name?.charAt(0) || 'E'}</div>
-                )}
+                <div style={{ position: 'relative', width: 36, height: 36 }}>
+                  <Image src={employee?.avatar_url || '/DEFAULT IMAGE.PNG'} alt={employee?.name || 'Avatar'} fill style={{ objectFit: 'cover', borderRadius: '50%' }} />
+                </div>
               </div>
             </div>
           </div>
@@ -407,13 +403,9 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
                 )}
               </button>
 
-              {employee?.avatar_url ? (
                 <div style={{ position: 'relative', width: 36, height: 36, borderRadius: '50%', overflow: 'hidden', border: '1px solid var(--db-bd)' }}>
-                  <Image src={employee.avatar_url} alt={employee.name || 'Avatar'} fill style={{ objectFit: 'cover', borderRadius: '50%' }} />
+                  <Image src={employee?.avatar_url || '/DEFAULT IMAGE.PNG'} alt={employee?.name || 'Avatar'} fill style={{ objectFit: 'cover', borderRadius: '50%' }} />
                 </div>
-              ) : (
-                <div className="saas-avatar" style={{ borderRadius: '50%' }}>{employee?.name?.charAt(0) || 'E'}</div>
-              )}
             </div>
           </header>
           <main className="saas-content">{children}</main>

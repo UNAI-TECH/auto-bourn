@@ -310,7 +310,7 @@ export default function EmployeeDashboard() {
           {/* Real Employee Portrait Card */}
           <div className="crextio-profile-card" style={{ border: '1px solid var(--db-bd)' }}>
             <div className="profile-img-container">
-              <Image src={employee?.avatar_url || '/employee_avatar.png'} alt="Employee Photo" fill className="profile-avatar-img" priority />
+              <Image src={employee?.avatar_url || '/DEFAULT IMAGE.PNG'} alt="Employee Photo" fill className="profile-avatar-img" priority />
               <div className="profile-overlay-gradient" />
               <div className="profile-avatar-upload-overlay" onClick={() => fileInputRef.current?.click()}>
                 {uploadingAvatar ? (

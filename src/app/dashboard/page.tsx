@@ -502,7 +502,7 @@ export default function DashboardOverview() {
                     <div className="founder-card-wrap">
                       <div className="founder-card-photo-container">
                         <Image
-                          src={selectedEmployee.avatar_url || '/employee_avatar.png'}
+                          src={selectedEmployee.avatar_url || '/DEFAULT IMAGE.PNG'}
                           alt={selectedEmployee.name}
                           fill
                           style={{ objectFit: 'cover' }}

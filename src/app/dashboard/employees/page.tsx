@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UserPlus, Search, MoreVertical, X, Shield, Ban, RotateCcw, Trash2, Key, Check, AlertCircle, Copy, CheckCheck, Mail, PhoneCall, CalendarClock, Upload, ShoppingCart, TrendingUp, Camera, ChevronDown } from 'lucide-react';
+import { UserPlus, Search, MoreVertical, X, Shield, Ban, RotateCcw, Trash2, Key, Check, AlertCircle, Copy, CheckCheck, Mail, PhoneCall, CalendarClock, Upload, ShoppingCart, TrendingUp, Camera, ChevronDown, Edit } from 'lucide-react';
 import Image from 'next/image';
 import { formatDate, timeAgo, generateEmployeeId } from '@/lib/utils';
 import type { Employee } from '@/types/database';
@@ -36,6 +36,13 @@ export default function EmployeesPage() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
+
+  // Edit Employee State
+  const [showEdit, setShowEdit] = useState(false);
+  const [editForm, setEditForm] = useState({ id: '', name: '', email: '', phone: '', employee_id: '', role: 'employee', status: 'active' });
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editRoleDropdownOpen, setEditRoleDropdownOpen] = useState(false);
+  const [editStatusDropdownOpen, setEditStatusDropdownOpen] = useState(false);
 
   // Employee Detail Modal State
   const [selectedEmployee, setSelectedEmployee] = useState<any | null>(null);
@@ -102,7 +109,7 @@ export default function EmployeesPage() {
   };
 
   const fetchEmployees = async () => {
-    const { data } = await supabase.from('employees').select('*').in('role', ['employee', 'admin']).order('created_at', { ascending: false });
+    const { data } = await supabase.from('employees').select('*').eq('role', 'employee').order('created_at', { ascending: false });
     if (data) {
       const enriched = await Promise.all(data.map(async (emp) => {
         const { count: uploads } = await supabase.from('cars').select('id', { count: 'exact', head: true }).eq('employee_id', emp.id);
@@ -220,6 +227,27 @@ export default function EmployeesPage() {
     setSubmitting(false);
   };
 
+  const handleEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEditSubmitting(true);
+    try {
+      const res = await fetch('/api/employees', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editForm),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      showToast('Employee details updated successfully!');
+      setShowEdit(false);
+      fetchEmployees();
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Failed to update employee details', 'error');
+    }
+    setEditSubmitting(false);
+  };
+
   const updateRole = async (id: string, role: string) => {
     await supabase.from('employees').update({ role }).eq('id', id);
     showToast(`Employee role updated to ${role}`);
@@ -325,13 +353,9 @@ export default function EmployeesPage() {
               <tr key={emp.id}>
                 <td>
                   <div className="emp-user" onClick={() => handleEmployeeClick(emp)}>
-                    {emp.avatar_url ? (
-                      <div className="emp-avatar-img-wrap">
-                        <Image src={emp.avatar_url} alt={emp.name} width={36} height={36} style={{ objectFit: 'cover' }} />
-                      </div>
-                    ) : (
-                      <div className="emp-avatar">{emp.name.charAt(0)}</div>
-                    )}
+                    <div className="emp-avatar-img-wrap">
+                      <Image src={emp.avatar_url || '/DEFAULT IMAGE.PNG'} alt={emp.name} width={36} height={36} style={{ objectFit: 'cover' }} />
+                    </div>
                     <div><span className="emp-name">{emp.name}</span><span className="emp-email">{emp.email}</span></div>
                   </div>
                 </td>
@@ -366,6 +390,19 @@ export default function EmployeesPage() {
                     <button className="emp-menu-btn" onClick={() => setMenuOpen(menuOpen === emp.id ? null : emp.id)}><MoreVertical size={16} /></button>
                     {menuOpen === emp.id && (
                       <div className="emp-dropdown">
+                        <button onClick={() => {
+                          setEditForm({
+                            id: emp.id,
+                            name: emp.name,
+                            email: emp.email,
+                            phone: emp.phone || '',
+                            employee_id: emp.employee_id,
+                            role: emp.role,
+                            status: emp.status
+                          });
+                          setShowEdit(true);
+                          setMenuOpen(null);
+                        }}><Edit size={14} />Edit Details</button>
                         {emp.status !== 'active' && <button onClick={() => updateStatus(emp.id, 'active')}><Check size={14} />Activate</button>}
                         {emp.status !== 'suspended' && <button onClick={() => updateStatus(emp.id, 'suspended')}><Ban size={14} />Suspend</button>}
                         {emp.status !== 'inactive' && <button onClick={() => updateStatus(emp.id, 'inactive')}><Shield size={14} />Deactivate</button>}
@@ -433,7 +470,7 @@ export default function EmployeesPage() {
                 />
               </div>
 
-              <form onSubmit={handleAdd} className="inspo-form">
+              <form onSubmit={handleAdd} className="inspo-form" autoComplete="off">
                 <div className="inspo-grid">
                   <div className="inspo-field full-width">
                     <label>Full Name <span className="required">*</span></label>
@@ -442,6 +479,7 @@ export default function EmployeesPage() {
                       onChange={e => setForm({ ...form, name: e.target.value })}
                       required
                       placeholder="Employee name"
+                      autoComplete="off"
                     />
                   </div>
 
@@ -453,6 +491,7 @@ export default function EmployeesPage() {
                       onChange={e => setForm({ ...form, email: e.target.value })}
                       required
                       placeholder="employee@autobourncars.com"
+                      autoComplete="off"
                     />
                   </div>
 
@@ -462,6 +501,7 @@ export default function EmployeesPage() {
                       value={form.phone}
                       onChange={e => setForm({ ...form, phone: e.target.value })}
                       placeholder="+91 XXXXXXXXXX"
+                      autoComplete="off"
                     />
                   </div>
 
@@ -473,6 +513,7 @@ export default function EmployeesPage() {
                         onChange={e => setForm({ ...form, employee_id: e.target.value })}
                         required
                         placeholder="Employee ID"
+                        autoComplete="off"
                       />
                       <button
                         type="button"
@@ -533,6 +574,7 @@ export default function EmployeesPage() {
                       required
                       placeholder="Min 6 characters"
                       minLength={6}
+                      autoComplete="new-password"
                     />
                   </div>
                 </div>
@@ -650,7 +692,7 @@ export default function EmployeesPage() {
                     <div className="founder-card-wrap">
                       <div className="founder-card-photo-container">
                         <Image
-                          src={selectedEmployee.avatar_url || '/employee_avatar.png'}
+                          src={selectedEmployee.avatar_url || '/DEFAULT IMAGE.PNG'}
                           alt={selectedEmployee.name}
                           fill
                           style={{ objectFit: 'cover' }}
@@ -685,6 +727,41 @@ export default function EmployeesPage() {
                           {selectedEmployee.role === 'admin' ? 'Administrator' : 'Sales Executive'}
                         </p>
                         <span className="founder-card-id">{selectedEmployee.employee_id}</span>
+                        <button 
+                          className="emp-edit-inline-btn" 
+                          onClick={() => {
+                            setEditForm({
+                              id: selectedEmployee.id,
+                              name: selectedEmployee.name,
+                              email: selectedEmployee.email,
+                              phone: selectedEmployee.phone || '',
+                              employee_id: selectedEmployee.employee_id,
+                              role: selectedEmployee.role,
+                              status: selectedEmployee.status
+                            });
+                            setShowEdit(true);
+                            setShowModal(false);
+                          }}
+                          style={{
+                            marginTop: '12px',
+                            width: '100%',
+                            padding: '8px',
+                            background: 'var(--db-gd, rgba(225, 6, 19, 0.05))',
+                            border: '1px solid var(--db-bd, rgba(225, 6, 19, 0.2))',
+                            borderRadius: '8px',
+                            color: 'var(--db-gold, #e10613)',
+                            fontSize: '0.8125rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          <Edit size={14} /> Edit Details
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -825,6 +902,182 @@ export default function EmployeesPage() {
               ) : (
                 <div className="modal-error">Failed to load employee details.</div>
               )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Modal */}
+      <AnimatePresence>
+        {showEdit && (
+          <div className="modal-backdrop" onClick={() => setShowEdit(false)}>
+            <motion.div
+              className="inspo-card-modal"
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button className="inspo-modal-close" onClick={() => setShowEdit(false)}>
+                <X size={20} />
+              </button>
+
+              <div className="inspo-card-header">
+                <h2 className="inspo-card-title">Edit Employee</h2>
+                <p className="inspo-card-subtitle">Update employee profile details and permissions.</p>
+              </div>
+
+              <form onSubmit={handleEdit} className="inspo-form" autoComplete="off">
+                <div className="inspo-grid">
+                  <div className="inspo-field full-width">
+                    <label>Full Name <span className="required">*</span></label>
+                    <input
+                      value={editForm.name}
+                      onChange={e => setEditForm({ ...editForm, name: e.target.value })}
+                      required
+                      placeholder="Employee name"
+                      autoComplete="off"
+                    />
+                  </div>
+
+                  <div className="inspo-field">
+                    <label>Email Address <span className="required">*</span></label>
+                    <input
+                      type="email"
+                      value={editForm.email}
+                      onChange={e => setEditForm({ ...editForm, email: e.target.value })}
+                      required
+                      placeholder="employee@autobourncars.com"
+                      autoComplete="off"
+                    />
+                  </div>
+
+                  <div className="inspo-field">
+                    <label>Phone Number</label>
+                    <input
+                      value={editForm.phone}
+                      onChange={e => setEditForm({ ...editForm, phone: e.target.value })}
+                      placeholder="+91 XXXXXXXXXX"
+                      autoComplete="off"
+                    />
+                  </div>
+
+                  <div className="inspo-field">
+                    <label>Employee ID <span className="required">*</span></label>
+                    <div className="inspo-input-btn-wrap">
+                      <input
+                        value={editForm.employee_id}
+                        onChange={e => setEditForm({ ...editForm, employee_id: e.target.value })}
+                        required
+                        placeholder="Employee ID"
+                        autoComplete="off"
+                      />
+                      <button
+                        type="button"
+                        className="inspo-regen-btn"
+                        onClick={() => setEditForm({ ...editForm, employee_id: generateEmployeeId() })}
+                        title="Regenerate ID"
+                      >
+                        <RotateCcw size={15} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="inspo-field" style={{ position: 'relative' }}>
+                    <label>Access Role <span className="required">*</span></label>
+                    <div
+                      className="custom-role-select-trigger"
+                      onClick={() => setEditRoleDropdownOpen(!editRoleDropdownOpen)}
+                    >
+                      <span>{editForm.role === 'admin' ? 'Admin' : 'Employee'}</span>
+                      <ChevronDown size={18} style={{ color: '#475569', transition: 'transform 0.2s', transform: editRoleDropdownOpen ? 'rotate(180deg)' : 'none' }} />
+                    </div>
+
+                    <AnimatePresence>
+                      {editRoleDropdownOpen && (
+                        <>
+                          <div className="custom-role-dropdown-overlay" onClick={() => setEditRoleDropdownOpen(false)} />
+                          <motion.div
+                            className="custom-role-dropdown-menu"
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.15 }}
+                          >
+                            <div
+                              className={`custom-role-option ${editForm.role === 'employee' ? 'selected' : ''}`}
+                              onClick={() => { setEditForm({ ...editForm, role: 'employee' }); setEditRoleDropdownOpen(false); }}
+                            >
+                              Employee
+                            </div>
+                            <div
+                              className={`custom-role-option ${editForm.role === 'admin' ? 'selected' : ''}`}
+                              onClick={() => { setEditForm({ ...editForm, role: 'admin' }); setEditRoleDropdownOpen(false); }}
+                            >
+                              Admin
+                            </div>
+                          </motion.div>
+                        </>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  <div className="inspo-field" style={{ position: 'relative' }}>
+                    <label>Status <span className="required">*</span></label>
+                    <div
+                      className="custom-role-select-trigger"
+                      onClick={() => setEditStatusDropdownOpen(!editStatusDropdownOpen)}
+                    >
+                      <span style={{ textTransform: 'capitalize' }}>{editForm.status}</span>
+                      <ChevronDown size={18} style={{ color: '#475569', transition: 'transform 0.2s', transform: editStatusDropdownOpen ? 'rotate(180deg)' : 'none' }} />
+                    </div>
+
+                    <AnimatePresence>
+                      {editStatusDropdownOpen && (
+                        <>
+                          <div className="custom-role-dropdown-overlay" onClick={() => setEditStatusDropdownOpen(false)} />
+                          <motion.div
+                            className="custom-role-dropdown-menu"
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.15 }}
+                          >
+                            {['active', 'inactive', 'suspended'].map(st => (
+                              <div
+                                key={st}
+                                className={`custom-role-option ${editForm.status === st ? 'selected' : ''}`}
+                                onClick={() => { setEditForm({ ...editForm, status: st }); setEditStatusDropdownOpen(false); }}
+                                style={{ textTransform: 'capitalize' }}
+                              >
+                                {st}
+                              </div>
+                            ))}
+                          </motion.div>
+                        </>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+
+                <div className="inspo-form-footer">
+                  <button
+                    type="button"
+                    className="inspo-btn-cancel"
+                    onClick={() => setShowEdit(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="inspo-btn-submit"
+                    disabled={editSubmitting}
+                  >
+                    {editSubmitting ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}

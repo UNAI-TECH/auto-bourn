@@ -222,13 +222,9 @@ export default function CRMAnalyticsPage() {
                     </td>
                     <td>
                       <div className="crm-emp-info">
-                        {emp.avatar_url ? (
-                          <div className="crm-emp-av" style={{ position: 'relative', overflow: 'hidden' }}>
-                            <Image src={emp.avatar_url} alt={emp.name} fill style={{ objectFit: 'cover', borderRadius: '50%' }} />
-                          </div>
-                        ) : (
-                          <div className="crm-emp-av">{emp.name.charAt(0)}</div>
-                        )}
+                        <div className="crm-emp-av" style={{ position: 'relative', overflow: 'hidden' }}>
+                          <Image src={emp.avatar_url || '/DEFAULT IMAGE.PNG'} alt={emp.name} fill style={{ objectFit: 'cover', borderRadius: '50%' }} />
+                        </div>
                         <div>
                           <div className="crm-emp-name">{emp.name}</div>
                           <div className="crm-emp-id">{emp.employee_id}</div>

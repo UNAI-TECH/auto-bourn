@@ -346,10 +346,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               >
                 {updatingAvatar ? (
                   <div className="avatar-spinner-small" style={{ width: 16, height: 16, border: '2px solid var(--db-gold)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-                ) : employee?.avatar_url ? (
-                  <Image src={employee.avatar_url} alt={employee.name || 'Avatar'} fill style={{ objectFit: 'cover', borderRadius: '50%' }} />
                 ) : (
-                  <div className="db-avatar" style={{ width: '100%', height: '100%', borderRadius: '50%', margin: 0 }}>{employee?.name?.charAt(0) || 'A'}</div>
+                  <Image src={employee?.avatar_url || '/DEFAULT IMAGE.PNG'} alt={employee?.name || 'Avatar'} fill style={{ objectFit: 'cover', borderRadius: '50%' }} />
                 )}
               </div>
               <input
