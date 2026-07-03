@@ -582,7 +582,12 @@ export default function MyCarsPage() {
             <div className="emp-tabs">
               {['all','available','sold','reserved','my'].map(f => (
                 <button key={f} className={`emp-tab ${statusFilter === f ? 'active' : ''}`} onClick={() => setStatusFilter(f)}>
-                  {f === 'all' ? 'All' : f === 'my' ? 'My Cars' : f.charAt(0).toUpperCase() + f.slice(1)}
+                  {f === 'all' ? 'All' : f === 'my' ? (
+                    <>
+                      <span className="hide-mobile">My Cars</span>
+                      <span className="show-mobile">Cars</span>
+                    </>
+                  ) : f.charAt(0).toUpperCase() + f.slice(1)}
                 </button>
               ))}
             </div>
@@ -880,12 +885,15 @@ export default function MyCarsPage() {
 .car-skel{background:var(--db-sf);border:1px solid var(--db-bd);border-radius:24px;height:380px;animation:pulse 1.5s infinite;box-shadow:var(--card-shadow)}
 .db-empty-full{color:var(--db-tx3);text-align:center;padding:5rem 0;font-size:.9375rem;grid-column:1/-1;font-weight:600}
 
+.show-mobile { display: none; }
 @media (max-width: 900px) {
   .upl-grid {
     grid-template-columns: 1fr 1fr;
   }
 }
 @media (max-width: 640px) {
+  .hide-mobile { display: none; }
+  .show-mobile { display: inline; }
   .upl-grid {
     grid-template-columns: 1fr;
   }
