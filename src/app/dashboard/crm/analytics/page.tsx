@@ -57,7 +57,7 @@ export default function CRMAnalyticsPage() {
       setTotalFollowUps(fuCount || 0);
 
       // Employee stats
-      const { data:emps } = await supabase.from('employees').select('id,name,employee_id,avatar_url').eq('status','active');
+      const { data:emps } = await supabase.from('employees').select('id,name,employee_id,avatar_url').eq('status','active').eq('role','employee');
       if (!emps) { setLoading(false); return; }
       const stats = await Promise.all(emps.map(async (e:{id:string;name:string;employee_id:string;avatar_url?:string}) => {
         const [{ count:total },{ count:sold },{ count:fu }] = await Promise.all([
