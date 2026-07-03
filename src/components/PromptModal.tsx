@@ -99,6 +99,7 @@ export default function PromptModal({
               </div>
               <button
                 onClick={onCancel}
+                aria-label="Close"
                 style={{
                   background: 'none',
                   border: 'none',
@@ -146,6 +147,7 @@ export default function PromptModal({
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
                       style={{
                         position: 'absolute',
                         right: '8px',

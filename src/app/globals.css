@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap');
-
 @import "tailwindcss";
 
 /* ========================================
@@ -41,8 +39,8 @@
   --shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.12);
 
   /* Typography */
-  --font-primary: 'Outfit', sans-serif;
-  --font-secondary: 'Inter', sans-serif;
+  --font-primary: var(--font-primary-google), 'Outfit', sans-serif;
+  --font-secondary: var(--font-secondary-google), 'Inter', sans-serif;
 
   /* Spacing */
   --section-padding: clamp(4rem, 8vw, 8rem);

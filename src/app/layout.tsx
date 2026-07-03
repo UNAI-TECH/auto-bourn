@@ -1,8 +1,23 @@
 import type { Metadata } from "next";
+import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
 import ConditionalLayout from "@/components/ConditionalLayout";
 import SchemaMarkup from "@/components/SchemaMarkup";
 import StyledJsxRegistry from "./registry";
+
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
+  variable: "--font-secondary-google",
+  display: "swap",
+});
+
+const outfit = Outfit({
+  subsets: ["latin"],
+  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
+  variable: "--font-primary-google",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
 
@@ -85,7 +100,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${inter.variable} ${outfit.variable}`}>
       <body>
         {/* AEO (Answer Engine Optimization) Hidden Context Block */}
         <div style={{ display: 'none' }} aria-hidden="true" id="ai-context">
