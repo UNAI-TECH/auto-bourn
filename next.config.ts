@@ -21,6 +21,7 @@ dns.lookup = function (hostname: any, options: any, callback: any) {
 } as any;
 
 const nextConfig: NextConfig = {
+  transpilePackages: ["framer-motion", "gsap", "lucide-react", "date-fns", "@supabase/ssr", "@supabase/supabase-js"],
   devIndicators: false,
   images: {
     unoptimized: true,
@@ -33,6 +34,10 @@ const nextConfig: NextConfig = {
   },
   turbopack: {
     root: path.resolve(__dirname),
+  },
+  experimental: {
+    optimizePackageImports: ["framer-motion", "recharts", "lucide-react", "date-fns"],
+    optimizeCss: true,
   },
 };
 

@@ -109,7 +109,7 @@ export default function EmployeeConsolePage() {
   };
 
   return (
-    <div className="console-page">
+    <main className="console-page">
       <div className="console-logo-wrapper">
         <Link href="/" className="console-logo">
           <div className="logo-container">
@@ -660,6 +660,6 @@ export default function EmployeeConsolePage() {
           }
         }
       `}</style>
-    </div>
+    </main>
   );
 }

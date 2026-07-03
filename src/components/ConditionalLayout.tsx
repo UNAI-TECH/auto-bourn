@@ -22,7 +22,7 @@ export default function ConditionalLayout({ children }: { children: React.ReactN
   const isAdmin = pathname?.startsWith('/admin');
   const isAdminArea = isDashboard || isEmployee || isLogin || isConsole || isAdmin;
 
-  if (mounted && isAdminArea) {
+  if (isAdminArea) {
     return <>{children}</>;
   }
 
