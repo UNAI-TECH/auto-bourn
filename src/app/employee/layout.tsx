@@ -123,7 +123,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
       .from('notifications')
       .select('*')
       .eq('recipient_employee_id', empId)
-      .in('type', ['new_booking_request', 'new_test_drive_request', 'lead_assigned', 'report_reviewed', 'new_lead', 'new_contact_message'])
+      .in('type', ['lead_assigned', 'report_reviewed', 'car_approved', 'car_rejected'])
       .order('created_at', { ascending: false })
       .limit(15);
     setNotifications(data || []);
@@ -144,6 +144,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
       if (!user) { router.push('/console'); return; }
       const { data } = await supabase.from('employees').select('*').eq('auth_user_id', user.id).single();
       if (!data) { router.push('/console'); return; }
+      if (data.role === 'admin') { router.push('/dashboard'); return; }
       setEmployee(data);
       await checkTodayReport(data.id);
       await fetchNotifications(data.id);
@@ -312,12 +313,16 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
 
               <button 
                 className="saas-action-btn notif-wrap" 
-                title="Notifications & Messages" 
+                title="Notifications" 
                 onClick={() => { setContactMessagesOpen(true); if (employee) fetchNotifications(employee.id); }}
-                style={{ marginRight: '0.75rem' }}
+                style={{ marginRight: '0.75rem', position: 'relative' }}
               >
-                <Mail size={18} />
-                {notifications.filter(n => !n.read).length > 0 && <span className="saas-dot notif-count" style={{ background: '#E10613', color: '#fff' }}>{notifications.filter(n => !n.read).length}</span>}
+                <Bell size={18} />
+                {notifications.filter(n => !n.read).length > 0 && (
+                  <span className="saas-dot notif-count" style={{ background: '#E10613', color: '#fff', position: 'absolute', top: '-2px', right: '-2px', minWidth: '12px', height: '12px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.55rem' }}>
+                    {notifications.filter(n => !n.read).length}
+                  </span>
+                )}
               </button>
 
               {/* Submit Report Button */}
@@ -381,7 +386,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
               <button 
                 className="saas-action-btn notif-wrap mobile-notif-btn" 
-                title="Notifications & Messages" 
+                title="Notifications" 
                 onClick={() => { setContactMessagesOpen(true); if (employee) fetchNotifications(employee.id); }}
                 style={{ 
                   background: 'var(--db-sf2, #f5f5f5)', 
@@ -396,9 +401,9 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
                   color: 'var(--db-tx2, #555)'
                 }}
               >
-                <Mail size={16} />
+                <Bell size={16} />
                 {notifications.filter(n => !n.read).length > 0 && (
-                  <span className="saas-dot notif-count" style={{ background: '#E10613', color: '#fff', top: '-2px', right: '-2px', minWidth: '14px', height: '14px', fontSize: '0.55rem' }}>
+                  <span className="saas-dot notif-count" style={{ background: '#E10613', color: '#fff', position: 'absolute', top: '-2px', right: '-2px', minWidth: '14px', height: '14px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.55rem' }}>
                     {notifications.filter(n => !n.read).length}
                   </span>
                 )}
@@ -612,6 +617,24 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
                               flexShrink: 0
                             }}>
                               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                            </div>
+                          )
+                        };
+                      } else if (t.includes('car_approved') || t.includes('car_rejected')) {
+                        config = {
+                          label: 'CAR LISTING',
+                          color: '#E10613',
+                          bgLight: 'rgba(225, 6, 19, 0.03)',
+                          borderLight: 'rgba(225, 6, 19, 0.15)',
+                          glow: '0 4px 20px rgba(225, 6, 19, 0.04)',
+                          icon: (
+                            <div style={{
+                              width: '32px', height: '32px', borderRadius: '8px', 
+                              background: 'rgba(225, 6, 19, 0.1)', display: 'flex', 
+                              alignItems: 'center', justifyContent: 'center', color: '#E10613',
+                              flexShrink: 0
+                            }}>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
                             </div>
                           )
                         };

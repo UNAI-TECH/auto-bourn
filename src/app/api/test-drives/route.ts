@@ -82,17 +82,6 @@ export async function POST(request: NextRequest) {
       metadata: { lead_id: lead.id, test_drive_id: testDrive.id, car_name: carName },
     });
 
-    if (employeeId) {
-      await serviceClient.from('notifications').insert({
-        recipient_role: 'employee',
-        recipient_employee_id: employeeId,
-        type: 'new_test_drive_request',
-        title: '🚗 Test Drive Requested',
-        message: `${name} requested a test drive for your listed vehicle ${carName || 'Luxury Vehicle'}.`,
-        metadata: { lead_id: lead.id, test_drive_id: testDrive.id, car_name: carName },
-      });
-    }
-
     return NextResponse.json({ success: true, lead, testDrive });
   } catch (err: any) {
     console.error('Unexpected error in test-drives POST API:', err);

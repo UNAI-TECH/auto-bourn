@@ -76,6 +76,15 @@ export async function PATCH(
     const body = await request.json();
     const { action, updateData, note, activityLog, inspectionData } = body;
 
+    if (emp.role !== 'admin') {
+      if (action === 'claim' || action === 'release') {
+        return NextResponse.json({ error: 'Forbidden: Only administrators can assign or claim leads.' }, { status: 403 });
+      }
+      if (updateData && updateData.assigned_to !== undefined) {
+        return NextResponse.json({ error: 'Forbidden: Only administrators can assign leads.' }, { status: 403 });
+      }
+    }
+
     const serviceClient = await createServiceRoleClient();
 
     // 4. Build updates payload

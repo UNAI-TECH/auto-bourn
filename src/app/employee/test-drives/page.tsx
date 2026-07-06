@@ -300,17 +300,7 @@ export default function EmployeeTestDrivesPage() {
                     </span>
 
                     <div className="action-button-group">
-                      {isUnassigned ? (
-                        <button
-                          disabled={updatingId === req.id}
-                          onClick={() => handleClaimRequest(req.id)}
-                          className="act-btn btn-accept"
-                          style={{ background: 'var(--brand-red, #E10613)', color: '#fff', borderColor: 'var(--brand-red, #E10613)' }}
-                        >
-                          <Bookmark size={13} />
-                          <span>Claim Request</span>
-                        </button>
-                      ) : isAssignedToMe && req.status === 'scheduled' ? (
+                      {isAssignedToMe && req.status === 'scheduled' ? (
                         <>
                           <button
                             disabled={updatingId === req.id}

@@ -1,7 +1,7 @@
 // Auto Bourn Database Types
 
 export type UserRole = 'admin' | 'employee';
-export type CarStatus = 'available' | 'sold' | 'reserved';
+export type CarStatus = 'available' | 'sold' | 'reserved' | 'pending' | 'rejected';
 export type EmployeeStatus = 'active' | 'inactive' | 'suspended';
 export type ActivityAction = 'login' | 'logout' | 'upload' | 'edit' | 'delete' | 'sold_status_change' | 'employee_added' | 'employee_removed' | 'password_reset';
 
@@ -42,6 +42,7 @@ export interface Car {
   engine?: string;
   horsepower?: number;
   status: CarStatus;
+  rejection_reason?: string | null;
   thumbnail: string;
   featured: boolean;
   views: number;

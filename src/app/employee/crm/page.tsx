@@ -57,10 +57,9 @@ export default function EmployeeCRMPage() {
     const todayEnd = new Date(now); todayEnd.setHours(23,59,59,999);
 
     try {
-      // Fetch both assigned and unassigned leads to calculate counts and display the current tab's leads
-      const [assignedRes, unassignedRes, todayFURes, upcomingFURes] = await Promise.all([
+      // Fetch only assigned leads to calculate counts and display the current tab's leads
+      const [assignedRes, todayFURes, upcomingFURes] = await Promise.all([
         fetch(`/api/leads?assigned_to=${employee.id}`),
-        fetch('/api/leads?assigned_to=unassigned'),
         supabase
           .from('follow_ups')
           .select('*, lead:leads!lead_id(customer_name,phone,interested_car,assigned_to)')
@@ -76,35 +75,15 @@ export default function EmployeeCRMPage() {
       ]);
 
       const assignedData = await assignedRes.json();
-      const unassignedData = await unassignedRes.json();
-
       const assignedList = (assignedData.leads || []) as Lead[];
-      const unassignedList = (unassignedData.leads || []) as Lead[];
-
-      const isSellLead = (lead: any) => {
-        const notesList = lead.customer_notes || [];
-        return notesList.some((n: any) => 
-          n.note && (n.note.includes('Vehicle Details:') || n.note.includes('Transmission:') || n.note.includes('Fuel Type:'))
-        );
-      };
-
-      const unassignedBuy = unassignedList.filter(l => !isSellLead(l));
-      const unassignedSell = unassignedList.filter(l => isSellLead(l));
 
       setCounts({
         my: assignedList.length,
-        buy: unassignedBuy.length,
-        sell: unassignedSell.length
+        buy: 0,
+        sell: 0
       });
 
-      // Filter based on activeTab
-      if (activeTab === 'my') {
-        setLeads(assignedList);
-      } else if (activeTab === 'unassigned_buy') {
-        setLeads(unassignedBuy);
-      } else {
-        setLeads(unassignedSell);
-      }
+      setLeads(assignedList);
 
       if (todayFURes.data) {
         const filteredToday = (todayFURes.data as any[]).filter(
@@ -123,7 +102,7 @@ export default function EmployeeCRMPage() {
       showToast('Failed to load CRM data');
     }
     setLoading(false);
-  }, [employee, activeTab]);
+  }, [employee]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -249,68 +228,9 @@ export default function EmployeeCRMPage() {
 
       {/* Tabs Header and Search */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1.5px solid var(--db-bd, rgba(0,0,0,0.06))', paddingBottom: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }} className="crm-filter-header-row">
-        {/* Tabs */}
-        <div style={{ display: 'flex', background: 'var(--db-sf2, #f5f5f5)', padding: '5px', borderRadius: '12px', gap: '4px' }} className="crm-tabs">
-          <button 
-            onClick={() => setActiveTab('my')} 
-            style={{ 
-              border: 'none', 
-              padding: '0.5rem 1.25rem', 
-              borderRadius: '9px', 
-              fontFamily: 'inherit', 
-              fontSize: '0.875rem', 
-              fontWeight: activeTab === 'my' ? 700 : 600, 
-              cursor: 'pointer', 
-              background: activeTab === 'my' ? 'var(--db-sf, #ffffff)' : 'transparent', 
-              color: activeTab === 'my' ? '#E10613' : 'var(--db-tx2, #555)', 
-              boxShadow: activeTab === 'my' ? '0 4px 10px rgba(0,0,0,0.03)' : 'none',
-              transition: 'all 0.2s' 
-            }}
-            className="crm-tab-btn"
-          >
-            <span className="tab-txt-full">My Assigned Leads ({counts.my})</span>
-            <span className="tab-txt-short">Assigned ({counts.my})</span>
-          </button>
-          <button 
-            onClick={() => setActiveTab('unassigned_buy')} 
-            style={{ 
-              border: 'none', 
-              padding: '0.5rem 1.25rem', 
-              borderRadius: '9px', 
-              fontFamily: 'inherit', 
-              fontSize: '0.875rem', 
-              fontWeight: activeTab === 'unassigned_buy' ? 700 : 600, 
-              cursor: 'pointer', 
-              background: activeTab === 'unassigned_buy' ? 'var(--db-sf, #ffffff)' : 'transparent', 
-              color: activeTab === 'unassigned_buy' ? '#E10613' : 'var(--db-tx2, #555)',
-              boxShadow: activeTab === 'unassigned_buy' ? '0 4px 10px rgba(0,0,0,0.03)' : 'none',
-              transition: 'all 0.2s' 
-            }}
-            className="crm-tab-btn"
-          >
-            <span className="tab-txt-full">Unassigned Buy Leads ({counts.buy})</span>
-            <span className="tab-txt-short">Buy ({counts.buy})</span>
-          </button>
-          <button 
-            onClick={() => setActiveTab('unassigned_sell')} 
-            style={{ 
-              border: 'none', 
-              padding: '0.5rem 1.25rem', 
-              borderRadius: '9px', 
-              fontFamily: 'inherit', 
-              fontSize: '0.875rem', 
-              fontWeight: activeTab === 'unassigned_sell' ? 700 : 600, 
-              cursor: 'pointer', 
-              background: activeTab === 'unassigned_sell' ? 'var(--db-sf, #ffffff)' : 'transparent', 
-              color: activeTab === 'unassigned_sell' ? '#E10613' : 'var(--db-tx2, #555)',
-              boxShadow: activeTab === 'unassigned_sell' ? '0 4px 10px rgba(0,0,0,0.03)' : 'none',
-              transition: 'all 0.2s' 
-            }}
-            className="crm-tab-btn"
-          >
-            <span className="tab-txt-full">Unassigned Sell Leads ({counts.sell})</span>
-            <span className="tab-txt-short">Sell ({counts.sell})</span>
-          </button>
+        {/* Title */}
+        <div>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--db-tx)', margin: 0, fontFamily: "'Outfit', sans-serif" }}>My Assigned Leads ({counts.my})</h2>
         </div>
 
         {/* Search */}
@@ -327,11 +247,7 @@ export default function EmployeeCRMPage() {
         ) : filtered.length === 0 ? (
           <div style={{ padding: '4rem 2rem', background: 'var(--db-sf, #ffffff)', border: '1.5px solid var(--db-bd, rgba(0,0,0,0.05))', borderRadius: '20px', textAlign: 'center' }}>
             <p style={{ color: 'var(--db-tx2, #555)', fontSize: '0.95rem', margin: 0, fontWeight: 500 }}>
-              {activeTab === 'my' 
-                ? 'No leads currently assigned to you. Go to the unassigned tabs to claim new customer requests.' 
-                : activeTab === 'unassigned_buy'
-                ? 'There are no unassigned buy inquiries right now.'
-                : 'There are no unassigned car sell submissions right now.'}
+              No leads currently assigned to you by the Admin.
             </p>
           </div>
         ) : (

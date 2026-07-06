@@ -277,7 +277,7 @@ export default function UploadCarPage() {
         insurance_validity: form.insurance_validity || null, registration_number: form.registration_number || null,
         location: form.location || null, body_type: form.body_type || null, color: form.color || null,
         interior_color: form.interior_color || null, engine: form.engine || null,
-        horsepower: form.horsepower || null, thumbnail: thumbnailUrl, status: 'available',
+        horsepower: form.horsepower || null, thumbnail: thumbnailUrl, status: 'pending',
       }).select().single();
 
       if (carError) throw carError;
@@ -293,21 +293,34 @@ export default function UploadCarPage() {
         }
       }
 
+      // Notify admin for approval
+      await supabase.from('notifications').insert({
+        recipient_role: 'admin',
+        type: 'car_upload_request',
+        title: '🚗 New Car Upload Request',
+        message: `Employee "${employee.name}" has requested approval to upload: ${form.brand} ${form.model} (${parsedYear}).`,
+        metadata: { car_id: car.id }
+      });
+
       // Log activity
       await supabase.from('activity_logs').insert({
         employee_id: employee.id, action: 'upload',
-        details: `Uploaded ${form.brand} ${form.model} with ${gallery.length} images`,
+        details: `Requested upload for ${form.brand} ${form.model} (pending approval)`,
       });
 
       setProgress(100);
-      showToast(`${form.brand} ${form.model} uploaded successfully!`);
+      showToast(`${form.brand} ${form.model} submitted for admin approval!`);
 
       // Reset form
       setForm({ brand: '', model: '', variant: '', year: '', fuel_type: '', transmission: '', km_driven: 0, ownership: '', price: 0, original_price: 0, description: '', features: '', insurance_validity: '', registration_number: '', location: '', body_type: '', color: '', interior_color: '', engine: '', horsepower: 0 });
       setThumbnail(null); setThumbPreview(''); setGallery([]); setGalleryPreviews([]);
-    } catch (err) {
-      console.error(err);
-      showToast('Failed to upload. Please try again.', 'error');
+    } catch (err: any) {
+      console.error('Upload error details:', err);
+      let errMsg = err?.message || err?.details || (typeof err === 'string' ? err : 'Failed to upload. Please try again.');
+      if (errMsg.includes('violates check constraint "cars_status_check"')) {
+        errMsg = 'Database error: The "cars_status_check" constraint on the "cars" table needs to be updated. Please copy the contents of "cars-approval-migration.sql" and run it in your Supabase SQL Editor to resolve this.';
+      }
+      showToast(errMsg, 'error');
     } finally {
       setUploading(false);
       setTimeout(() => setProgress(0), 2000);

@@ -1167,6 +1167,53 @@ export default function EmployeeDashboard() {
   .crextio-grid {
     gap: 1rem !important;
   }
+
+  /* Profile card: flow naturally in single scrollable page on mobile */
+  .crextio-profile-card {
+    height: auto !important;
+    position: relative !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  .profile-img-container {
+    position: relative !important;
+    width: 100% !important;
+    height: 280px !important;
+    flex-shrink: 0 !important;
+  }
+  .profile-overlay-gradient {
+    display: none !important;
+  }
+  .profile-details {
+    position: relative !important;
+    background: var(--db-sf, #fff) !important;
+    color: var(--db-tx, #000) !important;
+    padding: 1.25rem !important;
+    border-top: 1px solid var(--db-bd, #e2e8f0) !important;
+  }
+  .profile-details h2 {
+    color: var(--db-tx, #000) !important;
+    font-size: 1.25rem !important;
+  }
+  .profile-details p {
+    color: var(--db-tx2, #555) !important;
+    opacity: 1 !important;
+  }
+  .profile-commission {
+    background: var(--db-sf2, #f5f5f5) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid var(--db-bd, #e2e8f0) !important;
+    color: var(--db-tx, #000) !important;
+  }
+  .profile-commission span {
+    color: var(--db-tx2, #555) !important;
+  }
+
+  /* Chart card: auto height on mobile */
+  .progress-chart-card {
+    height: auto !important;
+  }
 }
       `}</style>
     </div>

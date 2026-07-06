@@ -549,17 +549,9 @@ export default function LeadsPage() {
                       className="inspo-select"
                     >
                       <option value="">Select employee</option>
-                      <option value={myId || ''}>Assign to Me (Personal Lead)</option>
-                      <optgroup label="Admins">
-                        {employees.filter(emp => emp.role === 'admin' && emp.id !== myId).map(emp => (
-                          <option key={emp.id} value={emp.id}>{emp.name}</option>
-                        ))}
-                      </optgroup>
-                      <optgroup label="Employees">
-                        {employees.filter(emp => emp.role === 'employee' && emp.id !== myId).map(emp => (
-                          <option key={emp.id} value={emp.id}>{emp.name}</option>
-                        ))}
-                      </optgroup>
+                      {employees.filter(emp => emp.role === 'employee').map(emp => (
+                        <option key={emp.id} value={emp.id}>{emp.name}</option>
+                      ))}
                     </select>
                   </div>
 

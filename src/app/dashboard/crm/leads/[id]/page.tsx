@@ -4,24 +4,13 @@ import { createClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import DateTimePicker from '@/components/DateTimePicker';
-import { ArrowLeft, Phone, MessageCircle, Mail, Edit, Plus, Check, X, Clock, Car } from 'lucide-react';
+import { ArrowLeft, Phone, MessageCircle, Mail, Edit, Plus, Check, X, Clock, Car, UserPlus, Download, ClipboardCheck, Sparkles, Armchair, Wrench, FileCheck, Camera, ClipboardList } from 'lucide-react';
 import { LEAD_STAGES, FOLLOW_UP_TYPE_LABELS, formatBudget, type Lead, type LeadStatus, type FollowUp, type CustomerNote, type TestDrive, type Booking } from '@/types/crm';
 import { getProxiedImageUrl } from '@/lib/utils';
+import InspectionModal from '@/components/InspectionModal';
+import { downloadInspectionPdf, openPdf } from '@/lib/pdf-utils';
 
 const TABS = ['Timeline','Follow-ups','Notes','Test Drives','Booking'];
-
-const openPdf = (url: string) => {
-  if (url.startsWith('data:application/pdf')) {
-    const pdfWindow = window.open("");
-    if (pdfWindow) {
-      pdfWindow.document.write(
-        `<iframe width='100%' height='100%' src='${url}' style='border:0;position:fixed;top:0;left:0;right:0;bottom:0;'></iframe>`
-      );
-    }
-  } else {
-    window.open(url, '_blank');
-  }
-};
 
 const renderInspectionReport = (note: string) => {
   if (!note.includes('Used Car Inspection Report')) {
@@ -85,6 +74,17 @@ const renderInspectionReport = (note: string) => {
     sections.push(currentSection);
   }
 
+  const getSectionIcon = (title: string) => {
+    const t = title.toLowerCase();
+    if (t.includes('vehicle')) return <Car size={15} />;
+    if (t.includes('exterior')) return <Sparkles size={15} />;
+    if (t.includes('interior')) return <Armchair size={15} />;
+    if (t.includes('mechanical') || t.includes('suspension')) return <Wrench size={15} />;
+    if (t.includes('test drive') || t.includes('docs')) return <FileCheck size={15} />;
+    if (t.includes('media') || t.includes('photo')) return <Camera size={15} />;
+    return <ClipboardCheck size={15} />;
+  };
+
   return (
     <div style={{ background: 'var(--db-sf2, #f8fafc)', border: '1px solid var(--db-bd, #e2e8f0)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', marginTop: '0.5rem', width: '100%' }}>
       {/* Top Header Card */}
@@ -92,13 +92,13 @@ const renderInspectionReport = (note: string) => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
           <div>
             <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', color: '#fff' }}>
-              📋 Used Car Inspection Report
+              <ClipboardList size={18} style={{ color: '#fff' }} /> Used Car Inspection Report
             </h3>
             <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginTop: '2px' }}>
               Inspector: {headerInfo.inspector || '—'}
             </span>
           </div>
-          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
             <span style={{ background: '#e10613', color: '#fff', fontSize: '0.7rem', fontWeight: 750, padding: '3px 8px', borderRadius: '4px', textTransform: 'uppercase' }}>
               Value: {headerInfo.value || '—'}
             </span>
@@ -108,6 +108,28 @@ const renderInspectionReport = (note: string) => {
             <span style={{ background: '#10b981', color: '#fff', fontSize: '0.7rem', fontWeight: 750, padding: '3px 8px', borderRadius: '4px', textTransform: 'uppercase' }}>
               {headerInfo.action || '—'}
             </span>
+            <button
+              onClick={() => downloadInspectionPdf(note)}
+              style={{
+                background: '#e10613',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '4px',
+                padding: '4px 10px',
+                fontSize: '0.7rem',
+                fontWeight: 750,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                textTransform: 'uppercase',
+                transition: 'background 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#b8040f'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#e10613'}
+            >
+              <Download size={13} /> Download PDF
+            </button>
           </div>
         </div>
       </div>
@@ -118,7 +140,8 @@ const renderInspectionReport = (note: string) => {
           const isMedia = sec.title.toLowerCase().includes('media') || sec.title.toLowerCase().includes('photo');
           return (
             <div key={idx} style={{ background: 'var(--db-sf2, #f8fafc)', padding: '0.875rem', borderRadius: '8px', border: '1px solid var(--db-bd, #e2e8f0)' }}>
-              <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', fontWeight: 750, color: '#e10613', borderBottom: '1.5px solid var(--db-bd, #f1f5f9)', paddingBottom: '4px' }}>
+              <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', fontWeight: 750, color: '#e10613', borderBottom: '1.5px solid var(--db-bd, #f1f5f9)', paddingBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                {getSectionIcon(sec.title)}
                 {sec.title}
               </h4>
               {isMedia ? (
@@ -193,10 +216,24 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
   const [tdForm, setTdForm] = useState({ car_name:'', scheduled_at:'', location:'', notes:'' });
   const [editStatus, setEditStatus] = useState(false);
   const [editAssignee, setEditAssignee] = useState(false);
+  const [showAcceptModal, setShowAcceptModal] = useState(false);
+  const [acceptAssigneeId, setAcceptAssigneeId] = useState('');
   const [toast, setToast] = useState('');
+  const [showInspection, setShowInspection] = useState(false);
 
   const supabase = createClient();
   const showToast = (m:string) => { setToast(m); setTimeout(()=>setToast(''),3000); };
+
+  const isSellerLead = () => {
+    if (!lead) return false;
+    return notes.some(n => 
+      n.note && (n.note.includes('Vehicle Details:') || n.note.includes('Transmission:') || n.note.includes('Fuel Type:'))
+    );
+  };
+
+  const hasInspectionForm = () => {
+    return notes.some(n => n.note && n.note.includes('Used Car Inspection Report'));
+  };
 
   const loadAll = async () => {
     const [{ data:l }, { data:fu }, { data:n }, { data:td }, { data:bk }] = await Promise.all([
@@ -394,15 +431,271 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
             <div>
               <h1 className="db-page-title" style={{ margin: 0, fontSize: '1.75rem' }}>{lead.customer_name}</h1>
               <p className="db-page-sub" style={{ margin: '0.25rem 0 0' }}>{lead.phone} {lead.city && `· ${lead.city}`} {lead.interested_car && `· ${lead.interested_car}`}</p>
+              {lead.assigned_to ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '4px 12px',
+                    background: 'var(--db-sf2, #f8fafc)',
+                    border: '1.5px solid var(--db-bd, rgba(0,0,0,0.06))',
+                    borderRadius: '20px',
+                    fontSize: '0.8125rem',
+                    color: 'var(--db-tx2)'
+                  }}>
+                    <span style={{ color: 'var(--db-tx3)' }}>Assigned to:</span>
+                    <span style={{ fontWeight: 700, color: '#E10613' }}>{emp?.name || 'Unknown'}</span>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      setAcceptAssigneeId(lead.assigned_to || '');
+                      setShowAcceptModal(true);
+                    }}
+                    style={{
+                      background: 'var(--db-sf, #ffffff)',
+                      border: '1.5px solid var(--db-bd, rgba(0,0,0,0.1))',
+                      borderRadius: '20px',
+                      padding: '4px 12px',
+                      color: 'var(--db-tx)',
+                      cursor: 'pointer',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      transition: 'all 0.2s',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+                    }}
+                  >
+                    <Edit size={11} style={{ color: 'var(--db-gold, #c5a880)' }} /> Change Consultant
+                  </button>
+                </div>
+              ) : null}
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
             <a href={`tel:${lead.phone}`} className="crm-action-btn call"><Phone size={15} />Call</a>
             <button onClick={() => openWhatsAppComposer('welcome')} className="crm-action-btn wa" style={{ cursor: 'pointer' }}><MessageCircle size={15} />WhatsApp</button>
             {lead.email && <a href={`mailto:${lead.email}`} className="crm-action-btn email"><Mail size={15} />Email</a>}
+            {isSellerLead() && (
+              hasInspectionForm() ? (
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  background: 'rgba(16, 185, 129, 0.1)',
+                  color: '#10b981',
+                  border: '1px solid rgba(16, 185, 129, 0.2)',
+                  borderRadius: '12px',
+                  padding: '0.625rem 1rem',
+                  fontSize: '0.875rem',
+                  fontWeight: 700,
+                  boxShadow: '0 4px 12px rgba(16, 185, 129, 0.05)'
+                }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  Inspection Form Added
+                </div>
+              ) : (
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  color: '#ef4444',
+                  border: '1px solid rgba(239, 68, 68, 0.2)',
+                  borderRadius: '12px',
+                  padding: '0.625rem 1rem',
+                  fontSize: '0.875rem',
+                  fontWeight: 700,
+                  boxShadow: '0 4px 12px rgba(239, 68, 68, 0.05)'
+                }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  Inspection Form Pending
+                </div>
+              )
+            )}
           </div>
         </div>
       </div>
+
+      {/* Accept & Assign Lead Banner */}
+      {!lead.assigned_to && (
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(225, 6, 19, 0.08), rgba(197, 168, 128, 0.08))',
+          border: '1.5px solid #E10613',
+          borderRadius: '16px',
+          padding: '1.25rem 1.5rem',
+          marginBottom: '1.5rem',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '1rem',
+          boxShadow: '0 4px 20px rgba(225, 6, 19, 0.05)'
+        }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--db-tx, #000)' }}>👋 Unassigned Lead</h3>
+            <p style={{ margin: '0.25rem 0 0', fontSize: '0.875rem', color: 'var(--db-tx2, #555)' }}>
+              This lead is not yet accepted/assigned. Accept this lead and assign it to a consultant to begin work.
+            </p>
+          </div>
+          <div>
+            <button 
+              onClick={() => {
+                setAcceptAssigneeId('');
+                setShowAcceptModal(true);
+              }}
+              style={{
+                padding: '0.625rem 1.25rem',
+                borderRadius: '10px',
+                border: 0,
+                background: '#E10613',
+                color: '#fff',
+                fontWeight: 700,
+                fontSize: '0.875rem',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: '0 4px 12px rgba(225, 6, 19, 0.15)'
+              }}
+            >
+              <UserPlus size={16} /> Accept &amp; Assign Lead
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Accept & Assign Modal */}
+      <AnimatePresence>
+        {showAcceptModal && (
+          <div className="modal-backdrop" onClick={() => setShowAcceptModal(false)} style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.4)',
+            backdropFilter: 'blur(6px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '1rem'
+          }}>
+            <motion.div 
+              className="inspo-card-modal"
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              onClick={e => e.stopPropagation()}
+              style={{
+                width: '100%',
+                maxWidth: '440px',
+                background: 'var(--db-sf, #ffffff)',
+                border: '1px solid var(--db-bd, rgba(0,0,0,0.06))',
+                borderRadius: '16px',
+                boxShadow: '0 20px 40px rgba(0,0,0,0.12)',
+                padding: '1.75rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1.25rem'
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: 'var(--db-tx)' }}>
+                    🤝 Accept & Assign Lead
+                  </h3>
+                  <p style={{ margin: '4px 0 0', fontSize: '0.8125rem', color: 'var(--db-tx3)' }}>
+                    Assign this lead to an employee to start tracking their interaction.
+                  </p>
+                </div>
+                <button onClick={() => setShowAcceptModal(false)} style={{
+                  background: 'var(--db-sf2, #f5f5f5)',
+                  border: 0,
+                  borderRadius: '50%',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: 'var(--db-tx2)'
+                }}>
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '0.8125rem', fontWeight: 750, color: 'var(--db-tx2)' }}>
+                  Select Consultant:
+                </label>
+                <select 
+                  value={acceptAssigneeId}
+                  onChange={(e) => setAcceptAssigneeId(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.625rem 0.875rem',
+                    borderRadius: '10px',
+                    border: '1.5px solid var(--db-bd, rgba(0,0,0,0.08))',
+                    background: 'var(--db-sf, #fff)',
+                    color: 'var(--db-tx)',
+                    fontWeight: 600,
+                    fontSize: '0.875rem',
+                    outline: 'none',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="" disabled>Choose an employee...</option>
+                  {employees.filter(e => e.role !== 'admin').map(e => (
+                    <option key={e.id} value={e.id}>{e.name} ({e.role || 'Sales Consultant'})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '4px' }}>
+                <button 
+                  onClick={() => setShowAcceptModal(false)}
+                  style={{
+                    padding: '0.625rem 1.25rem',
+                    borderRadius: '10px',
+                    border: '1.5px solid var(--db-bd, rgba(0,0,0,0.08))',
+                    background: 'none',
+                    color: 'var(--db-tx2)',
+                    fontWeight: 600,
+                    fontSize: '0.875rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  disabled={!acceptAssigneeId}
+                  onClick={async () => {
+                    if (acceptAssigneeId) {
+                      await changeAssignee(acceptAssigneeId);
+                      setShowAcceptModal(false);
+                    }
+                  }}
+                  style={{
+                    padding: '0.625rem 1.25rem',
+                    borderRadius: '10px',
+                    border: 0,
+                    background: acceptAssigneeId ? '#E10613' : 'rgba(0,0,0,0.05)',
+                    color: acceptAssigneeId ? '#fff' : 'var(--db-tx3)',
+                    fontWeight: 700,
+                    fontSize: '0.875rem',
+                    cursor: acceptAssigneeId ? 'pointer' : 'not-allowed',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  Confirm Assignment
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <div className="crm-detail-layout">
         {/* Sidebar */}
@@ -446,17 +739,9 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
                     }}
                   >
                     <option value="">Unassigned</option>
-                    <option value={myId || ''}>Assign to Me (Personal Lead)</option>
-                    <optgroup label="Admins">
-                      {employees.filter(e => e.role === 'admin' && e.id !== myId).map(e => (
-                        <option key={e.id} value={e.id}>{e.name}</option>
-                      ))}
-                    </optgroup>
-                    <optgroup label="Employees">
-                      {employees.filter(e => e.role === 'employee' && e.id !== myId).map(e => (
-                        <option key={e.id} value={e.id}>{e.name}</option>
-                      ))}
-                    </optgroup>
+                    {employees.filter(e => e.role === 'employee').map(e => (
+                      <option key={e.id} value={e.id}>{e.name}</option>
+                    ))}
                   </select>
                 </div>
               )}
@@ -651,6 +936,21 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
               </div>
             </div>
           </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showInspection && (
+          <InspectionModal
+            isOpen={showInspection}
+            onClose={() => setShowInspection(false)}
+            leadId={id}
+            inspectorName="Admin"
+            onSuccess={() => {
+              setShowInspection(false);
+              loadAll();
+            }}
+          />
         )}
       </AnimatePresence>
 

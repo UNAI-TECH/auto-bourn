@@ -3,12 +3,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UserPlus, Search, MoreVertical, X, Shield, Ban, RotateCcw, Trash2, Key, Check, AlertCircle, Copy, CheckCheck, Mail, PhoneCall, CalendarClock, Upload, ShoppingCart, TrendingUp, Camera, ChevronDown, Edit } from 'lucide-react';
+import { UserPlus, Search, MoreVertical, X, Shield, Ban, RotateCcw, Trash2, Key, Check, AlertCircle, Copy, CheckCheck, Mail, PhoneCall, CalendarClock, Upload, ShoppingCart, TrendingUp, Camera, ChevronDown, Edit, Car } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { formatDate, timeAgo, generateEmployeeId, getProxiedImageUrl } from '@/lib/utils';
 import type { Employee } from '@/types/database';
 import ConfirmModal from '@/components/ConfirmModal';
 import PromptModal from '@/components/PromptModal';
+import { LEAD_STAGES } from '@/types/crm';
 
 interface CredentialsModal {
   name: string;
@@ -49,8 +51,9 @@ export default function EmployeesPage() {
   const [selectedEmployee, setSelectedEmployee] = useState<any | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [modalLoading, setModalLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'profile' | 'cars'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'cars' | 'leads'>('profile');
   const [employeeCars, setEmployeeCars] = useState<any[]>([]);
+  const [employeeLeads, setEmployeeLeads] = useState<any[]>([]);
   const detailFileInputRef = useRef<HTMLInputElement>(null);
   const [updatingAvatar, setUpdatingAvatar] = useState(false);
 
@@ -134,17 +137,28 @@ export default function EmployeesPage() {
     setShowModal(true);
     setSelectedEmployee(emp);
     setEmployeeCars([]);
+    setEmployeeLeads([]);
     setActiveTab('profile');
 
     try {
-      const { data: cars } = await supabase
-        .from('cars')
-        .select('*')
-        .eq('employee_id', emp.id)
-        .order('created_at', { ascending: false });
+      const [carsRes, leadsRes] = await Promise.all([
+        supabase
+          .from('cars')
+          .select('*')
+          .eq('employee_id', emp.id)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('leads')
+          .select('*')
+          .eq('assigned_to', emp.id)
+          .order('created_at', { ascending: false })
+      ]);
 
-      if (cars) {
-        setEmployeeCars(cars);
+      if (carsRes.data) {
+        setEmployeeCars(carsRes.data);
+      }
+      if (leadsRes.data) {
+        setEmployeeLeads(leadsRes.data);
       }
     } catch (err) {
       console.error('Error fetching employee details:', err);
@@ -815,10 +829,16 @@ export default function EmployeesPage() {
                       >
                         Managed Cars ({employeeCars.length})
                       </button>
+                      <button
+                        className={`modal-tab-btn ${activeTab === 'leads' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('leads')}
+                      >
+                        Assigned Leads ({employeeLeads.length})
+                      </button>
                     </div>
 
                     <div className="modal-body-scroll">
-                      {activeTab === 'profile' ? (
+                      {activeTab === 'profile' && (
                         <>
                           <div className="modal-details-grid">
                             <div className="modal-detail-item">
@@ -884,7 +904,9 @@ export default function EmployeesPage() {
                             )}
                           </div>
                         </>
-                      ) : (
+                      )}
+
+                      {activeTab === 'cars' && (
                         <div className="modal-cars-list">
                           {employeeCars.length === 0 ? (
                             <p className="modal-no-cars">No cars uploaded by this employee yet.</p>
@@ -927,6 +949,93 @@ export default function EmployeesPage() {
                                   </div>
                                 </div>
                               ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {activeTab === 'leads' && (
+                        <div className="modal-leads-list" style={{ padding: '4px' }}>
+                          {employeeLeads.length === 0 ? (
+                            <p style={{
+                              textAlign: 'center',
+                              color: 'var(--db-tx3, rgba(0,0,0,0.4))',
+                              fontSize: '0.8125rem',
+                              padding: '2rem 1rem',
+                              margin: 0
+                            }}>No leads assigned to this employee yet.</p>
+                          ) : (
+                            <div style={{
+                              display: 'grid',
+                              gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+                              gap: '12px',
+                              padding: '4px 0'
+                            }}>
+                              {employeeLeads.map((lead) => {
+                                const stage = LEAD_STAGES.find(s => s.key === lead.lead_status);
+                                return (
+                                  <div key={lead.id} className="employee-lead-card" style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '8px',
+                                    padding: '14px',
+                                    background: 'var(--db-sf2, #f5f5f5)',
+                                    border: '1px solid var(--db-bd, rgba(0,0,0,0.06))',
+                                    borderRadius: '12px',
+                                    position: 'relative',
+                                    boxSizing: 'border-box'
+                                  }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                                      <h5 style={{ margin: 0, fontSize: '0.875rem', fontWeight: 700, color: 'var(--db-tx)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        {lead.customer_name}
+                                      </h5>
+                                      <span style={{
+                                        fontSize: '0.625rem',
+                                        fontWeight: 800,
+                                        textTransform: 'uppercase',
+                                        padding: '2px 8px',
+                                        borderRadius: '99px',
+                                        background: stage?.bg || 'rgba(107,114,128,0.1)',
+                                        color: stage?.color || '#6b7280',
+                                        whiteSpace: 'nowrap',
+                                        flexShrink: 0
+                                      }}>
+                                        {stage?.label || lead.lead_status}
+                                      </span>
+                                    </div>
+                                    
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.75rem', color: 'var(--db-tx2)' }}>
+                                      {lead.interested_car && (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                          <Car size={12} style={{ color: '#E10613', flexShrink: 0 }} />
+                                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{lead.interested_car}</span>
+                                        </div>
+                                      )}
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <PhoneCall size={12} style={{ color: 'var(--db-gold, #c5a880)', flexShrink: 0 }} />
+                                        <a href={`tel:${lead.phone}`} style={{ color: 'inherit', textDecoration: 'none' }}>{lead.phone}</a>
+                                      </div>
+                                    </div>
+
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px', paddingTop: '8px', borderTop: '1px solid rgba(0,0,0,0.04)' }}>
+                                      <span style={{ fontSize: '0.625rem', color: 'var(--db-tx3)' }}>
+                                        Added: {new Date(lead.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                                      </span>
+                                      <Link href={`/dashboard/crm/leads/${lead.id}`} style={{
+                                        fontSize: '0.75rem',
+                                        fontWeight: 600,
+                                        color: '#E10613',
+                                        textDecoration: 'none',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '2px'
+                                      }}>
+                                        Details →
+                                      </Link>
+                                    </div>
+                                  </div>
+                                );
+                              })}
                             </div>
                           )}
                         </div>

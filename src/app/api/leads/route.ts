@@ -78,26 +78,6 @@ export async function POST(request: NextRequest) {
       metadata: { lead_id: lead.id, type: isContactUs ? 'contact_us' : 'sell_car' },
     });
 
-    // Notify all active employees
-    const { data: emps } = await serviceClient
-      .from('employees')
-      .select('id')
-      .eq('status', 'active');
-
-    if (emps && emps.length > 0) {
-      const employeeNotifs = emps.map(emp => ({
-        recipient_role: 'employee',
-        recipient_employee_id: emp.id,
-        type: isContactUs ? 'new_contact_message' : 'new_lead',
-        title: isContactUs ? '✉️ New Contact Message' : '📞 New Lead Received',
-        message: isContactUs 
-          ? `${customer_name} sent a message via Get In Touch.` 
-          : `${customer_name} submitted a listing via Sell Your Car.`,
-        metadata: { lead_id: lead.id, type: isContactUs ? 'contact_us' : 'sell_car' },
-      }));
-      await serviceClient.from('notifications').insert(employeeNotifs);
-    }
-
     return NextResponse.json({ success: true, lead });
   } catch (err: any) {
     console.error('Unexpected error in leads API POST:', err);

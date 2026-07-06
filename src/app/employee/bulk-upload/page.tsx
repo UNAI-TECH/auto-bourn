@@ -128,6 +128,7 @@ export default function BulkUploadPage() {
     setUploading(true);
     setProgress({ done: 0, total: valid.length });
     let success = 0, failed = 0;
+    let hasConstraintError = false;
 
     for (let i = 0; i < valid.length; i++) {
       try {
@@ -136,7 +137,7 @@ export default function BulkUploadPage() {
         const featStr = String(d.features || '');
         const features = featStr.split(',').map(f => f.trim()).filter(Boolean);
 
-        await supabase.from('cars').insert({
+        const { error } = await supabase.from('cars').insert({
           employee_id: employee.id,
           brand: d.brand, model: d.model, variant: d.variant || null, year: yr,
           fuel_type: d.fuel_type || null, transmission: d.transmission || null,
@@ -148,23 +149,47 @@ export default function BulkUploadPage() {
           location: d.location || null, body_type: d.body_type || null,
           color: d.color || null, interior_color: d.interior_color || null,
           engine: d.engine || null, horsepower: Number(d.horsepower) || null,
-          thumbnail: '', status: 'available',
+          thumbnail: '', status: 'pending',
         });
+        if (error) throw error;
         success++;
-      } catch { failed++; }
+      } catch (err: any) {
+        console.error('Bulk upload row error:', err);
+        failed++;
+        if (err?.message?.includes('violates check constraint "cars_status_check"')) {
+          hasConstraintError = true;
+        }
+      }
       setProgress({ done: i + 1, total: valid.length });
+    }
+
+    if (success > 0) {
+      // Notify Admin
+      await supabase.from('notifications').insert({
+        recipient_role: 'admin',
+        type: 'car_upload_request',
+        title: '🚗 Bulk Car Upload Request',
+        message: `Employee "${employee.name}" has requested approval to upload ${success} cars.`,
+        metadata: { count: success }
+      });
     }
 
     // Log activity
     await supabase.from('activity_logs').insert({
       employee_id: employee.id, action: 'bulk_upload',
-      details: `Bulk uploaded ${success} cars (${failed} failed)`,
+      details: `Bulk uploaded ${success} cars (pending approval, ${failed} failed)`,
     });
 
     setResults({ success, failed });
     setUploading(false);
-    if (success > 0) showToast(`${success} car(s) uploaded successfully!`);
-    if (failed > 0) showToast(`${failed} car(s) failed to upload`, 'error');
+    if (success > 0) showToast(`${success} car(s) submitted for admin approval!`);
+    if (failed > 0) {
+      if (hasConstraintError) {
+        showToast('Upload failed: The database constraint needs to be updated. Please run "cars-approval-migration.sql" in your Supabase SQL Editor.', 'error');
+      } else {
+        showToast(`${failed} car(s) failed to upload`, 'error');
+      }
+    }
   };
 
   const validCount = rows.filter(r => r.errors.length === 0).length;

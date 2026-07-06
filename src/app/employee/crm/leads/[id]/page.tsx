@@ -7,24 +7,13 @@ import DateTimePicker from '@/components/DateTimePicker';
 import { 
   ArrowLeft, Phone, MessageCircle, Plus, CheckCircle2, X, 
   Calendar, User, Mail, MapPin, DollarSign, Clock, FileText, ChevronRight, Tag,
-  Upload, Check, ShieldAlert, Award, ChevronDown
+  Upload, Check, ShieldAlert, Award, ChevronDown, Download, ClipboardCheck, Sparkles, Armchair, Wrench, FileCheck, Camera, ClipboardList, Car
 } from 'lucide-react';
 import { useEmpContext } from '../../../layout';
 import { LEAD_STAGES, FOLLOW_UP_TYPE_LABELS, type Lead, type LeadStatus, type FollowUp, type CustomerNote, formatBudget } from '@/types/crm';
 import { getProxiedImageUrl } from '@/lib/utils';
-
-const openPdf = (url: string) => {
-  if (url.startsWith('data:application/pdf')) {
-    const pdfWindow = window.open("");
-    if (pdfWindow) {
-      pdfWindow.document.write(
-        `<iframe width='100%' height='100%' src='${url}' style='border:0;position:fixed;top:0;left:0;right:0;bottom:0;'></iframe>`
-      );
-    }
-  } else {
-    window.open(url, '_blank');
-  }
-};
+import InspectionModal from '@/components/InspectionModal';
+import { downloadInspectionPdf, openPdf } from '@/lib/pdf-utils';
 
 const renderInspectionReport = (note: string) => {
   if (!note.includes('Used Car Inspection Report')) {
@@ -88,6 +77,17 @@ const renderInspectionReport = (note: string) => {
     sections.push(currentSection);
   }
 
+  const getSectionIcon = (title: string) => {
+    const t = title.toLowerCase();
+    if (t.includes('vehicle')) return <Car size={15} />;
+    if (t.includes('exterior')) return <Sparkles size={15} />;
+    if (t.includes('interior')) return <Armchair size={15} />;
+    if (t.includes('mechanical') || t.includes('suspension')) return <Wrench size={15} />;
+    if (t.includes('test drive') || t.includes('docs')) return <FileCheck size={15} />;
+    if (t.includes('media') || t.includes('photo')) return <Camera size={15} />;
+    return <ClipboardCheck size={15} />;
+  };
+
   return (
     <div style={{ background: 'var(--db-sf2, #f8fafc)', border: '1px solid var(--db-bd, #e2e8f0)', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', marginTop: '0.5rem', width: '100%' }} className="inspection-report-card">
       {/* Top Header Card */}
@@ -95,13 +95,13 @@ const renderInspectionReport = (note: string) => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
           <div>
             <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', color: '#fff' }}>
-              📋 Used Car Inspection Report
+              <ClipboardList size={18} style={{ color: '#fff' }} /> Used Car Inspection Report
             </h3>
             <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block', marginTop: '2px' }}>
               Inspector: {headerInfo.inspector || '—'}
             </span>
           </div>
-          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
             <span style={{ background: '#e10613', color: '#fff', fontSize: '0.7rem', fontWeight: 750, padding: '3px 8px', borderRadius: '4px', textTransform: 'uppercase' }}>
               Value: {headerInfo.value || '—'}
             </span>
@@ -111,6 +111,28 @@ const renderInspectionReport = (note: string) => {
             <span style={{ background: '#10b981', color: '#fff', fontSize: '0.7rem', fontWeight: 750, padding: '3px 8px', borderRadius: '4px', textTransform: 'uppercase' }}>
               {headerInfo.action || '—'}
             </span>
+            <button
+              onClick={() => downloadInspectionPdf(note)}
+              style={{
+                background: '#e10613',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '4px',
+                padding: '4px 10px',
+                fontSize: '0.7rem',
+                fontWeight: 750,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                textTransform: 'uppercase',
+                transition: 'background 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#b8040f'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#e10613'}
+            >
+              <Download size={13} /> Download PDF
+            </button>
           </div>
         </div>
       </div>
@@ -121,7 +143,8 @@ const renderInspectionReport = (note: string) => {
           const isMedia = sec.title.toLowerCase().includes('media') || sec.title.toLowerCase().includes('photo');
           return (
             <div key={idx} style={{ background: 'var(--db-sf2, #f8fafc)', padding: '0.875rem', borderRadius: '8px', border: '1px solid var(--db-bd, #e2e8f0)' }} className="inspection-report-section">
-              <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', fontWeight: 750, color: '#e10613', borderBottom: '1.5px solid var(--db-bd, #f1f5f9)', paddingBottom: '4px' }}>
+              <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', fontWeight: 750, color: '#e10613', borderBottom: '1.5px solid var(--db-bd, #f1f5f9)', paddingBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                {getSectionIcon(sec.title)}
                 {sec.title}
               </h4>
               {isMedia ? (
@@ -466,9 +489,9 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
 
   const addNote = async () => {
     if (!newNote.trim()||!employee) return;
-    // Auto-claim if unassigned
-    if (!lead?.assigned_to) {
-      await claimLeadSilent();
+    if (lead?.assigned_to !== employee.id) {
+      showToast('You cannot comment on an unassigned lead or lead assigned to someone else.');
+      return;
     }
     await supabase.from('customer_notes').insert({ lead_id:id, employee_id:employee.id, note:newNote });
     setNewNote(''); loadAll(); showToast('Note saved');
@@ -505,141 +528,15 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
     setClaiming(false);
   };
 
-  const submitInspection = async () => {
-    if (!employee) return;
-    try {
-      setClaiming(true);
-      // 1. Format detailed Inspection Report note
-      const photoLinks = [];
-      if (uploads['Exterior_Front'] && uploads['Exterior_Front'] !== 'Uploading...') photoLinks.push(`- **Front Photo:** ${uploads['Exterior_Front']}`);
-      if (uploads['Exterior_Rear'] && uploads['Exterior_Rear'] !== 'Uploading...') photoLinks.push(`- **Rear Photo:** ${uploads['Exterior_Rear']}`);
-      if (uploads['Exterior_Left Side'] && uploads['Exterior_Left Side'] !== 'Uploading...') photoLinks.push(`- **Left Side Photo:** ${uploads['Exterior_Left Side']}`);
-      if (uploads['Exterior_Right Side'] && uploads['Exterior_Right Side'] !== 'Uploading...') photoLinks.push(`- **Right Side Photo:** ${uploads['Exterior_Right Side']}`);
-      if (uploads['Engine_Bay'] && uploads['Engine_Bay'] !== 'Uploading...') photoLinks.push(`- **Engine Bay Photo:** ${uploads['Engine_Bay']}`);
-      if (uploads['Interior_Cabin'] && uploads['Interior_Cabin'] !== 'Uploading...') photoLinks.push(`- **Interior Cabin Photo:** ${uploads['Interior_Cabin']}`);
-      if (uploads['Documents'] && uploads['Documents'] !== 'Uploading...') photoLinks.push(`- **Documents File:** ${uploads['Documents']}`);
 
-      const photosSection = photoLinks.length > 0
-        ? `\n\n#### 📸 Uploaded Media\n${photoLinks.join('\n')}`
-        : '';
-
-      const formattedReport = `### 📋 Used Car Inspection Report
-**Overall Condition:** ${inspectForm.overallCondition.toUpperCase()} | **Recommended Action:** ${inspectForm.recommendedAction.toUpperCase()}
-**Estimated Value:** INR ${inspectForm.estimatedValue}
-**Inspector:** ${inspectForm.inspectorName} on ${inspectForm.inspectionDate}
-
-#### 🚗 Vehicle Information
-- **Reg No:** ${inspectForm.regNo || '—'}
-- **VIN:** ${inspectForm.vin || '—'}
-- **Brand / Model / Variant:** ${inspectForm.brand} ${inspectForm.model} ${inspectForm.variant} (${inspectForm.year})
-- **Fuel / Transmission:** ${inspectForm.fuelType} / ${inspectForm.transmissionType}
-- **Odometer:** ${inspectForm.odometer} KM | **Owners:** ${inspectForm.owners}
-
-#### 🎨 Exterior Condition
-- **Body & Paint:** Paint: ${inspectForm.paintCondition} | Rust: ${inspectForm.rustInspection}
-- **Body Defects:** ${inspectForm.bodyCondition.join(', ') || 'None'}
-- **Glass / Windshield:** Windshield: ${inspectForm.windshieldCondition}
-- **Lights Working:** ${inspectForm.lightsWorking.join(', ') || 'None'}
-- **Tyre Tread Left:** FL: ${inspectForm.treadFL || '—'}%, FR: ${inspectForm.treadFR || '—'}%, RL: ${inspectForm.treadRL || '—'}%, RR: ${inspectForm.treadRR || '—'}% (Spare: ${inspectForm.spareTyre})
-- **Exterior Notes:** ${inspectForm.exteriorNotes || 'None'}
-
-#### 🛋️ Interior Condition
-- **Odour:** ${inspectForm.odour} | **Seats:** ${inspectForm.seatCondition} | **Seatbelt:** ${inspectForm.seatbeltCheck}
-- **Electrical Controls:** A/C: ${inspectForm.acWorking} | Infotainment: ${inspectForm.infoWorking} | Windows: ${inspectForm.winWorking} | Locks: ${inspectForm.lockWorking} | Horn: ${inspectForm.hornWorking}
-- **Warning Lights:** ${inspectForm.warningLights.join(', ') || 'None'}
-- **Remarks:** ${inspectForm.interiorRemarks || 'None'}
-
-#### ⚙️ Mechanical & Suspension
-- **Fluids:** Oil: ${inspectForm.engineOil} | Coolant: ${inspectForm.coolant} | Brake Fluid: ${inspectForm.brakeFluid} | Steering Fluid: ${inspectForm.steeringFluid}
-- **Leakages:** ${inspectForm.leakages.join(', ') || 'None'}
-- **Battery:** Age: ${inspectForm.batteryAge || '—'} months | Terminals: ${inspectForm.batteryTerminal}
-- **Transmission:** Shift: ${inspectForm.transmissionResponse}
-- **Suspension / Chassis:** Bounce: ${inspectForm.bounceTest} | Frame: ${inspectForm.frameCondition} | Alignment: ${inspectForm.alignment} | Noise: ${inspectForm.suspensionNoise}
-- **Comments:** ${inspectForm.mechanicalComments || 'None'}
-
-#### 🏁 Test Drive & Docs
-- **Cold Start:** ${inspectForm.coldStart} | **Steering:** ${inspectForm.steeringPerformance} | **Brake:** ${inspectForm.brakePerformance} | **Acceleration:** ${inspectForm.acceleration}
-- **Noises Observed:** ${inspectForm.testDriveNoises.join(', ') || 'None'}
-- **Evaluation Notes:** ${inspectForm.testDriveNotes || 'None'}
-- **Verification Check:** ${inspectForm.docsVerified.join(', ') || 'None'}
-- **Vehicle Category:** Type: ${inspectForm.vehicleType} | Warranty: ${inspectForm.warrantyAvailable}
-${photosSection}`;
-
-      const cleanVal = inspectForm.estimatedValue.replace(/[^0-9]/g, '');
-      const parsedVal = cleanVal ? parseInt(cleanVal) : null;
-
-      // 2. Claim and update lead via server PATCH endpoint (bypasses RLS limits)
-      const res = await fetch(`/api/leads/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'claim',
-          updateData: {
-            lead_status: 'contacted',
-            budget: parsedVal,
-            interested_car: `${inspectForm.brand} ${inspectForm.model} (${inspectForm.year})`
-          },
-          note: formattedReport,
-          inspectionData: {
-            ...inspectForm,
-            uploads
-          },
-          activityLog: {
-            action: 'inspection_submitted',
-            details: `Inspected ${inspectForm.brand} ${inspectForm.model} - Value: INR ${inspectForm.estimatedValue}`
-          }
-        })
-      });
-      
-      const data = await res.json();
-      if (!data.success) {
-        showToast(data.error || 'Failed to submit inspection');
-        setClaiming(false);
-        return;
-      }
-
-      showToast('🎉 Inspection saved and lead claimed successfully!');
-      setShowInspection(false);
-      loadAll();
-    } catch (err) {
-      console.error(err);
-      showToast('Error saving inspection report');
-    }
-    setClaiming(false);
-  };
-
-  const handlePhotoUpload = (field: string) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = field === 'Documents' ? 'image/*,application/pdf' : 'image/*';
-    input.onchange = (e: any) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-
-      setUploads(prev => ({ ...prev, [field]: 'Uploading...' }));
-      const reader = new FileReader();
-      reader.onload = () => {
-        setUploads(prev => ({ ...prev, [field]: reader.result as string }));
-        showToast('Photo uploaded successfully');
-      };
-      reader.readAsDataURL(file);
-    };
-    input.click();
-  };
-
-  const toggleCheckbox = (field: 'bodyCondition' | 'lightsWorking' | 'warningLights' | 'leakages' | 'testDriveNoises' | 'docsVerified', value: string) => {
-    setInspectForm(prev => {
-      const current = prev[field] as string[];
-      const updated = current.includes(value) 
-        ? current.filter(v => v !== value) 
-        : [...current, value];
-      return { ...prev, [field]: updated };
-    });
-  };
 
   const addFollowUp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!employee) return;
+    if (lead?.assigned_to !== employee.id) {
+      showToast('You cannot modify an unassigned lead.');
+      return;
+    }
     if (!fuForm.follow_up_type) {
       showToast('Please select a follow-up type');
       return;
@@ -656,24 +553,26 @@ ${photosSection}`;
       showToast('Cannot schedule follow-up in the past');
       return;
     }
-    // Auto-claim if unassigned
-    if (!lead?.assigned_to) {
-      await claimLeadSilent();
-    }
     await supabase.from('follow_ups').insert({ lead_id:id, employee_id:employee.id, ...fuForm });
     setFuForm({ follow_up_type:'', scheduled_at:'', notes:'', priority:'' });
     loadAll(); showToast('Follow-up scheduled!');
   };
 
   const complete = async (fuId: string) => {
+    if (!employee) return;
+    if (lead?.assigned_to !== employee.id) {
+      showToast('You cannot modify an unassigned lead.');
+      return;
+    }
     await supabase.from('follow_ups').update({ status:'completed', completed_at:new Date().toISOString() }).eq('id',fuId);
     loadAll(); showToast('Done!');
   };
 
   const changeStatus = async (s: LeadStatus) => {
-    // Auto-claim if unassigned
-    if (!lead?.assigned_to) {
-      await claimLeadSilent();
+    if (!employee) return;
+    if (lead?.assigned_to !== employee.id) {
+      showToast('You cannot modify an unassigned lead.');
+      return;
     }
     await supabase.from('leads').update({ lead_status:s, updated_at:new Date().toISOString() }).eq('id',id);
     if (employee) await supabase.from('crm_activity_logs').insert({ lead_id:id, employee_id:employee.id, action:'status_change', details:`→ ${s}` });
@@ -713,29 +612,10 @@ ${photosSection}`;
         </div>
 
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          {/* Claim Lead Button - Red Auto Bourn Theme */}
-          {!isAssigned && (
-            <button 
-              onClick={handleClaimClick} 
-              disabled={claiming}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.625rem 1.25rem',
-                background: 'linear-gradient(135deg, #E10613, #c70511)',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '12px',
-                fontSize: '0.875rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                boxShadow: '0 4px 15px rgba(225, 6, 19, 0.25)'
-              }}
-            >
-              <User size={15}/> {claiming ? 'Processing...' : 'Claim Lead (Assign to Me)'}
-            </button>
+          {lead.assigned_to !== employee?.id && (
+            <div style={{ padding: '0.625rem 1.25rem', background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.2)', borderRadius: '12px', fontSize: '0.875rem', fontWeight: 700 }}>
+              ⚠️ Unassigned / Assigned to another consultant. Only the assignee can modify this lead.
+            </div>
           )}
 
           <a href={`tel:${lead.phone}`} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0.625rem 1.25rem', background: 'rgba(59, 130, 246, 0.08)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.2)', borderRadius: '12px', fontSize: '0.875rem', fontWeight: 700, textDecoration: 'none', transition: 'all 0.2s' }}>
@@ -744,6 +624,11 @@ ${photosSection}`;
           <button onClick={() => openWhatsAppComposer('welcome')} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0.625rem 1.25rem', background: 'rgba(34, 197, 94, 0.08)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.2)', borderRadius: '12px', fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}>
             <MessageCircle size={15} /> WhatsApp
           </button>
+          {lead.assigned_to === employee?.id && isSellerLead() && (
+            <button onClick={() => setShowInspection(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0.625rem 1.25rem', background: 'rgba(225, 6, 19, 0.08)', color: '#E10613', border: '1px solid rgba(225, 6, 19, 0.2)', borderRadius: '12px', fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}>
+              <ClipboardCheck size={15} /> Vehicle Inspection
+            </button>
+          )}
         </div>
       </div>
 
@@ -983,791 +868,26 @@ ${photosSection}`;
                 <span style={{ fontWeight: 700, color: 'var(--db-tx3, #777)', fontFamily: 'monospace' }}>
                   #{lead.id.substring(0, 8).toUpperCase()}
                 </span>
+                {/* Used Car Inspection Modal Dialog */}
+                <AnimatePresence>
+                  {showInspection && (
+                    <InspectionModal
+                      isOpen={showInspection}
+                      onClose={() => setShowInspection(false)}
+                      leadId={id}
+                      inspectorName={employee?.name || ''}
+                      onSuccess={() => {
+                        setShowInspection(false);
+                        loadAll();
+                      }}
+                    />
+                  )}
+                </AnimatePresence>
               </div>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Used Car Inspection Modal Dialog - Styled with Solid Opaque Card container & Red Accents */}
-      <AnimatePresence>
-        {showInspection && (
-          <div className="wa-modal-overlay">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              style={{ 
-                maxWidth: '850px', 
-                width: '95%', 
-                maxHeight: '90vh', 
-                display: 'flex', 
-                flexDirection: 'column',
-                backgroundColor: '#ffffff', // Solid white background
-                color: '#000000',
-                border: '1.5px solid rgba(0, 0, 0, 0.12)',
-                borderRadius: '20px', 
-                overflow: 'hidden', 
-                boxShadow: '0 25px 60px rgba(0,0,0,0.2)',
-                zIndex: 99999
-              }}
-            >
-              <div className="wa-modal-header inspection-modal-header" style={{ background: '#ffffff', borderBottom: '1.5px solid rgba(0, 0, 0, 0.08)' }}>
-                <div>
-                  <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#E10613' }}>
-                    <ShieldAlert size={20} style={{ color: '#E10613' }} /> Used Car Inspection Report
-                  </h3>
-                  <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: '#555' }}>
-                    Fill out the checklist to complete physical inspection &amp; claim seller lead
-                  </p>
-                </div>
-                <button className="wa-close-btn" style={{ color: '#555' }} onClick={() => setShowInspection(false)}><X size={20}/></button>
-              </div>
-
-              {/* Progress Indicator Ring / bar */}
-              <div className="inspection-modal-progress" style={{ borderBottom: '1.5px solid rgba(0,0,0,0.08)' }}>
-                {[
-                  { step: 1, label: 'Vehicle Info' },
-                  { step: 2, label: 'Exterior' },
-                  { step: 3, label: 'Interior & Engine' },
-                  { step: 4, label: 'Suspension & Drive' },
-                  { step: 5, label: 'Category & Final' },
-                ].map(s => (
-                  <div key={s.step} style={{ display: 'flex', alignItems: 'center', gap: '8px', opacity: wizardStep === s.step ? 1 : 0.5, flexShrink: 0 }}>
-                    <span style={{ 
-                      width: '24px', height: '24px', borderRadius: '50%', background: wizardStep >= s.step ? '#E10613' : '#ddd',
-                      color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800
-                    }}>
-                      {s.step}
-                    </span>
-                    <span style={{ fontSize: '0.8125rem', fontWeight: wizardStep === s.step ? 700 : 500, color: wizardStep === s.step ? '#000000' : '#555555' }}>{s.label}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div style={{ flex: 1, overflowY: 'auto', padding: '1.75rem', backgroundColor: '#ffffff' }} className="inspection-modal-body">
-                {/* WIZARD STEP 1: VEHICLE INFORMATION */}
-                {wizardStep === 1 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                    <h4 style={{ margin: '0 0 0.5rem', fontWeight: 800, fontSize: '1rem', color: '#E10613' }}>Vehicle Information</h4>
-                    <div className="wa-form-grid" style={{ gap: '1.25rem' }}>
-                      <div className="wa-form-group">
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Vehicle Registration Number</label>
-                        <input style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} type="text" placeholder="E.g. TN-07-BY-1234" value={inspectForm.regNo} onChange={e => setInspectForm({ ...inspectForm, regNo: e.target.value })} />
-                      </div>
-                      <div className="wa-form-group">
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Vehicle Identification Number (VIN)</label>
-                        <input style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} type="text" placeholder="17 digit chassis number" value={inspectForm.vin} onChange={e => setInspectForm({ ...inspectForm, vin: e.target.value })} />
-                      </div>
-                      <div className="wa-form-group" style={{ position: 'relative', zIndex: brandDropdownOpen ? 1000001 : 1 }}>
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Brand / Manufacturer</label>
-                        <div
-                          className="custom-role-select-trigger"
-                          onClick={() => setBrandDropdownOpen(!brandDropdownOpen)}
-                        >
-                          <span>{inspectForm.brand || 'Select Brand'}</span>
-                          <ChevronDown size={18} style={{ color: '#555', transition: 'transform 0.2s', transform: brandDropdownOpen ? 'rotate(180deg)' : 'none' }} />
-                        </div>
-                        <AnimatePresence>
-                          {brandDropdownOpen && (
-                            <>
-                              <div className="custom-role-dropdown-overlay" onClick={() => setBrandDropdownOpen(false)} />
-                              <motion.div
-                                className="custom-role-dropdown-menu"
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                transition={{ duration: 0.15 }}
-                                onWheel={e => e.stopPropagation()}
-                                onTouchMove={e => e.stopPropagation()}
-                                style={{ 
-                                  maxHeight: '200px', 
-                                  overflowY: 'auto', 
-                                  WebkitOverflowScrolling: 'touch',
-                                  backgroundColor: '#ffffff',
-                                  border: '1.5px solid rgba(0,0,0,0.15)',
-                                  borderRadius: '10px',
-                                  boxShadow: '0 10px 25px rgba(0, 0, 0, 0.15)'
-                                }}
-                              >
-                                {BRANDS.map(b => (
-                                  <div
-                                    key={b}
-                                    className={`custom-role-option ${inspectForm.brand === b ? 'selected' : ''}`}
-                                    onClick={() => {
-                                      setInspectForm({ ...inspectForm, brand: b });
-                                      setBrandDropdownOpen(false);
-                                    }}
-                                  >
-                                    {b}
-                                  </div>
-                                ))}
-                              </motion.div>
-                            </>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                      <div className="wa-form-group">
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Model</label>
-                        <input style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} type="text" placeholder="E.g. C-Class / 5 Series" value={inspectForm.model} onChange={e => setInspectForm({ ...inspectForm, model: e.target.value })} />
-                      </div>
-                      <div className="wa-form-group">
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Variant</label>
-                        <input style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} type="text" placeholder="E.g. C220d Progressive / 530d M Sport" value={inspectForm.variant} onChange={e => setInspectForm({ ...inspectForm, variant: e.target.value })} />
-                      </div>
-                      <div className="wa-form-group" style={{ position: 'relative', zIndex: yearDropdownOpen ? 1000001 : 1 }}>
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Manufacturing Year</label>
-                        <div
-                          className="custom-role-select-trigger"
-                          onClick={() => setYearDropdownOpen(!yearDropdownOpen)}
-                        >
-                          <span>{inspectForm.year || 'Select Year'}</span>
-                          <ChevronDown size={18} style={{ color: '#555', transition: 'transform 0.2s', transform: yearDropdownOpen ? 'rotate(180deg)' : 'none' }} />
-                        </div>
-                        <AnimatePresence>
-                          {yearDropdownOpen && (
-                            <>
-                              <div className="custom-role-dropdown-overlay" onClick={() => setYearDropdownOpen(false)} />
-                              <motion.div
-                                className="custom-role-dropdown-menu"
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                transition={{ duration: 0.15 }}
-                                onWheel={e => e.stopPropagation()}
-                                onTouchMove={e => e.stopPropagation()}
-                                style={{ 
-                                  maxHeight: '200px', 
-                                  overflowY: 'auto', 
-                                  WebkitOverflowScrolling: 'touch',
-                                  backgroundColor: '#ffffff',
-                                  border: '1.5px solid rgba(0,0,0,0.15)',
-                                  borderRadius: '10px',
-                                  boxShadow: '0 10px 25px rgba(0, 0, 0, 0.15)'
-                                }}
-                              >
-                                {YEARS.map(y => (
-                                  <div
-                                    key={y}
-                                    className={`custom-role-option ${inspectForm.year === y ? 'selected' : ''}`}
-                                    onClick={() => {
-                                      setInspectForm({ ...inspectForm, year: y });
-                                      setYearDropdownOpen(false);
-                                    }}
-                                  >
-                                    {y}
-                                  </div>
-                                ))}
-                              </motion.div>
-                            </>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                      <div className="wa-form-group">
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Current Odometer Reading (KM)</label>
-                        <input style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} type="number" placeholder="E.g. 42000" value={inspectForm.odometer} onChange={e => setInspectForm({ ...inspectForm, odometer: e.target.value })} />
-                      </div>
-                      <div className="wa-form-group">
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Number of Previous Owners</label>
-                        <input style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} type="number" placeholder="E.g. 1" value={inspectForm.owners} onChange={e => setInspectForm({ ...inspectForm, owners: e.target.value })} />
-                      </div>
-                      
-                      <div className="wa-form-group" style={{ gridColumn: '1/-1' }}>
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem', marginBottom: '8px' }}>Fuel Type</label>
-                        <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap' }}>
-                          {['Petrol', 'Diesel', 'Electric', 'Hybrid', 'CNG'].map(f => (
-                            <label key={f} style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.875rem', color: '#111' }}>
-                              <input type="radio" name="fuelType" checked={inspectForm.fuelType === f} onChange={() => setInspectForm({ ...inspectForm, fuelType: f })} />
-                              {f}
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="wa-form-group" style={{ gridColumn: '1/-1' }}>
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem', marginBottom: '8px' }}>Transmission Type</label>
-                        <div style={{ display: 'flex', gap: '1.25rem' }}>
-                          {['Manual', 'Automatic'].map(t => (
-                            <label key={t} style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.875rem', color: '#111' }}>
-                              <input type="radio" name="trans" checked={inspectForm.transmissionType === t} onChange={() => setInspectForm({ ...inspectForm, transmissionType: t })} />
-                              {t}
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* WIZARD STEP 2: EXTERIOR INSPECTION */}
-                {wizardStep === 2 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                    <h4 style={{ margin: '0 0 0.5rem', fontWeight: 800, fontSize: '1rem', color: '#E10613' }}>1. Exterior Inspection</h4>
-                    
-                    <div className="wa-form-group">
-                      <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem', marginBottom: '8px' }}>Body Condition (Select defects)</label>
-                      <div className="wa-form-grid" style={{ gap: '8px' }}>
-                        {[
-                          'No visible damage',
-                          'Minor scratches',
-                          'Dents present',
-                          'Repainted panels',
-                          'Accident repair signs'
-                        ].map(def => (
-                          <label key={def} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.875rem', color: '#111' }}>
-                            <input type="checkbox" checked={inspectForm.bodyCondition.includes(def)} onChange={() => toggleCheckbox('bodyCondition', def)} />
-                            {def}
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="wa-form-group">
-                      <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem', marginBottom: '6px' }}>Upload Photos</label>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px' }}>
-                        {['Front', 'Rear', 'Left Side', 'Right Side'].map(dir => {
-                          const key = `Exterior_${dir}`;
-                          const isUploaded = uploads[key] && uploads[key] !== 'Uploading...';
-                          const isUploading = uploads[key] === 'Uploading...';
-                          return (
-                            <div key={dir} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                              <button 
-                                onClick={() => handlePhotoUpload(key)} 
-                                className="mock-upload-btn"
-                                style={{ 
-                                  height: '80px', 
-                                  padding: '4px',
-                                  display: 'flex', 
-                                  flexDirection: 'column', 
-                                  justifyContent: 'center', 
-                                  alignItems: 'center',
-                                  border: isUploaded ? '1.5px solid #22c55e' : '1.5px dashed rgba(0,0,0,0.15)',
-                                  background: '#f9f9f9',
-                                  borderRadius: '8px',
-                                  cursor: 'pointer',
-                                  position: 'relative',
-                                  overflow: 'hidden'
-                                }}
-                              >
-                                {isUploaded ? (
-                                  <>
-                                    <img src={getProxiedImageUrl(uploads[key])} alt={dir} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '6px' }} />
-                                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(34, 197, 94, 0.85)', color: '#fff', fontSize: '10px', fontWeight: 750, textAlign: 'center', padding: '2px 0' }}>
-                                      {dir} ✓
-                                    </div>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Upload size={16} style={{ color: '#E10613', marginBottom: '4px' }} />
-                                    <span style={{ fontSize: '11px', fontWeight: 600, color: '#333' }}>
-                                      {isUploading ? 'Uploading...' : `Upload ${dir}`}
-                                    </span>
-                                  </>
-                                )}
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div className="wa-form-grid" style={{ gap: '1.25rem' }}>
-                      <div className="wa-form-group">
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Paint Condition</label>
-                        <select style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} value={inspectForm.paintCondition} onChange={e => setInspectForm({ ...inspectForm, paintCondition: e.target.value })}>
-                          <option value="Original paint">Original paint</option>
-                          <option value="Colour mismatch detected">Colour mismatch detected</option>
-                          <option value="Overspray visible">Overspray visible</option>
-                        </select>
-                      </div>
-
-                      <div className="wa-form-group">
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Rust Inspection</label>
-                        <select style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} value={inspectForm.rustInspection} onChange={e => setInspectForm({ ...inspectForm, rustInspection: e.target.value })}>
-                          <option value="No rust">No rust</option>
-                          <option value="Surface rust">Surface rust</option>
-                          <option value="Structural rust">Structural rust</option>
-                        </select>
-                      </div>
-
-                      <div className="wa-form-group">
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Windshield Condition</label>
-                        <select style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} value={inspectForm.windshieldCondition} onChange={e => setInspectForm({ ...inspectForm, windshieldCondition: e.target.value })}>
-                          <option value="Good">Good</option>
-                          <option value="Cracked">Cracked</option>
-                          <option value="Replaced">Replaced</option>
-                        </select>
-                      </div>
-
-                      <div className="wa-form-group">
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Spare Tyre Available</label>
-                        <div style={{ display: 'flex', gap: '1rem', marginTop: '4px' }}>
-                          {['Yes', 'No'].map(st => (
-                            <label key={st} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem', color: '#111' }}>
-                              <input type="radio" name="spareTyre" checked={inspectForm.spareTyre === st} onChange={() => setInspectForm({ ...inspectForm, spareTyre: st })} />
-                              {st}
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="wa-form-group">
-                      <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem', marginBottom: '8px' }}>Lights Working</label>
-                      <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap' }}>
-                        {['Headlights', 'Tail Lamps', 'Indicators', 'Fog Lamps'].map(l => (
-                          <label key={l} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem', color: '#111' }}>
-                            <input type="checkbox" checked={inspectForm.lightsWorking.includes(l)} onChange={() => toggleCheckbox('lightsWorking', l)} />
-                            {l}
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="wa-form-group">
-                      <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem', marginBottom: '6px' }}>Tyre Tread Remaining (%)</label>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
-                        {['FL', 'FR', 'RL', 'RR'].map(pos => (
-                          <input style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} key={pos} type="number" placeholder={`${pos} Tread %`} value={inspectForm[`tread${pos}` as keyof typeof inspectForm] as string} onChange={e => setInspectForm({ ...inspectForm, [`tread${pos}`]: e.target.value })} />
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="wa-form-group">
-                      <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Exterior Notes</label>
-                      <textarea style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} rows={2} value={inspectForm.exteriorNotes} onChange={e => setInspectForm({ ...inspectForm, exteriorNotes: e.target.value })} placeholder="Add any details about scratches, bumps, dents..." />
-                    </div>
-                  </div>
-                )}
-
-                {/* WIZARD STEP 3: INTERIOR & MECHANICAL INSPECTION */}
-                {wizardStep === 3 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                    <h4 style={{ margin: '0 0 0.5rem', fontWeight: 800, fontSize: '1rem', color: '#E10613' }}>2. Interior Inspection</h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.25rem' }}>
-                      <div className="wa-form-group">
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Cabin Odour</label>
-                        <select style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} value={inspectForm.odour} onChange={e => setInspectForm({ ...inspectForm, odour: e.target.value })}>
-                          <option value="Fresh">Fresh</option>
-                          <option value="Mild Moisture">Mild Moisture</option>
-                          <option value="Water Damage Smell">Water Damage Smell</option>
-                        </select>
-                      </div>
-                      <div className="wa-form-group">
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Seat Condition</label>
-                        <select style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} value={inspectForm.seatCondition} onChange={e => setInspectForm({ ...inspectForm, seatCondition: e.target.value })}>
-                          <option value="Excellent">Excellent</option>
-                          <option value="Good">Good</option>
-                          <option value="Worn">Worn</option>
-                        </select>
-                      </div>
-                      <div className="wa-form-group">
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Seatbelt Check</label>
-                        <select style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} value={inspectForm.seatbeltCheck} onChange={e => setInspectForm({ ...inspectForm, seatbeltCheck: e.target.value })}>
-                          <option value="Working">Working</option>
-                          <option value="Requires Repair">Requires Repair</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="wa-form-group">
-                      <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem', marginBottom: '8px' }}>Controls &amp; Features Check</label>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
-                        {[
-                          { label: 'Air Conditioning', field: 'acWorking' },
-                          { label: 'Infotainment System', field: 'infoWorking' },
-                          { label: 'Power Windows', field: 'winWorking' },
-                          { label: 'Central Locking', field: 'lockWorking' },
-                          { label: 'Horn Operation', field: 'hornWorking' },
-                        ].map(ctrl => (
-                          <div key={ctrl.field} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8f9fa', padding: '6px 12px', borderRadius: '8px', border: '1px solid rgba(0, 0, 0, 0.1)' }}>
-                            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#333' }}>{ctrl.label}</span>
-                            <select 
-                              style={{ width: 'auto', padding: '2px 8px', fontSize: '0.75rem', borderRadius: '4px', background: '#ffffff', color: '#000000', border: '1px solid #ccc' }} 
-                              value={inspectForm[ctrl.field as keyof typeof inspectForm] as string} 
-                              onChange={e => setInspectForm({ ...inspectForm, [ctrl.field]: e.target.value })}
-                            >
-                              <option value="Working">Working</option>
-                              <option value="Not Working">Not Working</option>
-                            </select>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="wa-form-group">
-                      <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem', marginBottom: '8px' }}>Dashboard Warning Indicators</label>
-                      <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap' }}>
-                        {['No Warning Lights', 'Engine Warning', 'ABS Warning', 'Battery Warning'].map(w => (
-                          <label key={w} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem', color: '#111' }}>
-                            <input type="checkbox" checked={inspectForm.warningLights.includes(w)} onChange={() => toggleCheckbox('warningLights', w)} />
-                            {w}
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-
-                    <h4 style={{ margin: '1rem 0 0.5rem', fontWeight: 800, fontSize: '1rem', color: '#E10613' }}>3. Mechanical Inspection</h4>
-                    <div className="wa-form-grid" style={{ gap: '1.25rem' }}>
-                      <div className="wa-form-group">
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Engine Oil Level / Quality</label>
-                        <select style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} value={inspectForm.engineOil} onChange={e => setInspectForm({ ...inspectForm, engineOil: e.target.value })}>
-                          <option value="Good">Good</option>
-                          <option value="Low">Low</option>
-                          <option value="Dirty">Dirty</option>
-                        </select>
-                      </div>
-                      <div className="wa-form-group">
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Coolant Level</label>
-                        <select style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} value={inspectForm.coolant} onChange={e => setInspectForm({ ...inspectForm, coolant: e.target.value })}>
-                          <option value="Good">Good</option>
-                          <option value="Low">Low</option>
-                        </select>
-                      </div>
-                      <div className="wa-form-group">
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Brake Fluid Quality</label>
-                        <select style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} value={inspectForm.brakeFluid} onChange={e => setInspectForm({ ...inspectForm, brakeFluid: e.target.value })}>
-                          <option value="Good">Good</option>
-                          <option value="Replace">Replace</option>
-                        </select>
-                      </div>
-                      <div className="wa-form-group">
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Power Steering Fluid</label>
-                        <select style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} value={inspectForm.steeringFluid} onChange={e => setInspectForm({ ...inspectForm, steeringFluid: e.target.value })}>
-                          <option value="Good">Good</option>
-                          <option value="Replace">Replace</option>
-                        </select>
-                      </div>
-                      <div className="wa-form-group">
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Battery Age (Months)</label>
-                        <input style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} type="number" placeholder="Months since battery install" value={inspectForm.batteryAge} onChange={e => setInspectForm({ ...inspectForm, batteryAge: e.target.value })} />
-                      </div>
-                      <div className="wa-form-group">
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Battery Terminals Condition</label>
-                        <select style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} value={inspectForm.batteryTerminal} onChange={e => setInspectForm({ ...inspectForm, batteryTerminal: e.target.value })}>
-                          <option value="Clean">Clean</option>
-                          <option value="Corrosion Found">Corrosion Found</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="wa-form-group">
-                      <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem', marginBottom: '8px' }}>Fluid Leakage Inspection</label>
-                      <div style={{ display: 'flex', gap: '1.25rem' }}>
-                        {['No Leaks', 'Oil Leak', 'Coolant Leak'].map(leak => (
-                          <label key={leak} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem', color: '#111' }}>
-                            <input type="checkbox" checked={inspectForm.leakages.includes(leak)} onChange={() => toggleCheckbox('leakages', leak)} />
-                            {leak}
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="wa-form-group">
-                      <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem', marginBottom: '6px' }}>Upload Engine / Interior Photos</label>
-                      <div className="wa-form-grid" style={{ gap: '12px' }}>
-                        {[
-                          { label: 'Engine Bay', key: 'Engine_Bay', btnText: 'Engine Photo' },
-                          { label: 'Interior Cabin', key: 'Interior_Cabin', btnText: 'Interior Photo' }
-                        ].map(item => {
-                          const isUploaded = uploads[item.key] && uploads[item.key] !== 'Uploading...';
-                          const isUploading = uploads[item.key] === 'Uploading...';
-                          return (
-                            <button 
-                              key={item.key}
-                              onClick={() => handlePhotoUpload(item.key)} 
-                              className="mock-upload-btn"
-                              style={{ 
-                                height: '90px', 
-                                padding: '4px',
-                                display: 'flex', 
-                                flexDirection: 'column', 
-                                justifyContent: 'center', 
-                                alignItems: 'center',
-                                border: isUploaded ? '1.5px solid #22c55e' : '1.5px dashed rgba(0,0,0,0.15)',
-                                background: '#f9f9f9',
-                                borderRadius: '8px',
-                                cursor: 'pointer',
-                                position: 'relative',
-                                overflow: 'hidden'
-                              }}
-                            >
-                              {isUploaded ? (
-                                <>
-                                  <img src={getProxiedImageUrl(uploads[item.key])} alt={item.label} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '6px' }} />
-                                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(34, 197, 94, 0.85)', color: '#fff', fontSize: '10px', fontWeight: 750, textAlign: 'center', padding: '2px 0' }}>
-                                    {item.label} ✓
-                                  </div>
-                                </>
-                              ) : (
-                                <>
-                                  <Upload size={18} style={{ color: '#E10613', marginBottom: '4px' }} />
-                                  <span style={{ fontSize: '11px', fontWeight: 600, color: '#333' }}>
-                                    {isUploading ? 'Uploading...' : `Upload ${item.btnText}`}
-                                  </span>
-                                </>
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div className="wa-form-group">
-                      <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Inspector Comments / Remarks</label>
-                      <textarea style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} rows={2} value={inspectForm.mechanicalComments} onChange={e => setInspectForm({ ...inspectForm, mechanicalComments: e.target.value })} placeholder="Add notes on mechanical wear, gearshifts, belts, leak points..." />
-                    </div>
-                  </div>
-                )}
-
-                {/* WIZARD STEP 4: SUSPENSION & TEST DRIVE EVALUATION */}
-                {wizardStep === 4 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                    <h4 style={{ margin: '0 0 0.5rem', fontWeight: 800, fontSize: '1rem', color: '#E10613' }}>4. Suspension &amp; Frame</h4>
-                    <div className="wa-form-grid" style={{ gap: '1.25rem' }}>
-                      <div className="wa-form-group">
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Bounce Test</label>
-                        <select style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} value={inspectForm.bounceTest} onChange={e => setInspectForm({ ...inspectForm, bounceTest: e.target.value })}>
-                          <option value="Pass">Pass</option>
-                          <option value="Fail">Fail</option>
-                        </select>
-                      </div>
-                      <div className="wa-form-group">
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Frame / Structural Condition</label>
-                        <select style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} value={inspectForm.frameCondition} onChange={e => setInspectForm({ ...inspectForm, frameCondition: e.target.value })}>
-                          <option value="Good">Good</option>
-                          <option value="Rust Present">Rust Present</option>
-                          <option value="Repair Marks Found">Repair Marks Found</option>
-                        </select>
-                      </div>
-                      <div className="wa-form-group">
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Wheel Alignment Test</label>
-                        <select style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} value={inspectForm.alignment} onChange={e => setInspectForm({ ...inspectForm, alignment: e.target.value })}>
-                          <option value="Proper">Proper</option>
-                          <option value="Requires Alignment">Requires Alignment</option>
-                        </select>
-                      </div>
-                      <div className="wa-form-group">
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Suspension Noise</label>
-                        <select style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} value={inspectForm.suspensionNoise} onChange={e => setInspectForm({ ...inspectForm, suspensionNoise: e.target.value })}>
-                          <option value="None">None</option>
-                          <option value="Minor">Minor</option>
-                          <option value="Major">Major</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <h4 style={{ margin: '1rem 0 0.5rem', fontWeight: 800, fontSize: '1rem', color: '#E10613' }}>5. Test Drive Evaluation</h4>
-                    <div className="wa-form-grid" style={{ gap: '1.25rem' }}>
-                      <div className="wa-form-group">
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Cold Start Performance</label>
-                        <select style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} value={inspectForm.coldStart} onChange={e => setInspectForm({ ...inspectForm, coldStart: e.target.value })}>
-                          <option value="Pass">Pass</option>
-                          <option value="Fail">Fail</option>
-                        </select>
-                      </div>
-                      <div className="wa-form-group">
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Steering Performance</label>
-                        <select style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} value={inspectForm.steeringPerformance} onChange={e => setInspectForm({ ...inspectForm, steeringPerformance: e.target.value })}>
-                          <option value="Stable">Stable</option>
-                          <option value="Pulling">Pulling</option>
-                        </select>
-                      </div>
-                      <div className="wa-form-group">
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Braking Response</label>
-                        <select style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} value={inspectForm.brakePerformance} onChange={e => setInspectForm({ ...inspectForm, brakePerformance: e.target.value })}>
-                          <option value="Good">Good</option>
-                          <option value="Requires Service">Requires Service</option>
-                        </select>
-                      </div>
-                      <div className="wa-form-group">
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Acceleration Response</label>
-                        <select style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} value={inspectForm.acceleration} onChange={e => setInspectForm({ ...inspectForm, acceleration: e.target.value })}>
-                          <option value="Smooth">Smooth</option>
-                          <option value="Delayed">Delayed</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="wa-form-group">
-                      <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem', marginBottom: '8px' }}>Noise Observed During Test Drive</label>
-                      <div style={{ display: 'flex', gap: '1.25rem' }}>
-                        {['None', 'Engine', 'Suspension', 'Transmission'].map(noise => (
-                          <label key={noise} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem', color: '#111' }}>
-                            <input type="checkbox" checked={inspectForm.testDriveNoises.includes(noise)} onChange={() => toggleCheckbox('testDriveNoises', noise)} />
-                            {noise}
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="wa-form-group">
-                      <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Test Drive Evaluation Notes</label>
-                      <textarea style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} rows={2} value={inspectForm.testDriveNotes} onChange={e => setInspectForm({ ...inspectForm, testDriveNotes: e.target.value })} placeholder="Describe stability, cornering, acceleration lag, alignment issue remarks..." />
-                    </div>
-                  </div>
-                )}
-
-                {/* WIZARD STEP 5: VEHICLE CATEGORY & DOCUMENTATION VERIFICATION & EVALUATION */}
-                {wizardStep === 5 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                    <h4 style={{ margin: '0 0 0.5rem', fontWeight: 800, fontSize: '1rem', color: '#E10613' }}>6. Vehicle Category</h4>
-                    <div className="wa-form-grid" style={{ gap: '1.25rem' }}>
-                      <div className="wa-form-group">
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem', marginBottom: '6px' }}>Vehicle Type</label>
-                        <div style={{ display: 'flex', gap: '1rem' }}>
-                          {['Certified Used Vehicle', 'Regular Used Vehicle'].map(vt => (
-                            <label key={vt} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem', color: '#111' }}>
-                              <input type="radio" name="vehicleType" checked={inspectForm.vehicleType === vt} onChange={() => setInspectForm({ ...inspectForm, vehicleType: vt })} />
-                              {vt}
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="wa-form-group">
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem', marginBottom: '6px' }}>Warranty Available</label>
-                        <div style={{ display: 'flex', gap: '1rem' }}>
-                          {['Yes', 'No'].map(w => (
-                            <label key={w} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem', color: '#111' }}>
-                              <input type="radio" name="warrantyAvailable" checked={inspectForm.warrantyAvailable === w} onChange={() => setInspectForm({ ...inspectForm, warrantyAvailable: w })} />
-                              {w}
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    <h4 style={{ margin: '1rem 0 0.5rem', fontWeight: 800, fontSize: '1rem', color: '#E10613' }}>7. Document Verification</h4>
-                    <div className="wa-form-group">
-                      <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem', marginBottom: '8px' }}>Verify Documents</label>
-                      <div className="wa-form-grid" style={{ gap: '8px' }}>
-                        {[
-                          'Registration Certificate (RC) Verified',
-                          'VIN Matched',
-                          'Insurance Valid',
-                          'Loan NOC Verified',
-                          'Form 29 Uploaded',
-                          'Form 30 Uploaded',
-                          'Pollution Certificate Uploaded',
-                          'Road Tax Verified',
-                          'Original Invoice Uploaded',
-                          'Fitness Certificate Verified'
-                        ].map(doc => (
-                          <label key={doc} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.8125rem', color: '#111' }}>
-                            <input type="checkbox" checked={inspectForm.docsVerified.includes(doc)} onChange={() => toggleCheckbox('docsVerified', doc)} />
-                            {doc}
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="wa-form-group">
-                      <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem', marginBottom: '6px' }}>Upload Inspection Documents &amp; Certificates</label>
-                      <button 
-                        onClick={() => handlePhotoUpload('Documents')} 
-                        className="mock-upload-btn" 
-                        style={{ 
-                          width: '100%', 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          justifyContent: 'center', 
-                          gap: '8px', 
-                          background: uploads['Documents'] && uploads['Documents'] !== 'Uploading...' ? '#f0fdf4' : '#fff',
-                          border: uploads['Documents'] && uploads['Documents'] !== 'Uploading...' ? '1.5px solid #22c55e' : '1.5px solid rgba(0,0,0,0.15)',
-                          color: uploads['Documents'] && uploads['Documents'] !== 'Uploading...' ? '#15803d' : '#333'
-                        }}
-                      >
-                        <Upload size={14} /> {uploads['Documents'] === 'Uploading...' ? 'Uploading...' : uploads['Documents'] ? 'All PDF/Docs Uploaded ✓' : 'Upload Documents (RC, Insurance, Form 29/30)'}
-                      </button>
-                    </div>
-
-                    <h4 style={{ margin: '1rem 0 0.5rem', fontWeight: 800, fontSize: '1rem', color: '#E10613' }}>Final Evaluation</h4>
-                    <div className="wa-form-grid" style={{ gap: '1.25rem' }}>
-                      <div className="wa-form-group">
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Overall Vehicle Condition Rating</label>
-                        <select style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} value={inspectForm.overallCondition} onChange={e => setInspectForm({ ...inspectForm, overallCondition: e.target.value })}>
-                          <option value="Excellent">Excellent</option>
-                          <option value="Good">Good</option>
-                          <option value="Fair">Fair</option>
-                          <option value="Poor">Poor</option>
-                        </select>
-                      </div>
-
-                      <div className="wa-form-group">
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Estimated Market Value (INR)</label>
-                        <input style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} type="text" placeholder="E.g. 45,00,000" value={inspectForm.estimatedValue} onChange={e => setInspectForm({ ...inspectForm, estimatedValue: e.target.value })} />
-                      </div>
-
-                      <div className="wa-form-group">
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Recommended Action</label>
-                        <select style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} value={inspectForm.recommendedAction} onChange={e => setInspectForm({ ...inspectForm, recommendedAction: e.target.value })}>
-                          <option value="Approve">Approve / Buy Car</option>
-                          <option value="Hold">Hold / Re-evaluate</option>
-                          <option value="Reject">Reject Deal</option>
-                        </select>
-                      </div>
-
-                      <div className="wa-form-group">
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Inspector Name</label>
-                        <input style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} type="text" placeholder="Consultant Name" value={inspectForm.inspectorName} onChange={e => setInspectForm({ ...inspectForm, inspectorName: e.target.value })} />
-                      </div>
-
-                      <div className="wa-form-group">
-                        <label style={{ color: '#333', fontWeight: 700, fontSize: '0.8125rem' }}>Inspection Date</label>
-                        <input style={{ background: '#ffffff', border: '1.5px solid rgba(0,0,0,0.15)', color: '#000000' }} type="date" value={inspectForm.inspectionDate} onChange={e => setInspectForm({ ...inspectForm, inspectionDate: e.target.value })} />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Wizard Footer buttons */}
-              <div className="wa-modal-footer inspection-modal-footer" style={{ display: 'flex', justifyContent: 'space-between', background: '#f8f9fa', borderTop: '1.5px solid rgba(0, 0, 0, 0.08)' }}>
-                <button 
-                  className="wa-btn cancel" 
-                  disabled={claiming}
-                  onClick={() => {
-                    if (wizardStep > 1) {
-                      setWizardStep(prev => prev - 1);
-                    } else {
-                      setShowInspection(false);
-                    }
-                  }}
-                >
-                  {wizardStep === 1 ? 'Cancel' : 'Previous'}
-                </button>
-
-                {wizardStep < 5 ? (
-                  <button 
-                    className="wa-btn" 
-                    style={{ background: '#E10613', color: '#fff' }}
-                    onClick={() => {
-                      // Simple validator for page 1
-                      if (wizardStep === 1 && (!inspectForm.brand || !inspectForm.model || !inspectForm.year)) {
-                        showToast('Please select Brand, Model, and Year first');
-                        return;
-                      }
-                      setWizardStep(prev => prev + 1);
-                    }}
-                  >
-                    Next Step
-                  </button>
-                ) : (
-                  <button 
-                    className="wa-btn" 
-                    style={{ background: 'linear-gradient(135deg, #E10613, #c70511)', color: '#fff', boxShadow: '0 4px 15px rgba(225, 6, 19, 0.3)' }}
-                    onClick={submitInspection}
-                    disabled={claiming}
-                  >
-                    {claiming ? 'Saving Inspection...' : 'Submit Inspection Report'}
-                  </button>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
       {/* WhatsApp Modal */}
       {waModal && (

@@ -9,6 +9,7 @@ import { Search, Filter, Edit, Trash2, Eye, Star, Check, AlertCircle, X, Chevron
 import { formatPrice, formatDate, timeAgo, getProxiedImageUrl } from '@/lib/utils';
 import type { Car } from '@/types/database';
 import ConfirmModal from '@/components/ConfirmModal';
+import PromptModal from '@/components/PromptModal';
 
 const PAGE_SIZE = 12;
 
@@ -45,11 +46,65 @@ function CarsPageContent() {
   const [uploading, setUploading] = useState(false);
 
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [rejectCarTarget, setRejectCarTarget] = useState<Car | null>(null);
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
   const supabase = createClient();
 
   const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type }); setTimeout(() => setToast(null), 3000);
+  };
+
+  const approveCar = async (car: Car) => {
+    const { error } = await supabase.from('cars').update({ status: 'available', rejection_reason: null }).eq('id', car.id);
+    if (error) {
+      showToast(error.message, 'error');
+      return;
+    }
+
+    // Send notification to employee
+    if (car.employee_id) {
+      await supabase.from('notifications').insert({
+        recipient_employee_id: car.employee_id,
+        recipient_role: 'employee',
+        type: 'car_approved',
+        title: '✅ Car Upload Approved',
+        message: `Your request to upload ${car.brand} ${car.model} (${car.year}) has been approved and is now live!`,
+        metadata: { car_id: car.id }
+      });
+    }
+
+    showToast('Car approved successfully');
+    fetchCars();
+  };
+
+  const rejectCar = async (car: Car, reason: string) => {
+    if (!reason.trim()) {
+      showToast('Rejection reason is required', 'error');
+      return;
+    }
+
+    const { error } = await supabase.from('cars').delete().eq('id', car.id);
+
+    if (error) {
+      showToast(error.message, 'error');
+      return;
+    }
+
+    // Send notification to employee
+    if (car.employee_id) {
+      await supabase.from('notifications').insert({
+        recipient_employee_id: car.employee_id,
+        recipient_role: 'employee',
+        type: 'car_rejected',
+        title: '❌ Car Upload Rejected',
+        message: `your uploard was rejected by admin. Vehicle: ${car.brand} ${car.model} (${car.year}). Reason: ${reason}`,
+        metadata: { brand: car.brand, model: car.model, year: car.year, rejection_reason: reason }
+      });
+    }
+
+    showToast('Car listing rejected and deleted');
+    setRejectCarTarget(null);
+    fetchCars();
   };
 
   const fetchCars = useCallback(async () => {
@@ -302,7 +357,7 @@ function CarsPageContent() {
                   >
                     All Status
                   </button>
-                  {['available', 'sold', 'reserved'].map(st => (
+                  {['available', 'sold', 'reserved', 'pending', 'rejected'].map(st => (
                     <button
                       key={st}
                       type="button"
@@ -317,7 +372,7 @@ function CarsPageContent() {
                           width: '8px',
                           height: '8px',
                           borderRadius: '50%',
-                          background: st === 'available' ? '#22c55e' : st === 'sold' ? '#ef4444' : '#f59e0b',
+                          background: st === 'available' ? '#22c55e' : st === 'sold' ? '#ef4444' : st === 'reserved' ? '#f59e0b' : st === 'pending' ? '#3b82f6' : '#6b7280',
                           display: 'inline-block',
                           marginRight: '8px'
                         }}
@@ -420,6 +475,21 @@ function CarsPageContent() {
                   {car.brand} {car.model}
                 </Link>
               </h3>
+              {car.status === 'rejected' && car.rejection_reason && (
+                <div style={{
+                  margin: '0.5rem 0',
+                  background: 'rgba(239,68,68,0.08)',
+                  border: '1px solid rgba(239,68,68,0.2)',
+                  borderRadius: '8px',
+                  padding: '0.5rem 0.75rem',
+                  fontSize: '0.75rem',
+                  color: '#ef4444',
+                  fontWeight: 500,
+                  lineHeight: 1.4
+                }}>
+                  <span style={{ fontWeight: 700 }}>Reason:</span> {car.rejection_reason}
+                </div>
+              )}
               <p className="car-variant">{car.variant} · {car.year}</p>
               <p className="car-price">{formatPrice(car.price)}</p>
               <div className="car-meta">
@@ -431,9 +501,22 @@ function CarsPageContent() {
               </div>
               <div className="car-meta2"><span><Eye size={12} /> {car.views} views</span></div>
               <div className="car-actions">
-                <button onClick={() => setEditCar(car)} title="Edit"><Edit size={15} /></button>
-                {car.status !== 'sold' && <button onClick={() => updateCarStatus(car.id, 'sold')} title="Mark Sold" className="act-green"><Check size={15} /></button>}
-                {car.status === 'sold' && <button onClick={() => updateCarStatus(car.id, 'available')} title="Restore">↩</button>}
+                {car.status === 'pending' ? (
+                  <>
+                    <button onClick={() => approveCar(car)} className="act-green" style={{ color: '#22c55e', borderColor: 'rgba(34,197,94,0.3)' }} title="Approve">
+                      Approve
+                    </button>
+                    <button onClick={() => setRejectCarTarget(car)} className="act-red" style={{ color: '#ef4444', borderColor: 'rgba(239,68,68,0.3)' }} title="Reject">
+                      Reject
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button onClick={() => setEditCar(car)} title="Edit"><Edit size={15} /></button>
+                    {car.status !== 'sold' && <button onClick={() => updateCarStatus(car.id, 'sold')} title="Mark Sold" className="act-green"><Check size={15} /></button>}
+                    {car.status === 'sold' && <button onClick={() => updateCarStatus(car.id, 'available')} title="Restore">↩</button>}
+                  </>
+                )}
                 <button onClick={() => deleteCar(car.id)} title="Delete" className="act-red"><Trash2 size={15} /></button>
               </div>
             </div>
@@ -538,6 +621,8 @@ function CarsPageContent() {
                       <option value="available">Available</option>
                       <option value="sold">Sold</option>
                       <option value="reserved">Reserved</option>
+                      <option value="pending">Pending Approval</option>
+                      <option value="rejected">Rejected</option>
                     </select>
                   </div>
 
@@ -642,6 +727,19 @@ function CarsPageContent() {
         isDanger={true}
       />
 
+      <PromptModal
+        isOpen={!!rejectCarTarget}
+        title="Reject Car Listing"
+        message={`Please enter the reason for rejecting the upload request for ${rejectCarTarget?.brand} ${rejectCarTarget?.model}:`}
+        placeholder="Reason for rejection..."
+        confirmLabel="Reject Request"
+        cancelLabel="Cancel"
+        onConfirm={(val) => {
+          if (rejectCarTarget) rejectCar(rejectCarTarget, val);
+        }}
+        onCancel={() => setRejectCarTarget(null)}
+      />
+
       <AnimatePresence>{toast && <motion.div className={`db-toast ${toast.type}`} initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 50 }}>{toast.type === 'success' ? <Check size={16} /> : <AlertCircle size={16} />}{toast.msg}</motion.div>}</AnimatePresence>
 
       <style jsx>{`
@@ -665,6 +763,8 @@ function CarsPageContent() {
 .car-status-badge.available{background:rgba(34,197,94,.15);color:#22c55e}
 .car-status-badge.sold{background:rgba(239,68,68,.15);color:#ef4444}
 .car-status-badge.reserved{background:rgba(245,158,11,.15);color:#f59e0b}
+.car-status-badge.pending{background:rgba(59,130,246,.15);color:#3b82f6}
+.car-status-badge.rejected{background:rgba(107,114,128,.15);color:#6b7280}
 .car-feat{background:rgba(225,6,19,.15);color:#e10613;padding:.25rem;border-radius:6px;display:flex}
 .car-info{padding:1rem}
 .car-info h3{font-family:'Outfit',sans-serif;font-size:1.0625rem;font-weight:600;margin:0 0 .25rem}

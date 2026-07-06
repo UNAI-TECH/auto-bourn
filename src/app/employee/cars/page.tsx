@@ -349,21 +349,38 @@ export default function MyCarsPage() {
         ? (editCar.features as string).split(',').map(f => f.trim()).filter(Boolean) 
         : editCar.features;
 
+      const updatedStatus = editCar.status === 'rejected' ? 'pending' : editCar.status;
+
       const { error: updateError } = await supabase.from('cars').update({
         ...rest,
         features,
-        thumbnail: finalThumbnail
+        thumbnail: finalThumbnail,
+        status: updatedStatus,
+        rejection_reason: updatedStatus === 'pending' ? null : editCar.rejection_reason
       }).eq('id', id);
       if (updateError) throw updateError;
 
-      // 5. Insert activity log
+      // 5. Notify Admin if resubmitted
+      if (editCar.status === 'rejected') {
+        await supabase.from('notifications').insert({
+          recipient_role: 'admin',
+          type: 'car_upload_request',
+          title: '🚗 Car Upload Re-submitted',
+          message: `Employee "${employee.name}" has re-submitted rejected car details for approval: ${editCar.brand} ${editCar.model} (${editCar.year}).`,
+          metadata: { car_id: editCar.id }
+        });
+      }
+
+      // 6. Insert activity log
       await supabase.from('activity_logs').insert({
         employee_id: employee.id,
         action: 'edit',
-        details: `Edited ${editCar.brand} ${editCar.model} details and images`,
+        details: editCar.status === 'rejected'
+          ? `Re-submitted ${editCar.brand} ${editCar.model} for approval after rejection`
+          : `Edited ${editCar.brand} ${editCar.model} details and images`,
       });
 
-      showToast('Car updated successfully');
+      showToast(editCar.status === 'rejected' ? 'Car resubmitted for approval' : 'Car updated successfully');
       setEditCar(null);
       fetchCars();
     } catch (err) {
@@ -580,7 +597,7 @@ export default function MyCarsPage() {
           <div className="car-filters" style={{ marginBottom: '1.5rem' }}>
             <div className="db-search-inline"><Search size={16} /><input placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} /></div>
             <div className="emp-tabs">
-              {['all','available','sold','reserved','my'].map(f => (
+              {['all','available','sold','reserved','pending','rejected','my'].map(f => (
                 <button key={f} className={`emp-tab ${statusFilter === f ? 'active' : ''}`} onClick={() => setStatusFilter(f)}>
                   {f === 'all' ? 'All' : f === 'my' ? (
                     <>
@@ -610,6 +627,21 @@ export default function MyCarsPage() {
                       {car.brand} {car.model}
                     </Link>
                   </h3>
+                  {car.status === 'rejected' && car.rejection_reason && (
+                    <div style={{
+                      margin: '0.5rem 0 0.75rem',
+                      background: 'rgba(239,68,68,0.08)',
+                      border: '1.5px solid rgba(239,68,68,0.2)',
+                      borderRadius: '10px',
+                      padding: '0.6rem 0.8rem',
+                      fontSize: '0.75rem',
+                      color: '#ef4444',
+                      fontWeight: 500,
+                      lineHeight: 1.4
+                    }}>
+                      <span style={{ fontWeight: 700 }}>Rejection Reason:</span> {car.rejection_reason}
+                    </div>
+                  )}
                   <p className="car-variant">{car.variant} · {car.year}</p>
                   <p className="car-price">{formatPrice(car.price)}</p>
                   <div className="car-meta"><span>{car.fuel_type}</span><span>·</span><span>{car.transmission}</span><span>·</span><span>{car.km_driven?.toLocaleString()} km</span></div>
@@ -869,6 +901,8 @@ export default function MyCarsPage() {
 .car-status-badge.available{background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.1)}
 .car-status-badge.sold{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.1)}
 .car-status-badge.reserved{background:rgba(245,158,11,.15);color:#f59e0b;border:1px solid rgba(245,158,11,.1)}
+.car-status-badge.pending{background:rgba(59,130,246,.15);color:#3b82f6;border:1px solid rgba(59,130,246,.1)}
+.car-status-badge.rejected{background:rgba(107,114,128,.15);color:#6b7280;border:1px solid rgba(107,114,128,.1)}
 .car-info{padding:1.25rem}
 .car-info h3{font-family:'Outfit',sans-serif;font-size:1.15rem;font-weight:700;margin:0 0 .25rem;color:var(--db-tx)}
 .car-info h3:hover{color:var(--db-gold);text-decoration:underline}
