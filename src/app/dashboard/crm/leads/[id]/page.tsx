@@ -6,6 +6,7 @@ import Link from 'next/link';
 import DateTimePicker from '@/components/DateTimePicker';
 import { ArrowLeft, Phone, MessageCircle, Mail, Edit, Plus, Check, X, Clock, Car } from 'lucide-react';
 import { LEAD_STAGES, FOLLOW_UP_TYPE_LABELS, formatBudget, type Lead, type LeadStatus, type FollowUp, type CustomerNote, type TestDrive, type Booking } from '@/types/crm';
+import { getProxiedImageUrl } from '@/lib/utils';
 
 const TABS = ['Timeline','Follow-ups','Notes','Test Drives','Booking'];
 
@@ -137,7 +138,7 @@ const renderInspectionReport = (note: string) => {
                             </button>
                           ) : (
                             <div style={{ width: '100%', height: '50px', borderRadius: '4px', overflow: 'hidden', cursor: 'pointer', background: '#f1f5f9' }} onClick={() => window.open(url, '_blank')}>
-                              <img src={url} alt={label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              <img src={getProxiedImageUrl(url)} alt={label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             </div>
                           )}
                         </div>

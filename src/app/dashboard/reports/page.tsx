@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ClipboardList, Check, X, FileText, Search, Calendar, BarChart3, CheckCircle, Clock, ArrowUpRight } from 'lucide-react';
-import { timeAgo } from '@/lib/utils';
+import { timeAgo, getProxiedImageUrl } from '@/lib/utils';
 
 interface DailyReport {
   id: string;
@@ -301,7 +301,7 @@ export default function AdminReportsPage() {
               <div className="report-modal-left">
                 <div className="modal-avatar-container">
                   <img 
-                    src={selectedReport.employees?.avatar_url || '/DEFAULT IMAGE.PNG'} 
+                    src={getProxiedImageUrl(selectedReport.employees?.avatar_url || '/DEFAULT IMAGE.PNG')} 
                     alt={selectedReport.employees?.name}
                     className="modal-emp-avatar-img"
                   />

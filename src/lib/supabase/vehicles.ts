@@ -1,6 +1,14 @@
 import { createClient } from './client';
 import { Vehicle } from '@/data/vehicles';
 
+const proxyUrl = (url: string | null | undefined): string => {
+  if (!url) return '/vehicles/placeholder.png';
+  if (url.startsWith('https://njvgqybtgakgevnxmetf.supabase.co/')) {
+    return `/api/images?url=${encodeURIComponent(url)}`;
+  }
+  return url;
+};
+
 let cachedVehicles: Vehicle[] | null = null;
 let lastFetchTime = 0;
 const CACHE_TTL = 60000; // Cache for 60 seconds
@@ -31,11 +39,11 @@ export async function fetchDbVehicles(forceRefresh = false): Promise<Vehicle[]> 
 
     const mapped = carsList.map((car: any) => {
       const rawImages = car.car_images && car.car_images.length > 0
-        ? car.car_images.sort((a: any, b: any) => a.display_order - b.display_order).map((img: any) => img.image_url)
+        ? car.car_images.sort((a: any, b: any) => a.display_order - b.display_order).map((img: any) => proxyUrl(img.image_url))
         : [];
 
       const images = car.thumbnail
-        ? [car.thumbnail, ...rawImages.filter((img: string) => img !== car.thumbnail)]
+        ? [proxyUrl(car.thumbnail), ...rawImages.filter((img: string) => img !== proxyUrl(car.thumbnail))]
         : (rawImages.length > 0 ? rawImages : ['/vehicles/placeholder.png']);
 
       return {
@@ -103,11 +111,11 @@ export async function fetchDbVehicleById(id: string, forceRefresh = false): Prom
     if (error || !car) return null;
 
     const rawImages = car.car_images && car.car_images.length > 0
-      ? car.car_images.sort((a: any, b: any) => a.display_order - b.display_order).map((img: any) => img.image_url)
+      ? car.car_images.sort((a: any, b: any) => a.display_order - b.display_order).map((img: any) => proxyUrl(img.image_url))
       : [];
 
     const images = car.thumbnail
-      ? [car.thumbnail, ...rawImages.filter((img: string) => img !== car.thumbnail)]
+      ? [proxyUrl(car.thumbnail), ...rawImages.filter((img: string) => img !== proxyUrl(car.thumbnail))]
       : (rawImages.length > 0 ? rawImages : ['/vehicles/placeholder.png']);
 
     const mapped: Vehicle = {

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { motion } from 'framer-motion';
 import { Upload, Image as ImageIcon, Calendar, Clock, User, Search, ArrowUpRight } from 'lucide-react';
-import { formatDateTime, timeAgo } from '@/lib/utils';
+import { formatDateTime, timeAgo, getProxiedImageUrl } from '@/lib/utils';
 
 interface UploadRecord {
   id: string;
@@ -93,7 +93,7 @@ export default function UploadsPage() {
               <Link href={`/vehicle/${u.id}`} className="up-card">
                 <div className="up-thumb">
                   {u.thumbnail ? (
-                    <img src={u.thumbnail} alt={`${u.brand} ${u.model}`} />
+                    <img src={getProxiedImageUrl(u.thumbnail)} alt={`${u.brand} ${u.model}`} />
                   ) : (
                     <div className="up-no-img">
                       <Upload size={24} />

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useEmpContext } from '../layout';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Edit, Trash2, Check, AlertCircle, X, Eye, Upload, Image as ImageIcon, Loader2 } from 'lucide-react';
-import { formatPrice, timeAgo } from '@/lib/utils';
+import { formatPrice, timeAgo, getProxiedImageUrl } from '@/lib/utils';
 import type { Car } from '@/types/database';
 import ConfirmModal from '@/components/ConfirmModal';
 
@@ -489,7 +489,7 @@ export default function MyCarsPage() {
                     {newThumbPreview ? (
                       <img src={newThumbPreview} alt="New Preview" />
                     ) : editCar.thumbnail ? (
-                      <img src={editCar.thumbnail} alt="Current Thumbnail" />
+                      <img src={getProxiedImageUrl(editCar.thumbnail)} alt="Current Thumbnail" />
                     ) : (
                       <><Upload size={24} /><span>Click to change</span></>
                     )}
@@ -521,7 +521,7 @@ export default function MyCarsPage() {
                       if (isDeleted) return null;
                       return (
                         <div key={img.id} className="upl-preview-item">
-                          <img src={img.image_url} alt="" />
+                          <img src={getProxiedImageUrl(img.image_url)} alt="" />
                           <button type="button" onClick={() => setDeletedImageIds(prev => [...prev, img.id])} style={{ background: '#E10613' }}>
                             <X size={14} />
                           </button>
@@ -600,7 +600,7 @@ export default function MyCarsPage() {
               <motion.div key={car.id} className="car-card" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                 <Link href={`/vehicle/${car.id}`} style={{ display: 'block', color: 'inherit', textDecoration: 'none' }}>
                   <div className="car-thumb">
-                    {car.thumbnail ? <img src={car.thumbnail} alt={`${car.brand} ${car.model}`} /> : <div className="car-no-img">No Image</div>}
+                    {car.thumbnail ? <img src={getProxiedImageUrl(car.thumbnail)} alt={`${car.brand} ${car.model}`} /> : <div className="car-no-img">No Image</div>}
                     <div className="car-badges"><span className={`car-status-badge ${car.status}`}>{car.status}</span></div>
                   </div>
                 </Link>

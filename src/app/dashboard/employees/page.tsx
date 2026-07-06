@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserPlus, Search, MoreVertical, X, Shield, Ban, RotateCcw, Trash2, Key, Check, AlertCircle, Copy, CheckCheck, Mail, PhoneCall, CalendarClock, Upload, ShoppingCart, TrendingUp, Camera, ChevronDown, Edit } from 'lucide-react';
 import Image from 'next/image';
-import { formatDate, timeAgo, generateEmployeeId } from '@/lib/utils';
+import { formatDate, timeAgo, generateEmployeeId, getProxiedImageUrl } from '@/lib/utils';
 import type { Employee } from '@/types/database';
 import ConfirmModal from '@/components/ConfirmModal';
 import PromptModal from '@/components/PromptModal';
@@ -389,7 +389,7 @@ export default function EmployeesPage() {
                 <td>
                   <div className="emp-user" onClick={() => handleEmployeeClick(emp)}>
                     <div className="emp-avatar-img-wrap">
-                      <Image src={emp.avatar_url || '/DEFAULT IMAGE.PNG'} alt={emp.name} width={36} height={36} style={{ objectFit: 'cover' }} />
+                      <Image src={getProxiedImageUrl(emp.avatar_url || '/DEFAULT IMAGE.PNG')} alt={emp.name} width={36} height={36} style={{ objectFit: 'cover' }} />
                     </div>
                     <div><span className="emp-name">{emp.name}</span><span className="emp-email">{emp.email}</span></div>
                   </div>
@@ -727,7 +727,7 @@ export default function EmployeesPage() {
                     <div className="founder-card-wrap">
                       <div className="founder-card-photo-container">
                         <Image
-                          src={selectedEmployee.avatar_url || '/DEFAULT IMAGE.PNG'}
+                          src={getProxiedImageUrl(selectedEmployee.avatar_url || '/DEFAULT IMAGE.PNG')}
                           alt={selectedEmployee.name}
                           fill
                           style={{ objectFit: 'cover' }}
@@ -895,7 +895,7 @@ export default function EmployeesPage() {
                                   <div className="modal-car-thumb-wrap">
                                     {car.thumbnail ? (
                                       <Image
-                                        src={car.thumbnail}
+                                        src={getProxiedImageUrl(car.thumbnail)}
                                         alt={`${car.brand} ${car.model}`}
                                         width={180}
                                         height={110}

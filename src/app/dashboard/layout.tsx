@@ -8,6 +8,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Employee } from '@/types/database';
 import AlertModal from '@/components/AlertModal';
+import { getProxiedImageUrl } from '@/lib/utils';
 import {
   LayoutDashboard, Users, Car, ClipboardList, Activity,
   LogOut, Menu, X, ChevronRight, Moon, Sun, Bell, Search,
@@ -347,7 +348,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {updatingAvatar ? (
                   <div className="avatar-spinner-small" style={{ width: 16, height: 16, border: '2px solid var(--db-gold)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
                 ) : (
-                  <Image src={employee?.avatar_url || '/DEFAULT IMAGE.PNG'} alt={employee?.name || 'Avatar'} fill style={{ objectFit: 'cover', borderRadius: '50%' }} />
+                  <Image src={getProxiedImageUrl(employee?.avatar_url || '/DEFAULT IMAGE.PNG')} alt={employee?.name || 'Avatar'} fill style={{ objectFit: 'cover', borderRadius: '50%' }} />
                 )}
               </div>
               <input

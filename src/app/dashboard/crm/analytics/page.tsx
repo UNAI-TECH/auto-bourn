@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
+import { getProxiedImageUrl } from '@/lib/utils';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Trophy, TrendingUp, Target, Users2, Phone } from 'lucide-react';
 import { LEAD_STAGES } from '@/types/crm';
@@ -223,7 +224,7 @@ export default function CRMAnalyticsPage() {
                     <td>
                       <div className="crm-emp-info">
                         <div className="crm-emp-av" style={{ position: 'relative', overflow: 'hidden' }}>
-                          <Image src={emp.avatar_url || '/DEFAULT IMAGE.PNG'} alt={emp.name} fill style={{ objectFit: 'cover', borderRadius: '50%' }} />
+                          <Image src={getProxiedImageUrl(emp.avatar_url || '/DEFAULT IMAGE.PNG')} alt={emp.name} fill style={{ objectFit: 'cover', borderRadius: '50%' }} />
                         </div>
                         <div>
                           <div className="crm-emp-name">{emp.name}</div>

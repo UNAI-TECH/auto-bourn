@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { formatPrice, timeAgo } from '@/lib/utils';
+import { formatPrice, timeAgo, getProxiedImageUrl } from '@/lib/utils';
 import type { Car as CarType, ActivityLog } from '@/types/database';
 
 export default function EmployeeDashboard() {
@@ -310,7 +310,7 @@ export default function EmployeeDashboard() {
           {/* Real Employee Portrait Card */}
           <div className="crextio-profile-card" style={{ border: '1px solid var(--db-bd)' }}>
             <div className="profile-img-container">
-              <Image src={employee?.avatar_url || '/DEFAULT IMAGE.PNG'} alt="Employee Photo" fill className="profile-avatar-img" priority />
+              <Image src={getProxiedImageUrl(employee?.avatar_url || '/DEFAULT IMAGE.PNG')} alt="Employee Photo" fill className="profile-avatar-img" priority />
               <div className="profile-overlay-gradient" />
               <div className="profile-avatar-upload-overlay" onClick={() => fileInputRef.current?.click()}>
                 {uploadingAvatar ? (
@@ -412,7 +412,7 @@ export default function EmployeeDashboard() {
                   <div className="recent-car-item" key={car.id}>
                     <div className="recent-car-thumb">
                       {car.thumbnail ? (
-                        <img src={car.thumbnail} alt={`${car.brand} ${car.model}`} />
+                        <img src={getProxiedImageUrl(car.thumbnail)} alt={`${car.brand} ${car.model}`} />
                       ) : (
                         <div className="no-img">No Image</div>
                       )}

@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { Employee } from '@/types/database';
 import AlertModal from '@/components/AlertModal';
 import { LayoutDashboard, Car, Upload, LogOut, Menu, X, Bell, FileText, AlertCircle, Clock, CheckCircle, PhoneCall, Bookmark, Mail } from 'lucide-react';
+import { getProxiedImageUrl } from '@/lib/utils';
 
 const EmpContext = createContext<{ employee: Employee | null; refreshEmployee?: () => Promise<void>; darkMode: boolean; onReportSubmitted: () => void }>({ employee: null, darkMode: false, onReportSubmitted: () => {} });
 export const useEmpContext = () => useContext(EmpContext);
@@ -331,7 +332,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
               </button>
               <div className="saas-avatar-wrap">
                 <div style={{ position: 'relative', width: 36, height: 36 }}>
-                  <Image src={employee?.avatar_url || '/DEFAULT IMAGE.PNG'} alt={employee?.name || 'Avatar'} fill style={{ objectFit: 'cover', borderRadius: '50%' }} />
+                  <Image src={getProxiedImageUrl(employee?.avatar_url || '/DEFAULT IMAGE.PNG')} alt={employee?.name || 'Avatar'} fill style={{ objectFit: 'cover', borderRadius: '50%' }} />
                 </div>
               </div>
             </div>
@@ -404,7 +405,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
               </button>
 
                 <div style={{ position: 'relative', width: 36, height: 36, borderRadius: '50%', overflow: 'hidden', border: '1px solid var(--db-bd)' }}>
-                  <Image src={employee?.avatar_url || '/DEFAULT IMAGE.PNG'} alt={employee?.name || 'Avatar'} fill style={{ objectFit: 'cover', borderRadius: '50%' }} />
+                  <Image src={getProxiedImageUrl(employee?.avatar_url || '/DEFAULT IMAGE.PNG')} alt={employee?.name || 'Avatar'} fill style={{ objectFit: 'cover', borderRadius: '50%' }} />
                 </div>
             </div>
           </header>

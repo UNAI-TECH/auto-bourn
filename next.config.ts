@@ -24,11 +24,19 @@ const nextConfig: NextConfig = {
   transpilePackages: ["framer-motion", "gsap", "lucide-react", "date-fns", "@supabase/ssr", "@supabase/supabase-js"],
   devIndicators: false,
   images: {
-    unoptimized: true,
+    unoptimized: false,
     remotePatterns: [
       {
         protocol: 'https',
         hostname: '**',
+      },
+    ],
+    localPatterns: [
+      {
+        pathname: '/api/images',
+      },
+      {
+        pathname: '/**',
       },
     ],
   },

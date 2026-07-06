@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Filter, Edit, Trash2, Eye, Star, Check, AlertCircle, X, ChevronLeft, ChevronRight, Upload, ChevronDown } from 'lucide-react';
-import { formatPrice, formatDate, timeAgo } from '@/lib/utils';
+import { formatPrice, formatDate, timeAgo, getProxiedImageUrl } from '@/lib/utils';
 import type { Car } from '@/types/database';
 import ConfirmModal from '@/components/ConfirmModal';
 
@@ -408,7 +408,7 @@ function CarsPageContent() {
           <motion.div key={car.id} className="car-card" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
             <Link href={`/vehicle/${car.id}`} style={{ display: 'block', color: 'inherit', textDecoration: 'none' }}>
               <div className="car-thumb">
-                {car.thumbnail ? <img src={car.thumbnail} alt={`${car.brand} ${car.model}`} /> : <div className="car-no-img">No Image</div>}
+                {car.thumbnail ? <img src={getProxiedImageUrl(car.thumbnail)} alt={`${car.brand} ${car.model}`} /> : <div className="car-no-img">No Image</div>}
                 <div className="car-badges">
                   <span className={`car-status-badge ${car.status}`}>{car.status}</span>
                 </div>
@@ -475,7 +475,7 @@ function CarsPageContent() {
                       </div>
                     ) : editCar.thumbnail ? (
                       <div className="inspo-photo-preview-container rect-preview">
-                        <img src={editCar.thumbnail} alt="Current" className="inspo-photo-preview" />
+                        <img src={getProxiedImageUrl(editCar.thumbnail)} alt="Current" className="inspo-photo-preview" />
                         <div className="inspo-photo-overlay rect-overlay">
                           <span>Change Thumbnail</span>
                         </div>
@@ -561,7 +561,7 @@ function CarsPageContent() {
                     <div className="inspo-gallery-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(70px, 1fr))', gap: '0.5rem', minHeight: '60px', padding: '0.5rem', background: 'var(--db-sf2)', borderRadius: '12px', border: '1px solid var(--db-bd)' }}>
                       {gallery.map(img => (
                         <div key={img.id} className="inspo-gallery-item" style={{ position: 'relative', width: '100%', aspectRatio: '1', borderRadius: '8px', overflow: 'hidden' }}>
-                          <img src={img.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <img src={getProxiedImageUrl(img.image_url)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           <button
                             type="button"
                             className="inspo-gallery-delete"

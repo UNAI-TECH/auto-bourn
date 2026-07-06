@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useEmpContext } from '../../../layout';
 import { LEAD_STAGES, FOLLOW_UP_TYPE_LABELS, type Lead, type LeadStatus, type FollowUp, type CustomerNote, formatBudget } from '@/types/crm';
+import { getProxiedImageUrl } from '@/lib/utils';
 
 const openPdf = (url: string) => {
   if (url.startsWith('data:application/pdf')) {
@@ -140,7 +141,7 @@ const renderInspectionReport = (note: string) => {
                             </button>
                           ) : (
                             <div style={{ width: '100%', height: '50px', borderRadius: '4px', overflow: 'hidden', cursor: 'pointer', background: '#f1f5f9' }} onClick={() => window.open(url, '_blank')}>
-                              <img src={url} alt={label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              <img src={getProxiedImageUrl(url)} alt={label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             </div>
                           )}
                         </div>
@@ -1250,7 +1251,7 @@ ${photosSection}`;
                               >
                                 {isUploaded ? (
                                   <>
-                                    <img src={uploads[key]} alt={dir} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '6px' }} />
+                                    <img src={getProxiedImageUrl(uploads[key])} alt={dir} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '6px' }} />
                                     <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(34, 197, 94, 0.85)', color: '#fff', fontSize: '10px', fontWeight: 750, textAlign: 'center', padding: '2px 0' }}>
                                       {dir} ✓
                                     </div>
@@ -1493,7 +1494,7 @@ ${photosSection}`;
                             >
                               {isUploaded ? (
                                 <>
-                                  <img src={uploads[item.key]} alt={item.label} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '6px' }} />
+                                  <img src={getProxiedImageUrl(uploads[item.key])} alt={item.label} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '6px' }} />
                                   <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(34, 197, 94, 0.85)', color: '#fff', fontSize: '10px', fontWeight: 750, textAlign: 'center', padding: '2px 0' }}>
                                     {item.label} ✓
                                   </div>

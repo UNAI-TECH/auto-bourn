@@ -9,6 +9,7 @@ import Image from 'next/image';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import type { PieLabelRenderProps } from 'recharts';
 import type { DashboardStats, EmployeePerformance, BrandAnalytics } from '@/types/database';
+import { getProxiedImageUrl } from '@/lib/utils';
 
 const BRAND_RED = '#E10613';
 const COLORS = [BRAND_RED, '#22c55e', '#3b82f6', '#f59e0b', '#a855f7', '#06b6d4'];
@@ -502,7 +503,7 @@ export default function DashboardOverview() {
                     <div className="founder-card-wrap">
                       <div className="founder-card-photo-container">
                         <Image
-                          src={selectedEmployee.avatar_url || '/DEFAULT IMAGE.PNG'}
+                          src={getProxiedImageUrl(selectedEmployee.avatar_url || '/DEFAULT IMAGE.PNG')}
                           alt={selectedEmployee.name}
                           fill
                           style={{ objectFit: 'cover' }}
@@ -637,7 +638,7 @@ export default function DashboardOverview() {
                                   <div className="modal-car-thumb-wrap">
                                     {car.thumbnail ? (
                                       <Image
-                                        src={car.thumbnail}
+                                        src={getProxiedImageUrl(car.thumbnail)}
                                         alt={`${car.brand} ${car.model}`}
                                         width={180}
                                         height={110}

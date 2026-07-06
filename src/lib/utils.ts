@@ -60,3 +60,11 @@ export function generateEmployeeId(): string {
   const num = Math.floor(1000 + Math.random() * 9000);
   return `${prefix}${num}`;
 }
+
+export function getProxiedImageUrl(url: string | null | undefined): string {
+  if (!url) return '/vehicles/placeholder.png';
+  if (url.startsWith('https://njvgqybtgakgevnxmetf.supabase.co/')) {
+    return `/api/images?url=${encodeURIComponent(url)}`;
+  }
+  return url;
+}
