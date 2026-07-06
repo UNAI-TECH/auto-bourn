@@ -12,7 +12,7 @@ import { getProxiedImageUrl } from '@/lib/utils';
 import {
   LayoutDashboard, Users, Car, ClipboardList, Activity,
   LogOut, Menu, X, ChevronRight, Moon, Sun, Bell, Search,
-  Users2, CalendarClock, BarChart3, PhoneCall, Bookmark, Mail, FileText
+  Users2, CalendarClock, BarChart3, PhoneCall, Bookmark, Mail, FileText, ClipboardCheck
 } from 'lucide-react';
 
 interface DashboardContextType {
@@ -30,6 +30,7 @@ export const useDashboard = () => useContext(DashboardContext);
 const navItems = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
   { href: '/dashboard/employees', label: 'Employees', icon: Users },
+  { href: '/dashboard/attendance', label: 'Attendance', icon: ClipboardCheck },
   { href: '/dashboard/cars', label: 'Cars', icon: Car },
   { href: '/dashboard/uploads', label: 'Upload Tracking', icon: ClipboardList },
   { href: '/dashboard/bookings', label: 'Reservations', icon: Bookmark },
