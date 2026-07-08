@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Clock, CheckCircle2, AlertTriangle, ArrowRight, Filter, Phone, MessageCircle, Calendar, X, User } from 'lucide-react';
 import { FOLLOW_UP_TYPE_LABELS, type FollowUp } from '@/types/crm';
 
-type Section = 'today' | 'missed' | 'upcoming';
+type Section = 'today' | 'missed' | 'upcoming' | 'pending';
 
 export default function FollowUpsPage() {
   const [section, setSection] = useState<Section>('today');
@@ -35,8 +35,10 @@ export default function FollowUpsPage() {
       q = q.eq('status','pending').gte('scheduled_at', todayStart.toISOString()).lte('scheduled_at', todayEnd.toISOString());
     } else if (section === 'missed') {
       q = q.eq('status','pending').lt('scheduled_at', todayStart.toISOString());
-    } else {
+    } else if (section === 'upcoming') {
       q = q.eq('status','pending').gt('scheduled_at', todayEnd.toISOString());
+    } else if (section === 'pending') {
+      q = q.eq('status','pending');
     }
 
     if (typeFilter !== 'all') q = q.eq('follow_up_type', typeFilter);
@@ -123,6 +125,7 @@ export default function FollowUpsPage() {
     today: { label:"Today's Follow-ups", icon: Clock, color:'#f59e0b' },
     missed: { label:'Missed Follow-ups', icon: AlertTriangle, color:'#E10613' },
     upcoming: { label:'Upcoming', icon: ArrowRight, color:'#6366f1' },
+    pending: { label:'Pending', icon: Calendar, color:'#a855f7' },
   };
 
   return (
@@ -206,7 +209,7 @@ export default function FollowUpsPage() {
                     <button onClick={() => complete(fu.id, fu.lead_id)} className="crm-action-badge done">
                       <CheckCircle2 size={12} /> Done
                     </button>
-                    {section === 'today' && (
+                    {(section === 'today' || section === 'pending') && (
                       <button onClick={() => markMissed(fu.id)} className="crm-action-badge miss">
                         <X size={12} /> Miss
                       </button>

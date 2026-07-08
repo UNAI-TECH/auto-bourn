@@ -20,7 +20,7 @@ interface CredentialsModal {
 }
 
 export default function EmployeesPage() {
-  const [employees, setEmployees] = useState<(Employee & { total_uploads?: number; total_sold?: number; total_leads?: number; last_upload?: string | null })[]>([]);
+  const [employees, setEmployees] = useState<(Employee & { total_uploads?: number; total_sold?: number; total_leads?: number; total_completed_leads?: number; last_upload?: string | null })[]>([]);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest'>('newest');
@@ -122,7 +122,19 @@ export default function EmployeesPage() {
         const { count: sold } = await supabase.from('cars').select('id', { count: 'exact', head: true }).eq('employee_id', emp.id).eq('status', 'sold');
         const { data: last } = await supabase.from('cars').select('created_at').eq('employee_id', emp.id).order('created_at', { ascending: false }).limit(1);
         const { count: leadsCount } = await supabase.from('leads').select('id', { count: 'exact', head: true }).eq('assigned_to', emp.id);
-        return { ...emp, total_uploads: uploads || 0, total_sold: sold || 0, total_leads: leadsCount || 0, last_upload: last?.[0]?.created_at || null };
+        const { count: completedLeadsCount } = await supabase
+          .from('leads')
+          .select('id', { count: 'exact', head: true })
+          .eq('assigned_to', emp.id)
+          .in('lead_status', ['booking_done', 'sold', 'lost']);
+        return { 
+          ...emp, 
+          total_uploads: uploads || 0, 
+          total_sold: sold || 0, 
+          total_leads: leadsCount || 0, 
+          total_completed_leads: completedLeadsCount || 0,
+          last_upload: last?.[0]?.created_at || null 
+        };
       }));
       setEmployees(enriched);
     }
@@ -397,12 +409,12 @@ export default function EmployeesPage() {
       {/* Table */}
       <div className="emp-table-wrap">
         <table className="emp-table">
-          <thead><tr><th>Employee</th><th>Lead</th><th>ID</th><th>Phone</th><th>Uploads</th><th>Sold</th><th>Last Upload</th><th>Status</th><th></th></tr></thead>
+          <thead><tr><th>Employee</th><th>ID</th><th>Phone</th><th>Assigned</th><th>Completed</th><th>Uploads</th><th>Sold</th><th>Recent</th><th>Status</th><th></th></tr></thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={9} className="emp-empty" style={{ fontStyle: 'normal' }}>Loading employee list...</td></tr>
+              <tr><td colSpan={10} className="emp-empty" style={{ fontStyle: 'normal' }}>Loading employee list...</td></tr>
             ) : filtered.length === 0 ? (
-              <tr><td colSpan={9} className="emp-empty">No employees found</td></tr>
+              <tr><td colSpan={10} className="emp-empty">No employees found</td></tr>
             ) : filtered.map(emp => (
               <tr key={emp.id}>
                 <td>
@@ -413,6 +425,8 @@ export default function EmployeesPage() {
                     <div><span className="emp-name">{emp.name}</span></div>
                   </div>
                 </td>
+                <td><span className="emp-id-badge">{emp.employee_id}</span></td>
+                <td>{emp.phone || '—'}</td>
                 <td className="emp-num">
                   <span style={{ 
                     display: 'inline-flex',
@@ -430,8 +444,23 @@ export default function EmployeesPage() {
                     {emp.total_leads || 0}
                   </span>
                 </td>
-                <td><span className="emp-id-badge">{emp.employee_id}</span></td>
-                <td>{emp.phone || '—'}</td>
+                <td className="emp-num">
+                  <span style={{ 
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minWidth: '24px',
+                    height: '24px',
+                    borderRadius: '6px',
+                    background: 'rgba(34, 197, 94, 0.05)',
+                    color: '#22c55e',
+                    fontWeight: 700,
+                    fontSize: '0.8125rem',
+                    padding: '0 6px'
+                  }}>
+                    {emp.total_completed_leads || 0}
+                  </span>
+                </td>
                 <td className="emp-num emp-metric-clickable" onClick={() => handleEmployeeClick(emp, 'cars', 'all')} title="Click to view all uploads">
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '90px' }}>
                     <span style={{ fontWeight: 700 }}>{emp.total_uploads}</span>
@@ -1359,7 +1388,7 @@ export default function EmployeesPage() {
 .emp-tab.active{background:var(--db-gd);color:var(--db-gold);font-weight:600}
 .emp-table-wrap{background:var(--db-sf);border:1px solid var(--db-bd);border-radius:14px;overflow-x:auto;min-height:550px}
 .emp-table{width:100%;border-collapse:collapse;font-size:.875rem}
-.emp-table th{text-align:left;padding:.875rem 1rem;color:var(--db-tx3);font-weight:500;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--db-bd)}
+.emp-table th{text-align:left;padding:.875rem 1rem;color:var(--db-tx3);font-weight:500;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--db-bd);white-space:nowrap}
 .emp-table td{padding:.875rem 1rem;border-bottom:1px solid var(--db-bd);vertical-align:middle}
 .emp-table tr:last-child td{border-bottom:0}
 .emp-table tr:hover{background:var(--db-sf2)}
