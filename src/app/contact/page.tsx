@@ -40,6 +40,10 @@ export default function ContactPage() {
   const [email, setEmail] = useState('');
   const [interest, setInterest] = useState('Select');
   const [message, setMessage] = useState('');
+  const [exchangeBrand, setExchangeBrand] = useState('');
+  const [exchangeYear, setExchangeYear] = useState('');
+  const [exchangeKms, setExchangeKms] = useState('');
+  const [exchangeExpectedPrice, setExchangeExpectedPrice] = useState('');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -49,6 +53,8 @@ export default function ContactPage() {
         setInterest('Insurance');
       } else if (interestParam === 'Finance') {
         setInterest('Finance');
+      } else if (interestParam?.toLowerCase() === 'exchange') {
+        setInterest('Exchange Cars');
       }
     }
   }, []);
@@ -91,8 +97,16 @@ export default function ContactPage() {
       showAlert('Input Required', 'Name and Phone are required.', 'error');
       return;
     }
+    if (interest === 'Exchange Cars' && (!exchangeBrand.trim() || !exchangeYear.trim() || !exchangeKms.trim())) {
+      showAlert('Input Required', 'Please fill in your exchange car details.', 'error');
+      return;
+    }
     setSubmitting(true);
     try {
+      const notesContent = interest === 'Exchange Cars'
+        ? `Interest: Exchange Cars\nExchange Car Details:\n- Brand & Model: ${exchangeBrand}\n- Year: ${exchangeYear}\n- Kilometers: ${exchangeKms}\n- Expected Price: ${exchangeExpectedPrice || 'N/A'}\n\nMessage: ${message || 'No message provided.'}`
+        : `Interest: ${interest}\nMessage: ${message || 'No message provided.'}`;
+
       const response = await fetch('/api/leads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -103,7 +117,7 @@ export default function ContactPage() {
           source: 'website',
           interested_car: interest !== 'Select' ? `Get In Touch: ${interest}` : 'Get In Touch Message',
           lead_status: 'new',
-          notes: `Interest: ${interest}\nMessage: ${message || 'No message provided.'}`,
+          notes: notesContent,
         }),
       });
 
@@ -113,12 +127,21 @@ export default function ContactPage() {
         console.error('Error submitting contact form:', resData.error);
         showAlert('Submission Error', 'There was a problem sending your message: ' + (resData.error || 'Server error'), 'error');
       } else {
-        const waText = `Hi Auto Bourn, I want to get in touch:
+        let waText = `Hi Auto Bourn, I want to get in touch:
 *Name:* ${name}
 *Phone:* ${phone}
 *Email:* ${email || 'N/A'}
-*Interest:* ${interest}
-*Message:* ${message || 'No message provided.'}`;
+*Interest:* ${interest}`;
+
+        if (interest === 'Exchange Cars') {
+          waText += `\n\n*Exchange Car Details:*
+- Brand & Model: ${exchangeBrand}
+- Year: ${exchangeYear}
+- Kilometers: ${exchangeKms}
+- Expected Price: ${exchangeExpectedPrice || 'N/A'}`;
+        }
+
+        waText += `\n\n*Message:* ${message || 'No message provided.'}`;
 
         const waUrl = `https://wa.me/919176777222?text=${encodeURIComponent(waText)}`;
 
@@ -133,6 +156,10 @@ export default function ContactPage() {
             setEmail('');
             setInterest('Select');
             setMessage('');
+            setExchangeBrand('');
+            setExchangeYear('');
+            setExchangeKms('');
+            setExchangeExpectedPrice('');
             setSuccess(true);
             setTimeout(() => setSuccess(false), 5000);
           }
@@ -222,12 +249,46 @@ export default function ContactPage() {
                       <option>Select</option>
                       <option>Buy a Vehicle</option>
                       <option>Sell a Vehicle</option>
+                      <option>Exchange Cars</option>
                       <option>Finance</option>
                       <option>Insurance</option>
                       <option>Test Drive</option>
                       <option>General Inquiry</option>
                     </select>
                   </div>
+                  <AnimatePresence>
+                    {interest === 'Exchange Cars' && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.3 }}
+                        style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: '1rem', border: '1px solid #ECECEC', padding: '1.25rem', borderRadius: '14px', background: '#FFFFFF', marginTop: '0.25rem', marginBottom: '0.25rem' }}
+                      >
+                        <h4 style={{ margin: 0, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#E10613', fontWeight: 700 }}>Your Car's Details</h4>
+                        <div className="contact-name-phone-grid">
+                          <div>
+                            <label style={{ fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#8A8A8A', display: 'block', marginBottom: '0.5rem' }}>Brand & Model *</label>
+                            <input required type="text" placeholder="e.g. Maruti Swift" style={inputStyle} value={exchangeBrand} onChange={e => setExchangeBrand(e.target.value)} />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#8A8A8A', display: 'block', marginBottom: '0.5rem' }}>Manufacturing Year *</label>
+                            <input required type="number" placeholder="e.g. 2018" style={inputStyle} value={exchangeYear} onChange={e => setExchangeYear(e.target.value)} />
+                          </div>
+                        </div>
+                        <div className="contact-name-phone-grid">
+                          <div>
+                            <label style={{ fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#8A8A8A', display: 'block', marginBottom: '0.5rem' }}>Kilometers Driven *</label>
+                            <input required type="text" placeholder="e.g. 45,000 km" style={inputStyle} value={exchangeKms} onChange={e => setExchangeKms(e.target.value)} />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#8A8A8A', display: 'block', marginBottom: '0.5rem' }}>Expected Price (Optional)</label>
+                            <input type="text" placeholder="e.g. ₹ 5,00,000" style={inputStyle} value={exchangeExpectedPrice} onChange={e => setExchangeExpectedPrice(e.target.value)} />
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                   <div>
                     <label style={{ fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#8A8A8A', display: 'block', marginBottom: '0.5rem' }}>Message</label>
                     <textarea rows={4} placeholder="How can we help?" style={{ ...inputStyle, resize: 'vertical' }} value={message} onChange={e => setMessage(e.target.value)} />

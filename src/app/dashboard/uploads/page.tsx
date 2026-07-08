@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
-import { motion } from 'framer-motion';
-import { Upload, Image as ImageIcon, Calendar, Clock, User, Search, ArrowUpRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Upload, Image as ImageIcon, Calendar, Clock, User, Search, ArrowUpRight, Check, X } from 'lucide-react';
 import { formatDateTime, timeAgo, getProxiedImageUrl } from '@/lib/utils';
 
 interface UploadRecord {
@@ -12,11 +12,13 @@ interface UploadRecord {
   brand: string;
   model: string;
   variant: string;
+  year: number;
   created_at: string;
   updated_at: string;
   sold_at: string | null;
   status: string;
   thumbnail: string;
+  employee_id: string | null;
   employee: { name: string; employee_id: string } | null;
   image_count: number;
 }
@@ -25,26 +27,117 @@ export default function UploadsPage() {
   const [uploads, setUploads] = useState<UploadRecord[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [rejectTarget, setRejectTarget] = useState<UploadRecord | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+
   const supabase = createClient();
 
-  useEffect(() => {
-    const fetch = async () => {
-      const { data: cars } = await supabase
+  const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const fetchUploads = async () => {
+    setLoading(true);
+    try {
+      const { data: cars, error } = await supabase
         .from('cars')
-        .select('id, brand, model, variant, created_at, updated_at, sold_at, status, thumbnail, employee:employees!employee_id(name, employee_id)')
+        .select('id, brand, model, variant, year, created_at, updated_at, sold_at, status, thumbnail, employee_id, employee:employees!employee_id(name, employee_id)')
         .order('created_at', { ascending: false });
+
+      if (error) throw error;
 
       if (cars) {
         const enriched = await Promise.all(cars.map(async (car) => {
-          const { count } = await supabase.from('car_images').select('id', { count: 'exact', head: true }).eq('car_id', car.id);
-          return { ...car, image_count: count || 0, employee: car.employee as unknown as { name: string; employee_id: string } | null };
+          const { count } = await supabase
+            .from('car_images')
+            .select('id', { count: 'exact', head: true })
+            .eq('car_id', car.id);
+          return {
+            ...car,
+            image_count: count || 0,
+            employee: car.employee as unknown as { name: string; employee_id: string } | null
+          };
         }));
         setUploads(enriched);
       }
+    } catch (err: any) {
+      console.error('Error fetching uploads:', err);
+      showToast(err.message, 'error');
+    } finally {
       setLoading(false);
-    };
-    fetch();
+    }
+  };
+
+  useEffect(() => {
+    fetchUploads();
   }, [supabase]);
+
+  const approveCar = async (car: UploadRecord) => {
+    try {
+      const { error } = await supabase
+        .from('cars')
+        .update({ status: 'available', rejection_reason: null })
+        .eq('id', car.id);
+
+      if (error) throw error;
+
+      // Send notification to employee
+      if (car.employee_id) {
+        await supabase.from('notifications').insert({
+          recipient_employee_id: car.employee_id,
+          recipient_role: 'employee',
+          type: 'car_approved',
+          title: '✅ Car Upload Approved',
+          message: `Your request to upload ${car.brand} ${car.model} (${car.year}) has been approved and is now live!`,
+          metadata: { car_id: car.id }
+        });
+      }
+
+      showToast('Car approved and published successfully');
+      fetchUploads();
+    } catch (err: any) {
+      showToast(err.message, 'error');
+    }
+  };
+
+  const handleRejectConfirm = async () => {
+    if (!rejectTarget) return;
+    if (!rejectionReason.trim()) {
+      showToast('Rejection reason is required', 'error');
+      return;
+    }
+
+    try {
+      // 1. Delete from Supabase
+      const { error } = await supabase
+        .from('cars')
+        .delete()
+        .eq('id', rejectTarget.id);
+
+      if (error) throw error;
+
+      // 2. Notify employee
+      if (rejectTarget.employee_id) {
+        await supabase.from('notifications').insert({
+          recipient_employee_id: rejectTarget.employee_id,
+          recipient_role: 'employee',
+          type: 'car_rejected',
+          title: '❌ Car Upload Rejected',
+          message: `your uploard was rejected by admin. Vehicle: ${rejectTarget.brand} ${rejectTarget.model} (${rejectTarget.year}). Reason: ${rejectionReason}`,
+          metadata: { brand: rejectTarget.brand, model: rejectTarget.model, year: rejectTarget.year, rejection_reason: rejectionReason }
+        });
+      }
+
+      showToast('Car listing rejected and deleted successfully');
+      setRejectTarget(null);
+      setRejectionReason('');
+      fetchUploads();
+    } catch (err: any) {
+      showToast(err.message, 'error');
+    }
+  };
 
   const filtered = uploads.filter(u =>
     u.brand.toLowerCase().includes(search.toLowerCase()) ||
@@ -90,7 +183,7 @@ export default function UploadsPage() {
               animate={{ opacity: 1, y: 0 }} 
               transition={{ delay: i * 0.03 }}
             >
-              <Link href={`/vehicle/${u.id}`} className="up-card">
+              <div className="up-card">
                 <div className="up-thumb">
                   {u.thumbnail ? (
                     <img src={getProxiedImageUrl(u.thumbnail)} alt={`${u.brand} ${u.model}`} />
@@ -103,14 +196,18 @@ export default function UploadsPage() {
                 <div className="up-body">
                   <div className="up-main-header">
                     <div className="up-title-block">
-                      <h3>{u.brand} {u.model}</h3>
-                      <p className="up-variant">{u.variant}</p>
+                      <h3 style={{ margin: 0 }}>
+                        <Link href={`/vehicle/${u.id}`} className="up-title-link">
+                          {u.brand} {u.model}
+                        </Link>
+                      </h3>
+                      <p className="up-variant">{u.variant} · {u.year}</p>
                     </div>
                     <div className="up-badge-container" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                       <span className={`up-status-badge ${u.status}`}>{u.status}</span>
-                      <div className="up-redirect-arrow">
+                      <Link href={`/vehicle/${u.id}`} className="up-redirect-arrow">
                         <ArrowUpRight size={18} />
-                      </div>
+                      </Link>
                     </div>
                   </div>
 
@@ -146,13 +243,66 @@ export default function UploadsPage() {
                         </div>
                       )}
                     </div>
+
+                    {u.status === 'pending' && (
+                      <div className="up-action-buttons">
+                        <button onClick={() => approveCar(u)} className="btn-approve">
+                          <Check size={14} style={{ marginRight: '4px' }} /> Accept Listing
+                        </button>
+                        <button onClick={() => setRejectTarget(u)} className="btn-reject">
+                          <X size={14} style={{ marginRight: '4px' }} /> Reject Request
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
-              </Link>
+              </div>
             </motion.div>
           ))
         )}
       </div>
+
+      {/* Reject Modal */}
+      <AnimatePresence>
+        {rejectTarget && (
+          <div className="modal-backdrop" onClick={() => setRejectTarget(null)}>
+            <motion.div 
+              className="reject-modal" 
+              onClick={e => e.stopPropagation()}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+            >
+              <h3>Reject Car Upload Request</h3>
+              <p>Please enter the reason for rejecting <strong>{rejectTarget.brand} {rejectTarget.model}</strong>:</p>
+              <textarea
+                value={rejectionReason}
+                onChange={e => setRejectionReason(e.target.value)}
+                placeholder="Enter rejection reason here..."
+                rows={4}
+              />
+              <div className="reject-modal-actions">
+                <button className="btn-modal-cancel" onClick={() => setRejectTarget(null)}>Cancel</button>
+                <button className="btn-modal-confirm" onClick={handleRejectConfirm}>Reject & Delete</button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div 
+            className={`db-toast ${toast.type}`}
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 50 }}
+          >
+            {toast.msg}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <style jsx global>{`
         .up-list {
@@ -187,8 +337,9 @@ export default function UploadsPage() {
           border: 1px solid var(--db-bd, rgba(255, 255, 255, 0.08));
           border-radius: 16px;
           display: flex;
+          align-items: stretch;
+          min-height: 160px;
           overflow: hidden;
-          text-decoration: none;
           color: inherit;
           transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
           position: relative;
@@ -201,13 +352,16 @@ export default function UploadsPage() {
         }
         .up-thumb {
           width: 240px;
-          min-height: 150px;
+          min-height: 160px;
           background: var(--db-sf2, #18181c);
           flex-shrink: 0;
           position: relative;
           overflow: hidden;
         }
         .up-thumb img {
+          position: absolute;
+          top: 0;
+          left: 0;
           width: 100%;
           height: 100%;
           object-fit: cover;
@@ -217,10 +371,14 @@ export default function UploadsPage() {
           transform: scale(1.05);
         }
         .up-no-img {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
           display: flex;
           align-items: center;
           justify-content: center;
-          height: 100%;
           color: var(--db-tx3, #71717a);
           background: var(--db-sf2);
         }
@@ -238,21 +396,21 @@ export default function UploadsPage() {
           align-items: flex-start;
           gap: 1rem;
         }
-        .up-title-block h3 {
+        .up-title-link {
+          text-decoration: none;
+          color: var(--db-tx, #f4f4f5);
           font-family: 'Outfit', sans-serif;
           font-size: 1.2rem;
           font-weight: 600;
-          margin: 0 0 0.25rem 0;
-          color: var(--db-tx, #f4f4f5);
           transition: color 0.2s;
         }
-        .up-card:hover .up-title-block h3 {
+        .up-title-link:hover {
           color: var(--db-gold, #c5a880);
         }
         .up-variant {
           color: var(--db-tx2, #a1a1aa);
           font-size: 0.875rem;
-          margin: 0;
+          margin: 4px 0 0 0;
         }
         .up-status-badge {
           font-size: 0.75rem;
@@ -266,6 +424,16 @@ export default function UploadsPage() {
           background: rgba(16, 185, 129, 0.1);
           color: #10b981;
           border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+        .up-status-badge.pending {
+          background: rgba(59, 130, 246, 0.1);
+          color: #3b82f6;
+          border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+        .up-status-badge.rejected {
+          background: rgba(107, 114, 128, 0.15);
+          color: #6b7280;
+          border: 1px solid rgba(107, 114, 128, 0.1);
         }
         .up-status-badge.reserved {
           background: rgba(245, 158, 11, 0.1);
@@ -326,6 +494,127 @@ export default function UploadsPage() {
           padding: 0.25rem 0.6rem;
           border-radius: 6px;
           border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        .up-action-buttons {
+          display: flex;
+          gap: 0.75rem;
+          margin-top: 0.75rem;
+          border-top: 1px solid var(--db-bd);
+          padding-top: 0.75rem;
+        }
+        .btn-approve {
+          background: #10b981;
+          color: white;
+          border: none;
+          padding: 0.5rem 1rem;
+          border-radius: 8px;
+          font-weight: 600;
+          font-size: 0.8125rem;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          transition: background 0.2s;
+        }
+        .btn-approve:hover {
+          background: #0d9668;
+        }
+        .btn-reject {
+          background: #ef4444;
+          color: white;
+          border: none;
+          padding: 0.5rem 1rem;
+          border-radius: 8px;
+          font-weight: 600;
+          font-size: 0.8125rem;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          transition: background 0.2s;
+        }
+        .btn-reject:hover {
+          background: #dc2626;
+        }
+        .modal-backdrop {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.6);
+          backdrop-filter: blur(4px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 100;
+        }
+        .reject-modal {
+          background: var(--db-sf, #121214);
+          border: 1px solid var(--db-bd);
+          border-radius: 16px;
+          padding: 1.5rem;
+          width: 90%;
+          max-width: 450px;
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+        .reject-modal h3 {
+          font-family: 'Outfit', sans-serif;
+          margin: 0;
+          color: var(--db-tx);
+          font-size: 1.25rem;
+          font-weight: 700;
+        }
+        .reject-modal p {
+          font-size: 0.875rem;
+          color: var(--db-tx2);
+          margin: 0;
+        }
+        .reject-modal textarea {
+          width: 100%;
+          background: var(--db-sf2);
+          border: 1px solid var(--db-bd);
+          border-radius: 8px;
+          padding: 0.75rem;
+          color: var(--db-tx);
+          font-family: inherit;
+          resize: none;
+        }
+        .reject-modal textarea:focus {
+          border-color: var(--db-gold);
+          outline: none;
+        }
+        .reject-modal-actions {
+          display: flex;
+          justify-content: flex-end;
+          gap: 0.75rem;
+          margin-top: 0.5rem;
+        }
+        .btn-modal-cancel {
+          background: transparent;
+          border: 1px solid var(--db-bd);
+          color: var(--db-tx2);
+          padding: 0.5rem 1.125rem;
+          border-radius: 8px;
+          font-size: 0.8125rem;
+          font-weight: 600;
+          cursor: pointer;
+        }
+        .btn-modal-cancel:hover {
+          background: rgba(255, 255, 255, 0.03);
+        }
+        .btn-modal-confirm {
+          background: #ef4444;
+          border: none;
+          color: white;
+          padding: 0.5rem 1.125rem;
+          border-radius: 8px;
+          font-size: 0.8125rem;
+          font-weight: 600;
+          cursor: pointer;
+        }
+        .btn-modal-confirm:hover {
+          background: #dc2626;
         }
         .up-skel {
           height: 160px;

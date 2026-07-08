@@ -29,17 +29,18 @@ export async function GET(
 
     // 3. Fetch lead details using service role client to bypass client RLS for unassigned leads
     const serviceClient = await createServiceRoleClient();
-    const [{ data: lead, error: leadError }, { data: followUps }, { data: notes }] = await Promise.all([
+    const [{ data: lead, error: leadError }, { data: followUps }, { data: notes }, { data: inspection }] = await Promise.all([
       serviceClient.from('leads').select('*, assigned_employee:employees!assigned_to(name)').eq('id', id).maybeSingle(),
       serviceClient.from('follow_ups').select('*, employee:employees!employee_id(name)').eq('lead_id', id).order('scheduled_at', { ascending: false }),
       serviceClient.from('customer_notes').select('*, employee:employees!employee_id(name)').eq('lead_id', id).order('created_at', { ascending: false }),
+      serviceClient.from('car_inspections').select('*').eq('lead_id', id).maybeSingle(),
     ]);
 
     if (leadError || !lead) {
       return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, lead, followUps, notes });
+    return NextResponse.json({ success: true, lead, followUps, notes, inspection });
   } catch (err: any) {
     console.error('Error in leads/[id] API:', err);
     return NextResponse.json({ error: err.message || 'Internal Server Error' }, { status: 500 });
@@ -204,12 +205,28 @@ export async function PATCH(
         uploads: inspectionData.uploads || {}
       };
 
-      const { error: inspectErr } = await serviceClient
+      const { data: existingInspection } = await serviceClient
         .from('car_inspections')
-        .insert(dbInspection);
+        .select('id')
+        .eq('lead_id', id)
+        .maybeSingle();
+
+      let inspectErr;
+      if (existingInspection) {
+        const { error } = await serviceClient
+          .from('car_inspections')
+          .update(dbInspection)
+          .eq('id', existingInspection.id);
+        inspectErr = error;
+      } else {
+        const { error } = await serviceClient
+          .from('car_inspections')
+          .insert(dbInspection);
+        inspectErr = error;
+      }
 
       if (inspectErr) {
-        console.error('Error inserting structured inspection:', inspectErr);
+        console.error('Error saving structured inspection:', inspectErr);
       }
     }
 

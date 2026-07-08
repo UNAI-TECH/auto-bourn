@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UserPlus, Search, MoreVertical, X, Shield, Ban, RotateCcw, Trash2, Key, Check, AlertCircle, Copy, CheckCheck, Mail, PhoneCall, CalendarClock, Upload, ShoppingCart, TrendingUp, Camera, ChevronDown, Edit, Car } from 'lucide-react';
+import { UserPlus, Search, MoreVertical, X, Shield, Ban, RotateCcw, Trash2, Key, Check, AlertCircle, Copy, CheckCheck, Mail, PhoneCall, CalendarClock, Upload, ShoppingCart, TrendingUp, Camera, ChevronDown, Edit, Car, Eye, EyeOff } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { formatDate, timeAgo, generateEmployeeId, getProxiedImageUrl } from '@/lib/utils';
@@ -20,7 +20,7 @@ interface CredentialsModal {
 }
 
 export default function EmployeesPage() {
-  const [employees, setEmployees] = useState<(Employee & { total_uploads?: number; total_sold?: number; last_upload?: string | null })[]>([]);
+  const [employees, setEmployees] = useState<(Employee & { total_uploads?: number; total_sold?: number; total_leads?: number; last_upload?: string | null })[]>([]);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest'>('newest');
@@ -37,6 +37,7 @@ export default function EmployeesPage() {
   const [copied, setCopied] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [showAddPassword, setShowAddPassword] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
 
@@ -53,6 +54,7 @@ export default function EmployeesPage() {
   const [modalLoading, setModalLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'cars' | 'leads'>('profile');
   const [employeeCars, setEmployeeCars] = useState<any[]>([]);
+  const [carFilter, setCarFilter] = useState<'all' | 'available' | 'sold' | 'reserved'>('all');
   const [employeeLeads, setEmployeeLeads] = useState<any[]>([]);
   const detailFileInputRef = useRef<HTMLInputElement>(null);
   const [updatingAvatar, setUpdatingAvatar] = useState(false);
@@ -119,7 +121,8 @@ export default function EmployeesPage() {
         const { count: uploads } = await supabase.from('cars').select('id', { count: 'exact', head: true }).eq('employee_id', emp.id);
         const { count: sold } = await supabase.from('cars').select('id', { count: 'exact', head: true }).eq('employee_id', emp.id).eq('status', 'sold');
         const { data: last } = await supabase.from('cars').select('created_at').eq('employee_id', emp.id).order('created_at', { ascending: false }).limit(1);
-        return { ...emp, total_uploads: uploads || 0, total_sold: sold || 0, last_upload: last?.[0]?.created_at || null };
+        const { count: leadsCount } = await supabase.from('leads').select('id', { count: 'exact', head: true }).eq('assigned_to', emp.id);
+        return { ...emp, total_uploads: uploads || 0, total_sold: sold || 0, total_leads: leadsCount || 0, last_upload: last?.[0]?.created_at || null };
       }));
       setEmployees(enriched);
     }
@@ -132,13 +135,14 @@ export default function EmployeesPage() {
     setTimeout(() => setCopied(null), 2000);
   };
 
-  const handleEmployeeClick = async (emp: any) => {
+  const handleEmployeeClick = async (emp: any, defaultTab: 'profile' | 'cars' | 'leads' = 'profile', defaultCarFilter: 'all' | 'available' | 'sold' | 'reserved' = 'all') => {
     setModalLoading(true);
     setShowModal(true);
     setSelectedEmployee(emp);
     setEmployeeCars([]);
     setEmployeeLeads([]);
-    setActiveTab('profile');
+    setActiveTab(defaultTab);
+    setCarFilter(defaultCarFilter);
 
     try {
       const [carsRes, leadsRes] = await Promise.all([
@@ -183,6 +187,7 @@ export default function EmployeesPage() {
     setShowAdd(false);
     setAvatarFile(null);
     setAvatarPreview(null);
+    setShowAddPassword(false);
     setForm({ name: '', email: '', phone: '', password: '', employee_id: generateEmployeeId(), role: 'employee' });
     setRoleDropdownOpen(false);
   };
@@ -392,12 +397,12 @@ export default function EmployeesPage() {
       {/* Table */}
       <div className="emp-table-wrap">
         <table className="emp-table">
-          <thead><tr><th>Employee</th><th>Role</th><th>ID</th><th>Phone</th><th>Joined</th><th>Uploads</th><th>Sold</th><th>Last Upload</th><th>Status</th><th></th></tr></thead>
+          <thead><tr><th>Employee</th><th>Lead</th><th>ID</th><th>Phone</th><th>Uploads</th><th>Sold</th><th>Last Upload</th><th>Status</th><th></th></tr></thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={10} className="emp-empty" style={{ fontStyle: 'normal' }}>Loading employee list...</td></tr>
+              <tr><td colSpan={9} className="emp-empty" style={{ fontStyle: 'normal' }}>Loading employee list...</td></tr>
             ) : filtered.length === 0 ? (
-              <tr><td colSpan={10} className="emp-empty">No employees found</td></tr>
+              <tr><td colSpan={9} className="emp-empty">No employees found</td></tr>
             ) : filtered.map(emp => (
               <tr key={emp.id}>
                 <td>
@@ -405,18 +410,29 @@ export default function EmployeesPage() {
                     <div className="emp-avatar-img-wrap">
                       <Image src={getProxiedImageUrl(emp.avatar_url || '/DEFAULT IMAGE.PNG')} alt={emp.name} width={36} height={36} style={{ objectFit: 'cover' }} />
                     </div>
-                    <div><span className="emp-name">{emp.name}</span><span className="emp-email">{emp.email}</span></div>
+                    <div><span className="emp-name">{emp.name}</span></div>
                   </div>
                 </td>
-                <td>
-                  <span className={`emp-role-badge ${emp.role === 'admin' ? 'admin' : 'employee'}`}>
-                    {emp.role === 'admin' ? 'Admin' : 'Employee'}
+                <td className="emp-num">
+                  <span style={{ 
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minWidth: '24px',
+                    height: '24px',
+                    borderRadius: '6px',
+                    background: 'rgba(225, 6, 19, 0.05)',
+                    color: '#E10613',
+                    fontWeight: 700,
+                    fontSize: '0.8125rem',
+                    padding: '0 6px'
+                  }}>
+                    {emp.total_leads || 0}
                   </span>
                 </td>
                 <td><span className="emp-id-badge">{emp.employee_id}</span></td>
                 <td>{emp.phone || '—'}</td>
-                <td>{formatDate(emp.created_at)}</td>
-                <td className="emp-num">
+                <td className="emp-num emp-metric-clickable" onClick={() => handleEmployeeClick(emp, 'cars', 'all')} title="Click to view all uploads">
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '90px' }}>
                     <span style={{ fontWeight: 700 }}>{emp.total_uploads}</span>
                     <div style={{ width: '100%', height: '5px', background: 'rgba(0,0,0,0.05)', borderRadius: '3px', overflow: 'hidden' }}>
@@ -424,7 +440,7 @@ export default function EmployeesPage() {
                     </div>
                   </div>
                 </td>
-                <td className="emp-num">
+                <td className="emp-num emp-metric-clickable" onClick={() => handleEmployeeClick(emp, 'cars', 'sold')} title="Click to view sold cars">
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '90px' }}>
                     <span style={{ fontWeight: 700 }}>{emp.total_sold}</span>
                     <div style={{ width: '100%', height: '5px', background: 'rgba(0,0,0,0.05)', borderRadius: '3px', overflow: 'hidden' }}>
@@ -616,15 +632,38 @@ export default function EmployeesPage() {
 
                   <div className="inspo-field full-width">
                     <label>Password <span className="required">*</span></label>
-                    <input
-                      type="password"
-                      value={form.password}
-                      onChange={e => setForm({ ...form, password: e.target.value })}
-                      required
-                      placeholder="Min 6 characters"
-                      minLength={6}
-                      autoComplete="new-password"
-                    />
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                      <input
+                        type={showAddPassword ? 'text' : 'password'}
+                        value={form.password}
+                        onChange={e => setForm({ ...form, password: e.target.value })}
+                        required
+                        placeholder="Min 6 characters"
+                        minLength={6}
+                        autoComplete="new-password"
+                        style={{ paddingRight: '2.5rem', width: '100%' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowAddPassword(!showAddPassword)}
+                        aria-label={showAddPassword ? 'Hide password' : 'Show password'}
+                        style={{
+                          position: 'absolute',
+                          right: '12px',
+                          background: 'none',
+                          border: 'none',
+                          color: '#64748b',
+                          cursor: 'pointer',
+                          padding: '4px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          zIndex: 10
+                        }}
+                      >
+                        {showAddPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -856,10 +895,10 @@ export default function EmployeesPage() {
                               </div>
                             </div>
                             <div className="modal-detail-item">
-                              <CalendarClock size={16} />
+                              <TrendingUp size={16} />
                               <div>
-                                <label>Joined Date</label>
-                                <span>{new Date(selectedEmployee.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                                <label>Assigned Leads</label>
+                                <span>{selectedEmployee.total_leads || 0}</span>
                               </div>
                             </div>
                           </div>
@@ -867,12 +906,28 @@ export default function EmployeesPage() {
                           <div className="modal-stats">
                             <h4 className="modal-stats-title">Performance Metrics</h4>
                             <div className="modal-stats-grid">
-                              <div className="modal-stat-box">
+                              <div 
+                                className="modal-stat-box"
+                                style={{ cursor: 'pointer' }}
+                                onClick={() => {
+                                  setActiveTab('cars');
+                                  setCarFilter('all');
+                                }}
+                                title="Click to view all uploads"
+                              >
                                 <Upload size={18} />
                                 <span className="modal-stat-num">{selectedEmployee.total_uploads || 0}</span>
                                 <span className="modal-stat-lbl">Cars Uploaded</span>
                               </div>
-                              <div className="modal-stat-box">
+                              <div 
+                                className="modal-stat-box"
+                                style={{ cursor: 'pointer' }}
+                                onClick={() => {
+                                  setActiveTab('cars');
+                                  setCarFilter('sold');
+                                }}
+                                title="Click to view sold cars"
+                              >
                                 <ShoppingCart size={18} />
                                 <span className="modal-stat-num">{selectedEmployee.total_sold || 0}</span>
                                 <span className="modal-stat-lbl">Cars Sold</span>
@@ -908,47 +963,78 @@ export default function EmployeesPage() {
 
                       {activeTab === 'cars' && (
                         <div className="modal-cars-list">
-                          {employeeCars.length === 0 ? (
-                            <p className="modal-no-cars">No cars uploaded by this employee yet.</p>
+                          {/* Car status sub-filter */}
+                          <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
+                            {(['all', 'available', 'sold', 'reserved'] as const).map(status => {
+                              const count = status === 'all' 
+                                ? employeeCars.length 
+                                : employeeCars.filter(c => c.status === status).length;
+                              return (
+                                <button
+                                  key={status}
+                                  onClick={() => setCarFilter(status)}
+                                  style={{
+                                    background: carFilter === status ? 'var(--db-gd)' : 'none',
+                                    border: `1px solid ${carFilter === status ? 'var(--db-gold)' : 'var(--db-bd)'}`,
+                                    color: carFilter === status ? 'var(--db-gold)' : 'var(--db-tx2)',
+                                    padding: '4px 12px',
+                                    borderRadius: '6px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    textTransform: 'capitalize',
+                                    transition: 'all 0.2s'
+                                  }}
+                                >
+                                  {status} ({count})
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          {employeeCars.filter(c => carFilter === 'all' || c.status === carFilter).length === 0 ? (
+                            <p className="modal-no-cars">No {carFilter !== 'all' ? carFilter : ''} cars uploaded by this employee yet.</p>
                           ) : (
                             <div className="modal-cars-grid">
-                              {employeeCars.map((car) => (
-                                <div key={car.id} className="modal-car-card">
-                                  <div className="modal-car-thumb-wrap">
-                                    {car.thumbnail ? (
-                                      <Image
-                                        src={getProxiedImageUrl(car.thumbnail)}
-                                        alt={`${car.brand} ${car.model}`}
-                                        width={180}
-                                        height={110}
-                                        className="modal-car-thumb"
-                                      />
-                                    ) : (
-                                      <div className="modal-car-thumb-placeholder">No Image</div>
-                                    )}
-                                    <span className={`car-status-badge ${car.status}`}>
-                                      {car.status}
-                                    </span>
-                                  </div>
-                                  <div className="modal-car-info">
-                                    <h5 className="modal-car-title" title={`${car.brand} ${car.model}`}>
-                                      {car.brand} {car.model}
-                                    </h5>
-                                    <div className="modal-car-meta">
-                                      <span>{car.year}</span>
-                                      <span className="meta-dot">•</span>
-                                      <span>{car.fuel_type || car.transmission}</span>
+                              {employeeCars
+                                .filter(c => carFilter === 'all' || c.status === carFilter)
+                                .map((car) => (
+                                  <div key={car.id} className="modal-car-card">
+                                    <div className="modal-car-thumb-wrap">
+                                      {car.thumbnail ? (
+                                        <Image
+                                          src={getProxiedImageUrl(car.thumbnail)}
+                                          alt={`${car.brand} ${car.model}`}
+                                          width={180}
+                                          height={110}
+                                          className="modal-car-thumb"
+                                        />
+                                      ) : (
+                                        <div className="modal-car-thumb-placeholder">No Image</div>
+                                      )}
+                                      <span className={`car-status-badge ${car.status}`}>
+                                        {car.status}
+                                      </span>
                                     </div>
-                                    <div className="modal-car-price">
-                                      {new Intl.NumberFormat('en-IN', {
-                                        style: 'currency',
-                                        currency: 'INR',
-                                        maximumFractionDigits: 0,
-                                      }).format(car.price)}
+                                    <div className="modal-car-info">
+                                      <h5 className="modal-car-title" title={`${car.brand} ${car.model}`}>
+                                        {car.brand} {car.model}
+                                      </h5>
+                                      <div className="modal-car-meta">
+                                        <span>{car.year}</span>
+                                        <span className="meta-dot">•</span>
+                                        <span>{car.fuel_type || car.transmission}</span>
+                                      </div>
+                                      <div className="modal-car-price">
+                                        {new Intl.NumberFormat('en-IN', {
+                                          style: 'currency',
+                                          currency: 'INR',
+                                          maximumFractionDigits: 0,
+                                        }).format(car.price)}
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              ))}
+                                ))}
                             </div>
                           )}
                         </div>
@@ -1746,6 +1832,23 @@ export default function EmployeesPage() {
   display: flex;
   flex-direction: column;
   align-items: center;
+  transition: all 0.2s;
+}
+
+:global(.modal-stat-box):hover {
+  border-color: var(--db-gold);
+  background: var(--db-gd);
+  transform: translateY(-2px);
+}
+
+:global(.emp-metric-clickable) {
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+:global(.emp-metric-clickable):hover {
+  background: var(--db-gd) !important;
+  color: var(--db-gold) !important;
 }
 
 :global(.modal-stat-box) svg {

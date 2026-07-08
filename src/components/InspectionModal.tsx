@@ -37,64 +37,64 @@ export default function InspectionModal({
     model: '',
     variant: '',
     year: '',
-    fuelType: 'Petrol',
-    transmissionType: 'Automatic',
+    fuelType: '',
+    transmissionType: '',
     odometer: '',
     owners: '',
 
     // Section 2: Exterior Inspection
     bodyCondition: [] as string[],
-    paintCondition: 'Original paint',
-    rustInspection: 'No rust',
-    windshieldCondition: 'Good',
+    paintCondition: '',
+    rustInspection: '',
+    windshieldCondition: '',
     lightsWorking: [] as string[],
     treadFL: '',
     treadFR: '',
     treadRL: '',
     treadRR: '',
-    spareTyre: 'Yes',
+    spareTyre: '',
     exteriorNotes: '',
 
     // Section 3: Interior Inspection
-    odour: 'Fresh',
-    seatCondition: 'Excellent',
-    seatbeltCheck: 'Working',
-    acWorking: 'Working',
-    infoWorking: 'Working',
-    winWorking: 'Working',
-    lockWorking: 'Working',
-    hornWorking: 'Working',
+    odour: '',
+    seatCondition: '',
+    seatbeltCheck: '',
+    acWorking: '',
+    infoWorking: '',
+    winWorking: '',
+    lockWorking: '',
+    hornWorking: '',
     warningLights: [] as string[],
     interiorRemarks: '',
 
     // Section 4: Mechanical & Suspension
-    engineOil: 'Good',
-    coolant: 'Good',
-    brakeFluid: 'Good',
-    steeringFluid: 'Good',
+    engineOil: '',
+    coolant: '',
+    brakeFluid: '',
+    steeringFluid: '',
     leakages: [] as string[],
     batteryAge: '',
     batteryTerminal: 'Clean',
     transmissionResponse: 'Smooth',
-    bounceTest: 'Pass',
-    frameCondition: 'Good',
-    alignment: 'Proper',
-    suspensionNoise: 'None',
+    bounceTest: '',
+    frameCondition: '',
+    alignment: '',
+    suspensionNoise: '',
     mechanicalComments: '',
 
     // Section 5: Test Drive & Final
-    coldStart: 'Pass',
-    steeringPerformance: 'Stable',
-    brakePerformance: 'Good',
-    acceleration: 'Smooth',
+    coldStart: '',
+    steeringPerformance: '',
+    brakePerformance: '',
+    acceleration: '',
     testDriveNoises: [] as string[],
     testDriveNotes: '',
     docsVerified: [] as string[],
-    vehicleType: 'Certified Used Vehicle',
-    warrantyAvailable: 'No',
-    overallCondition: 'Good',
+    vehicleType: '',
+    warrantyAvailable: '',
+    overallCondition: '',
     estimatedValue: '',
-    recommendedAction: 'Approve',
+    recommendedAction: '',
     inspectorName: inspectorName || '',
     inspectionDate: new Date().toISOString().substring(0, 10),
   });
@@ -269,7 +269,11 @@ ${photosSection}`;
             { step: 4, label: 'Suspension & Drive' },
             { step: 5, label: 'Category & Final' },
           ].map(s => (
-            <div key={s.step} style={{ display: 'flex', alignItems: 'center', gap: '8px', opacity: wizardStep === s.step ? 1 : 0.5, flexShrink: 0 }}>
+            <div 
+              key={s.step} 
+              className={`progress-step-item ${wizardStep === s.step ? 'active' : ''}`}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', opacity: wizardStep === s.step ? 1 : 0.5, flexShrink: 0 }}
+            >
               <span style={{ 
                 width: '24px', height: '24px', borderRadius: '50%', background: wizardStep >= s.step ? '#E10613' : '#ddd',
                 color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800
@@ -374,6 +378,7 @@ ${photosSection}`;
                 <div className="wa-form-group">
                   <label>Fuel Type</label>
                   <select value={inspectForm.fuelType} onChange={e => setInspectForm({ ...inspectForm, fuelType: e.target.value })}>
+                    <option value="" disabled>Select Fuel Type</option>
                     <option value="Petrol">Petrol</option>
                     <option value="Diesel">Diesel</option>
                     <option value="Electric">Electric</option>
@@ -383,6 +388,7 @@ ${photosSection}`;
                 <div className="wa-form-group">
                   <label>Transmission</label>
                   <select value={inspectForm.transmissionType} onChange={e => setInspectForm({ ...inspectForm, transmissionType: e.target.value })}>
+                    <option value="" disabled>Select Transmission</option>
                     <option value="Automatic">Automatic</option>
                     <option value="Manual">Manual</option>
                   </select>
@@ -407,6 +413,7 @@ ${photosSection}`;
                 <div className="wa-form-group">
                   <label>Paint Condition</label>
                   <select value={inspectForm.paintCondition} onChange={e => setInspectForm({ ...inspectForm, paintCondition: e.target.value })}>
+                    <option value="" disabled>Select Paint Condition</option>
                     <option value="Original paint">Original Paint</option>
                     <option value="Repainted panels">Repainted Panels</option>
                     <option value="Scratches present">Scratches Present</option>
@@ -416,6 +423,7 @@ ${photosSection}`;
                 <div className="wa-form-group">
                   <label>Rust Inspection</label>
                   <select value={inspectForm.rustInspection} onChange={e => setInspectForm({ ...inspectForm, rustInspection: e.target.value })}>
+                    <option value="" disabled>Select Rust Inspection</option>
                     <option value="No rust">No Rust</option>
                     <option value="Surface rust found">Surface Rust Found</option>
                     <option value="Structural rust found">Structural Rust Found</option>
@@ -424,6 +432,7 @@ ${photosSection}`;
                 <div className="wa-form-group">
                   <label>Glass &amp; Windshield</label>
                   <select value={inspectForm.windshieldCondition} onChange={e => setInspectForm({ ...inspectForm, windshieldCondition: e.target.value })}>
+                    <option value="" disabled>Select Windshield Condition</option>
                     <option value="Good">Good / Crack Free</option>
                     <option value="Chipped">Chipped</option>
                     <option value="Cracked">Cracked</option>
@@ -432,6 +441,7 @@ ${photosSection}`;
                 <div className="wa-form-group">
                   <label>Spare Tyre Available</label>
                   <select value={inspectForm.spareTyre} onChange={e => setInspectForm({ ...inspectForm, spareTyre: e.target.value })}>
+                    <option value="" disabled>Select Option</option>
                     <option value="Yes">Yes</option>
                     <option value="No">No</option>
                   </select>
@@ -482,7 +492,7 @@ ${photosSection}`;
 
               <div className="wa-form-group">
                 <label style={{ marginBottom: '6px' }}>Upload Exterior Photos</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+                <div className="upload-grid-4">
                   {['Front', 'Rear', 'Left Side', 'Right Side'].map(side => {
                     const key = `Exterior_${side}`;
                     const isUploaded = uploads[key] && uploads[key] !== 'Uploading...';
@@ -543,6 +553,7 @@ ${photosSection}`;
                 <div className="wa-form-group">
                   <label>Cabin Odour</label>
                   <select value={inspectForm.odour} onChange={e => setInspectForm({ ...inspectForm, odour: e.target.value })}>
+                    <option value="" disabled>Select Odour</option>
                     <option value="Fresh">Fresh / Clean</option>
                     <option value="Musty / Damp">Musty / Damp</option>
                     <option value="Smoke smell">Smoke Smell</option>
@@ -552,6 +563,7 @@ ${photosSection}`;
                 <div className="wa-form-group">
                   <label>Seat Upholstery Condition</label>
                   <select value={inspectForm.seatCondition} onChange={e => setInspectForm({ ...inspectForm, seatCondition: e.target.value })}>
+                    <option value="" disabled>Select Seat Condition</option>
                     <option value="Excellent">Excellent / No Wear</option>
                     <option value="Good">Good / Minor Wear</option>
                     <option value="Fair">Fair / Worn Leather</option>
@@ -561,6 +573,7 @@ ${photosSection}`;
                 <div className="wa-form-group">
                   <label>Seatbelt Retractors</label>
                   <select value={inspectForm.seatbeltCheck} onChange={e => setInspectForm({ ...inspectForm, seatbeltCheck: e.target.value })}>
+                    <option value="" disabled>Select Seatbelt Check</option>
                     <option value="Working">All Working Properly</option>
                     <option value="Slow response">Slow Response / Weak Tension</option>
                     <option value="Damaged">Damaged / Non-functional</option>
@@ -569,6 +582,7 @@ ${photosSection}`;
                 <div className="wa-form-group">
                   <label>Air Conditioning Performance</label>
                   <select value={inspectForm.acWorking} onChange={e => setInspectForm({ ...inspectForm, acWorking: e.target.value })}>
+                    <option value="" disabled>Select A/C Performance</option>
                     <option value="Working">Excellent Cooling</option>
                     <option value="Weak cooling">Weak Cooling</option>
                     <option value="Needs service">Needs Service / Leakage</option>
@@ -577,6 +591,7 @@ ${photosSection}`;
                 <div className="wa-form-group">
                   <label>Infotainment &amp; Audio Screen</label>
                   <select value={inspectForm.infoWorking} onChange={e => setInspectForm({ ...inspectForm, infoWorking: e.target.value })}>
+                    <option value="" disabled>Select Infotainment Performance</option>
                     <option value="Working">All Screen &amp; Speakers OK</option>
                     <option value="Display issues">Display Issues / No Sound</option>
                     <option value="Dead unit">Dead Unit</option>
@@ -585,6 +600,7 @@ ${photosSection}`;
                 <div className="wa-form-group">
                   <label>Power Windows</label>
                   <select value={inspectForm.winWorking} onChange={e => setInspectForm({ ...inspectForm, winWorking: e.target.value })}>
+                    <option value="" disabled>Select Power Windows Status</option>
                     <option value="Working">All Windows Working</option>
                     <option value="Slow response">Slow Window Response</option>
                     <option value="One or more failed">One or more Failed</option>
@@ -593,6 +609,7 @@ ${photosSection}`;
                 <div className="wa-form-group">
                   <label>Central Lock / Key Fob</label>
                   <select value={inspectForm.lockWorking} onChange={e => setInspectForm({ ...inspectForm, lockWorking: e.target.value })}>
+                    <option value="" disabled>Select Central Lock Status</option>
                     <option value="Working">Working Perfectly</option>
                     <option value="Key Fob Weak">Key Fob Weak</option>
                     <option value="Locks Failed">Failed Locking Mechanism</option>
@@ -601,6 +618,7 @@ ${photosSection}`;
                 <div className="wa-form-group">
                   <label>Horn Checklist</label>
                   <select value={inspectForm.hornWorking} onChange={e => setInspectForm({ ...inspectForm, hornWorking: e.target.value })}>
+                    <option value="" disabled>Select Horn Status</option>
                     <option value="Working">Working Perfectly</option>
                     <option value="Muted / Weak">Muted or Weak Tone</option>
                     <option value="Failed">Failed / Dead</option>
@@ -625,6 +643,7 @@ ${photosSection}`;
                 <div className="wa-form-group">
                   <label>Engine Oil Level &amp; Quality</label>
                   <select value={inspectForm.engineOil} onChange={e => setInspectForm({ ...inspectForm, engineOil: e.target.value })}>
+                    <option value="" disabled>Select Oil Status</option>
                     <option value="Good">Level OK / Clean Oil</option>
                     <option value="Needs Replacement">Dirty / Black Oil</option>
                     <option value="Low level">Low Level / Needs Topping</option>
@@ -633,6 +652,7 @@ ${photosSection}`;
                 <div className="wa-form-group">
                   <label>Coolant Reservoir</label>
                   <select value={inspectForm.coolant} onChange={e => setInspectForm({ ...inspectForm, coolant: e.target.value })}>
+                    <option value="" disabled>Select Coolant Status</option>
                     <option value="Good">Level OK / Clean Coolant</option>
                     <option value="Contaminated">Dirty / Contaminated Coolant</option>
                     <option value="Low level">Low Level / Leaks Found</option>
@@ -641,6 +661,7 @@ ${photosSection}`;
                 <div className="wa-form-group">
                   <label>Brake Fluid Condition</label>
                   <select value={inspectForm.brakeFluid} onChange={e => setInspectForm({ ...inspectForm, brakeFluid: e.target.value })}>
+                    <option value="" disabled>Select Brake Fluid Status</option>
                     <option value="Good">Level OK / Transparent</option>
                     <option value="Dark / Aged">Dark / Aged Fluid</option>
                     <option value="Low level">Low Level</option>
@@ -649,6 +670,7 @@ ${photosSection}`;
                 <div className="wa-form-group">
                   <label>Power Steering Fluid</label>
                   <select value={inspectForm.steeringFluid} onChange={e => setInspectForm({ ...inspectForm, steeringFluid: e.target.value })}>
+                    <option value="" disabled>Select Power Steering Fluid Status</option>
                     <option value="Good">Level OK / Smooth Response</option>
                     <option value="Low level">Low Level</option>
                     <option value="Not Applicable">Not Applicable (EPS)</option>
@@ -670,7 +692,7 @@ ${photosSection}`;
 
               <div className="wa-form-group">
                 <label style={{ marginBottom: '6px' }}>Upload Engine / Interior Photos</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+                <div className="upload-grid-2">
                   {[
                     { label: 'Engine Bay', key: 'Engine_Bay', btnText: 'Engine Photo' },
                     { label: 'Interior Cabin', key: 'Interior_Cabin', btnText: 'Interior Photo' }
@@ -733,6 +755,7 @@ ${photosSection}`;
                 <div className="wa-form-group">
                   <label>Bounce Test</label>
                   <select value={inspectForm.bounceTest} onChange={e => setInspectForm({ ...inspectForm, bounceTest: e.target.value })}>
+                    <option value="" disabled>Select Bounce Test</option>
                     <option value="Pass">Pass</option>
                     <option value="Fail">Fail</option>
                   </select>
@@ -740,6 +763,7 @@ ${photosSection}`;
                 <div className="wa-form-group">
                   <label>Frame / Structural Condition</label>
                   <select value={inspectForm.frameCondition} onChange={e => setInspectForm({ ...inspectForm, frameCondition: e.target.value })}>
+                    <option value="" disabled>Select Frame Condition</option>
                     <option value="Good">Good</option>
                     <option value="Rust Present">Rust Present</option>
                     <option value="Repair Marks Found">Repair Marks Found</option>
@@ -748,6 +772,7 @@ ${photosSection}`;
                 <div className="wa-form-group">
                   <label>Wheel Alignment Test</label>
                   <select value={inspectForm.alignment} onChange={e => setInspectForm({ ...inspectForm, alignment: e.target.value })}>
+                    <option value="" disabled>Select Wheel Alignment</option>
                     <option value="Proper">Proper</option>
                     <option value="Requires Alignment">Requires Alignment</option>
                   </select>
@@ -755,6 +780,7 @@ ${photosSection}`;
                 <div className="wa-form-group">
                   <label>Suspension Noise</label>
                   <select value={inspectForm.suspensionNoise} onChange={e => setInspectForm({ ...inspectForm, suspensionNoise: e.target.value })}>
+                    <option value="" disabled>Select Suspension Noise</option>
                     <option value="None">None</option>
                     <option value="Minor">Minor</option>
                     <option value="Major">Major</option>
@@ -767,6 +793,7 @@ ${photosSection}`;
                 <div className="wa-form-group">
                   <label>Cold Start Performance</label>
                   <select value={inspectForm.coldStart} onChange={e => setInspectForm({ ...inspectForm, coldStart: e.target.value })}>
+                    <option value="" disabled>Select Cold Start Status</option>
                     <option value="Pass">Pass / Quick Crank</option>
                     <option value="Rough start">Rough Start / Delays</option>
                     <option value="Fail">Battery Failure</option>
@@ -775,6 +802,7 @@ ${photosSection}`;
                 <div className="wa-form-group">
                   <label>Steering Response</label>
                   <select value={inspectForm.steeringPerformance} onChange={e => setInspectForm({ ...inspectForm, steeringPerformance: e.target.value })}>
+                    <option value="" disabled>Select Steering Response</option>
                     <option value="Stable">Stable / Centered</option>
                     <option value="Pulls Left">Pulls Left</option>
                     <option value="Pulls Right">Pulls Right</option>
@@ -784,6 +812,7 @@ ${photosSection}`;
                 <div className="wa-form-group">
                   <label>Braking Response</label>
                   <select value={inspectForm.brakePerformance} onChange={e => setInspectForm({ ...inspectForm, brakePerformance: e.target.value })}>
+                    <option value="" disabled>Select Braking Response</option>
                     <option value="Good">Firm / Solid Stops</option>
                     <option value="Spongey">Spongey Pedal</option>
                     <option value="Pulls under braking">Pulls Under Braking</option>
@@ -793,6 +822,7 @@ ${photosSection}`;
                 <div className="wa-form-group">
                   <label>Acceleration Response</label>
                   <select value={inspectForm.acceleration} onChange={e => setInspectForm({ ...inspectForm, acceleration: e.target.value })}>
+                    <option value="" disabled>Select Acceleration Response</option>
                     <option value="Smooth">Smooth Acceleration</option>
                     <option value="Jerky">Jerky / Stalls</option>
                     <option value="Laggy">Turbo / Throttle Lag</option>
@@ -827,6 +857,7 @@ ${photosSection}`;
                 <div className="wa-form-group">
                   <label>Certified Pre-Owned Category</label>
                   <select value={inspectForm.vehicleType} onChange={e => setInspectForm({ ...inspectForm, vehicleType: e.target.value })}>
+                    <option value="" disabled>Select Category</option>
                     <option value="Certified Used Vehicle">Certified Used Vehicle</option>
                     <option value="Budget Used Vehicle">Budget Used Vehicle</option>
                     <option value="Value Plus Selection">Value Plus Selection</option>
@@ -836,6 +867,7 @@ ${photosSection}`;
                 <div className="wa-form-group">
                   <label>Warranty Terms Available</label>
                   <select value={inspectForm.warrantyAvailable} onChange={e => setInspectForm({ ...inspectForm, warrantyAvailable: e.target.value })}>
+                    <option value="" disabled>Select Warranty Terms</option>
                     <option value="No">No Warranty</option>
                     <option value="6 Months Certified">6 Months Certified Warranty</option>
                     <option value="12 Months Certified">12 Months Certified Warranty</option>
@@ -880,6 +912,7 @@ ${photosSection}`;
                 <div className="wa-form-group">
                   <label>Overall Vehicle Condition Rating</label>
                   <select value={inspectForm.overallCondition} onChange={e => setInspectForm({ ...inspectForm, overallCondition: e.target.value })}>
+                    <option value="" disabled>Select Rating</option>
                     <option value="Excellent">Excellent</option>
                     <option value="Good">Good</option>
                     <option value="Fair">Fair</option>
@@ -895,6 +928,7 @@ ${photosSection}`;
                 <div className="wa-form-group">
                   <label>Recommended Action</label>
                   <select value={inspectForm.recommendedAction} onChange={e => setInspectForm({ ...inspectForm, recommendedAction: e.target.value })}>
+                    <option value="" disabled>Select Action</option>
                     <option value="Approve">Approve / Buy Car</option>
                     <option value="Hold">Hold / Re-evaluate</option>
                     <option value="Reject">Reject Deal</option>
@@ -929,7 +963,7 @@ ${photosSection}`;
       </motion.div>
 
       <style jsx>{`
-        .wa-modal-overlay {
+        :global(.wa-modal-overlay) {
           position: fixed;
           top: 0;
           left: 0;
@@ -942,7 +976,7 @@ ${photosSection}`;
           z-index: 99999;
           padding: 1rem;
         }
-        .inspection-modal-container {
+        :global(.inspection-modal-container) {
           max-width: 850px;
           width: 100%;
           max-height: 90vh;
@@ -1127,6 +1161,69 @@ ${photosSection}`;
         }
         .wa-btn.send {
           color: #fff;
+        }
+        .upload-grid-4 {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 12px;
+        }
+        .upload-grid-2 {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 12px;
+        }
+
+        @media (max-width: 600px) {
+          :global(.wa-modal-overlay) {
+            padding: 0.5rem !important;
+          }
+          :global(.inspection-modal-container) {
+            max-height: 96vh !important;
+            border-radius: 12px !important;
+          }
+          .inspection-modal-header {
+            padding: 1rem !important;
+          }
+          .inspection-modal-header p {
+            display: none !important;
+          }
+          .inspection-modal-header h3 {
+            font-size: 1.125rem !important;
+          }
+          .inspection-modal-progress {
+            padding: 0.5rem 1rem !important;
+            gap: 0.5rem !important;
+            justify-content: space-between !important;
+          }
+          .progress-step-item span:last-child {
+            display: none !important;
+          }
+          .progress-step-item.active span:last-child {
+            display: inline !important;
+            font-size: 0.75rem !important;
+          }
+          .inspection-modal-body {
+            padding: 1rem !important;
+          }
+          .wa-form-grid {
+            grid-template-columns: 1fr !important;
+            gap: 0.75rem !important;
+          }
+          .checkbox-group {
+            grid-template-columns: 1fr !important;
+            gap: 6px !important;
+            padding: 10px !important;
+          }
+          .upload-grid-4 {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+          .inspection-modal-footer {
+            padding: 1rem !important;
+          }
+          .wa-btn {
+            padding: 0.5rem 0.875rem !important;
+            font-size: 0.8125rem !important;
+          }
         }
       `}</style>
     </div>

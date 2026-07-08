@@ -705,7 +705,9 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
                           style={{
                             padding: '1.25rem 1.25rem 1.25rem 1.125rem',
                             background: isNew ? config.bgLight : 'var(--db-sf2)',
-                            border: isNew ? `1px solid ${config.borderLight}` : '1px solid var(--db-bd)',
+                            borderTop: isNew ? `1px solid ${config.borderLight}` : '1px solid var(--db-bd)',
+                            borderRight: isNew ? `1px solid ${config.borderLight}` : '1px solid var(--db-bd)',
+                            borderBottom: isNew ? `1px solid ${config.borderLight}` : '1px solid var(--db-bd)',
                             borderLeft: `4px solid ${config.color}`,
                             borderRadius: '16px',
                             cursor: hasLink ? 'pointer' : 'default',
@@ -716,15 +718,19 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
                           onMouseEnter={e => {
                             if (hasLink) {
                               e.currentTarget.style.transform = 'translateY(-2px)';
-                              e.currentTarget.style.borderColor = config.color;
+                              e.currentTarget.style.borderTopColor = config.color;
+                              e.currentTarget.style.borderRightColor = config.color;
+                              e.currentTarget.style.borderBottomColor = config.color;
                               e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.06)';
                             }
                           }}
                           onMouseLeave={e => {
                             if (hasLink) {
                               e.currentTarget.style.transform = 'none';
-                              e.currentTarget.style.borderColor = isNew ? config.borderLight : 'var(--db-bd)';
-                              e.currentTarget.style.borderLeftColor = config.color;
+                              const c = isNew ? config.borderLight : 'var(--db-bd)';
+                              e.currentTarget.style.borderTopColor = c;
+                              e.currentTarget.style.borderRightColor = c;
+                              e.currentTarget.style.borderBottomColor = c;
                               e.currentTarget.style.boxShadow = isNew ? config.glow : 'none';
                             }
                           }}

@@ -527,7 +527,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       n.metadata?.booking_id || 
                       n.metadata?.test_drive_id ||
                       n.metadata?.report_date ||
-                      n.type === 'daily_report_submitted'
+                      n.type === 'daily_report_submitted' ||
+                      n.type?.toLowerCase().includes('car') ||
+                      n.metadata?.car_id
                     );
                     
                     // Categorize notification
@@ -650,6 +652,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           } else if (n.type === 'daily_report_submitted' || n.metadata?.report_date) {
                             setContactMessagesOpen(false);
                             router.push('/dashboard/reports');
+                          } else if (n.type?.toLowerCase().includes('car') || n.metadata?.car_id) {
+                            setContactMessagesOpen(false);
+                            const isEmployee = pathname.startsWith('/employee');
+                            router.push(isEmployee ? `/employee/cars` : `/dashboard/uploads`);
                           }
                         }}
                         style={{

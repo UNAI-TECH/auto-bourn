@@ -33,6 +33,7 @@ export default function DashboardOverview() {
   const [modalLoading, setModalLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'cars'>('profile');
   const [employeeCars, setEmployeeCars] = useState<any[]>([]);
+  const [carFilter, setCarFilter] = useState<'all' | 'available' | 'sold' | 'reserved'>('all');
   const detailFileInputRef = useRef<HTMLInputElement>(null);
   const [updatingAvatar, setUpdatingAvatar] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
@@ -90,7 +91,7 @@ export default function DashboardOverview() {
     }
   };
 
-  const handleBarClick = async (clickedData: any) => {
+  const handleBarClick = async (clickedData: any, defaultTab: 'profile' | 'cars' = 'profile', defaultCarFilter: 'all' | 'available' | 'sold' | 'reserved' = 'all') => {
     if (!clickedData) return;
     
     // Extract payload from various possible Recharts onClick signatures
@@ -113,7 +114,8 @@ export default function DashboardOverview() {
     setSelectedEmpStats(payload);
     setSelectedEmployee(null);
     setEmployeeCars([]);
-    setActiveTab('profile');
+    setActiveTab(defaultTab);
+    setCarFilter(defaultCarFilter);
 
     try {
       const { data: emp } = await supabase
@@ -123,18 +125,27 @@ export default function DashboardOverview() {
         .single();
       
       if (emp) {
-        setSelectedEmployee(emp);
+        // Fetch employee's managed cars and leads count
+        const [carsRes, leadsCountRes] = await Promise.all([
+          supabase
+            .from('cars')
+            .select('*')
+            .eq('employee_id', payload.employee_id)
+            .order('created_at', { ascending: false }),
+          supabase
+            .from('leads')
+            .select('id', { count: 'exact', head: true })
+            .eq('assigned_to', payload.employee_id)
+        ]);
 
-        // Fetch employee's managed cars
-        const { data: cars } = await supabase
-          .from('cars')
-          .select('*')
-          .eq('employee_id', payload.employee_id)
-          .order('created_at', { ascending: false });
-
-        if (cars) {
-          setEmployeeCars(cars);
+        if (carsRes.data) {
+          setEmployeeCars(carsRes.data);
         }
+
+        setSelectedEmployee({
+          ...emp,
+          total_leads: leadsCountRes.count || 0
+        });
       }
     } catch (err) {
       console.error('Error fetching employee details:', err);
@@ -443,8 +454,8 @@ export default function DashboardOverview() {
                 <XAxis type="number" tick={{ fill: 'var(--db-tx3)', fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis type="category" dataKey="name" tick={<CustomYAxisTick />} axisLine={false} tickLine={false} width={100} />
                 <Tooltip contentStyle={{ background: 'var(--db-sf)', border: '1px solid var(--db-bd)', borderRadius: 10, color: 'var(--db-tx)', fontSize: 13 }} />
-                <Bar dataKey="total_uploads" fill={BRAND_RED} radius={[0, 6, 6, 0]} name="Uploads" onClick={(data) => handleBarClick(data)} />
-                <Bar dataKey="total_sold" fill="#22c55e" radius={[0, 6, 6, 0]} name="Sold" onClick={(data) => handleBarClick(data)} />
+                <Bar dataKey="total_uploads" fill={BRAND_RED} radius={[0, 6, 6, 0]} name="Uploads" onClick={(data) => handleBarClick(data, 'cars', 'all')} />
+                <Bar dataKey="total_sold" fill="#22c55e" radius={[0, 6, 6, 0]} name="Sold" onClick={(data) => handleBarClick(data, 'cars', 'sold')} />
               </BarChart>
             </ResponsiveContainer>
           ) : <p className="db-empty">No employee data yet</p>}
@@ -577,10 +588,10 @@ export default function DashboardOverview() {
                               </div>
                             </div>
                             <div className="modal-detail-item">
-                              <CalendarClock size={16} />
+                              <TrendingUp size={16} />
                               <div>
-                                <label>Joined Date</label>
-                                <span>{new Date(selectedEmployee.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                                <label>Assigned Leads</label>
+                                <span>{selectedEmployee.total_leads || 0}</span>
                               </div>
                             </div>
                           </div>
@@ -589,12 +600,28 @@ export default function DashboardOverview() {
                             <div className="modal-stats">
                               <h4 className="modal-stats-title">Performance Metrics</h4>
                               <div className="modal-stats-grid">
-                                <div className="modal-stat-box">
+                                <div 
+                                  className="modal-stat-box"
+                                  style={{ cursor: 'pointer' }}
+                                  onClick={() => {
+                                    setActiveTab('cars');
+                                    setCarFilter('all');
+                                  }}
+                                  title="Click to view all uploads"
+                                >
                                   <Upload size={18} />
                                   <span className="modal-stat-num">{selectedEmpStats.total_uploads}</span>
                                   <span className="modal-stat-lbl">Cars Uploaded</span>
                                 </div>
-                                <div className="modal-stat-box">
+                                <div 
+                                  className="modal-stat-box"
+                                  style={{ cursor: 'pointer' }}
+                                  onClick={() => {
+                                    setActiveTab('cars');
+                                    setCarFilter('sold');
+                                  }}
+                                  title="Click to view sold cars"
+                                >
                                   <ShoppingCart size={18} />
                                   <span className="modal-stat-num">{selectedEmpStats.total_sold}</span>
                                   <span className="modal-stat-lbl">Cars Sold</span>
@@ -629,44 +656,75 @@ export default function DashboardOverview() {
                         </>
                       ) : (
                         <div className="modal-cars-list">
-                          {employeeCars.length === 0 ? (
-                            <p className="modal-no-cars">No cars uploaded by this employee yet.</p>
+                          {/* Car status sub-filter */}
+                          <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
+                            {(['all', 'available', 'sold', 'reserved'] as const).map(status => {
+                              const count = status === 'all' 
+                                ? employeeCars.length 
+                                : employeeCars.filter(c => c.status === status).length;
+                              return (
+                                <button
+                                  key={status}
+                                  onClick={() => setCarFilter(status)}
+                                  style={{
+                                    background: carFilter === status ? 'var(--db-gd)' : 'none',
+                                    border: `1px solid ${carFilter === status ? 'var(--db-gold)' : 'var(--db-bd)'}`,
+                                    color: carFilter === status ? 'var(--db-gold)' : 'var(--db-tx2)',
+                                    padding: '4px 12px',
+                                    borderRadius: '6px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    textTransform: 'capitalize',
+                                    transition: 'all 0.2s'
+                                  }}
+                                >
+                                  {status} ({count})
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          {employeeCars.filter(c => carFilter === 'all' || c.status === carFilter).length === 0 ? (
+                            <p className="modal-no-cars">No {carFilter !== 'all' ? carFilter : ''} cars uploaded by this employee yet.</p>
                           ) : (
                             <div className="modal-cars-grid">
-                              {employeeCars.map((car) => (
-                                <div key={car.id} className="modal-car-card">
-                                  <div className="modal-car-thumb-wrap">
-                                    {car.thumbnail ? (
-                                      <Image
-                                        src={getProxiedImageUrl(car.thumbnail)}
-                                        alt={`${car.brand} ${car.model}`}
-                                        width={180}
-                                        height={110}
-                                        className="modal-car-thumb"
-                                      />
-                                    ) : (
-                                      <div className="modal-car-thumb-placeholder">No Image</div>
-                                    )}
-                                    <span className={`car-status-badge ${car.status}`}>
-                                      {car.status}
-                                    </span>
-                                  </div>
-                                  <div className="modal-car-info">
-                                    <h5 className="modal-car-title" title={`${car.brand} ${car.model}`}>
-                                      {car.brand} {car.model}
-                                    </h5>
-                                    <div className="modal-car-meta">
-                                      <span>{car.year}</span>
-                                      <span className="meta-dot">•</span>
-                                      <span>{car.fuel_type || car.transmission}</span>
+                              {employeeCars
+                                .filter(c => carFilter === 'all' || c.status === carFilter)
+                                .map((car) => (
+                                  <div key={car.id} className="modal-car-card">
+                                    <div className="modal-car-thumb-wrap">
+                                      {car.thumbnail ? (
+                                        <Image
+                                          src={getProxiedImageUrl(car.thumbnail)}
+                                          alt={`${car.brand} ${car.model}`}
+                                          width={180}
+                                          height={110}
+                                          className="modal-car-thumb"
+                                        />
+                                      ) : (
+                                        <div className="modal-car-thumb-placeholder">No Image</div>
+                                      )}
+                                      <span className={`car-status-badge ${car.status}`}>
+                                        {car.status}
+                                      </span>
                                     </div>
-                                    <div className="modal-car-price">
-                                      {new Intl.NumberFormat('en-IN', {
-                                        style: 'currency',
-                                        currency: 'INR',
-                                        maximumFractionDigits: 0,
-                                      }).format(car.price)}
-                                    </div>
+                                    <div className="modal-car-info">
+                                      <h5 className="modal-car-title" title={`${car.brand} ${car.model}`}>
+                                        {car.brand} {car.model}
+                                      </h5>
+                                      <div className="modal-car-meta">
+                                        <span>{car.year}</span>
+                                        <span className="meta-dot">•</span>
+                                        <span>{car.fuel_type || car.transmission}</span>
+                                      </div>
+                                      <div className="modal-car-price">
+                                        {new Intl.NumberFormat('en-IN', {
+                                          style: 'currency',
+                                          currency: 'INR',
+                                          maximumFractionDigits: 0,
+                                        }).format(car.price)}
+                                      </div>
                                   </div>
                                 </div>
                               ))}
@@ -1121,6 +1179,13 @@ export default function DashboardOverview() {
   display: flex;
   flex-direction: column;
   align-items: center;
+  transition: all 0.2s;
+}
+
+:global(.modal-stat-box):hover {
+  border-color: var(--db-gold);
+  background: var(--db-gd);
+  transform: translateY(-2px);
 }
 
 :global(.modal-stat-box) svg {

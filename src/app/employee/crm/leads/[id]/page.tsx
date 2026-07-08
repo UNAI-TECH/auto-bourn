@@ -224,6 +224,7 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
 
   // Used Car Inspection Modal States
   const [showInspection, setShowInspection] = useState(false);
+  const [hasInspection, setHasInspection] = useState(false);
   const [wizardStep, setWizardStep] = useState(1);
   const [brandDropdownOpen, setBrandDropdownOpen] = useState(false);
   const [yearDropdownOpen, setYearDropdownOpen] = useState(false);
@@ -379,6 +380,7 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
         setLead(data.lead);
         setFollowUps(data.followUps || []);
         setNotes(data.notes || []);
+        setHasInspection(!!data.inspection);
         
         // Auto pre-populate brand/model/variant if lead details exist
         if (data.lead) {
@@ -626,7 +628,7 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
           </button>
           {lead.assigned_to === employee?.id && isSellerLead() && (
             <button onClick={() => setShowInspection(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0.625rem 1.25rem', background: 'rgba(225, 6, 19, 0.08)', color: '#E10613', border: '1px solid rgba(225, 6, 19, 0.2)', borderRadius: '12px', fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}>
-              <ClipboardCheck size={15} /> Vehicle Inspection
+              <ClipboardCheck size={15} /> {hasInspection ? 'Edit Inspection' : 'Vehicle Inspection'}
             </button>
           )}
         </div>
