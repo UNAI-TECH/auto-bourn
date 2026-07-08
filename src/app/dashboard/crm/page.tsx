@@ -105,7 +105,7 @@ export default function CRMOverviewPage() {
         supabase.from('leads').select('id', { count: 'exact', head: true }),
         supabase.from('leads').select('id', { count: 'exact', head: true }).not('lead_status', 'in', '(sold,lost)'),
         supabase.from('follow_ups').select('id', { count: 'exact', head: true }).eq('status', 'pending').gte('scheduled_at', todayStart.toISOString()).lte('scheduled_at', todayEnd.toISOString()),
-        supabase.from('follow_ups').select('id', { count: 'exact', head: true }).eq('status', 'pending').lt('scheduled_at', todayStart.toISOString()),
+        supabase.from('follow_ups').select('id', { count: 'exact', head: true }).or(`status.eq.missed,and(status.eq.pending,scheduled_at.lt.${todayStart.toISOString()})`),
         supabase.from('leads').select('id', { count: 'exact', head: true }).eq('lead_status', 'sold').gte('updated_at', monthStart),
         supabase.from('leads').select('id', { count: 'exact', head: true }).eq('lead_status', 'new'),
         supabase.from('leads').select('id', { count: 'exact', head: true }).eq('lead_status', 'contacted'),

@@ -34,7 +34,7 @@ export default function FollowUpsPage() {
     if (section === 'today') {
       q = q.eq('status','pending').gte('scheduled_at', todayStart.toISOString()).lte('scheduled_at', todayEnd.toISOString());
     } else if (section === 'missed') {
-      q = q.eq('status','pending').lt('scheduled_at', todayStart.toISOString());
+      q = q.or(`status.eq.missed,and(status.eq.pending,scheduled_at.lt.${todayStart.toISOString()})`);
     } else if (section === 'upcoming') {
       q = q.eq('status','pending').gt('scheduled_at', todayEnd.toISOString());
     } else if (section === 'pending') {
@@ -123,9 +123,9 @@ export default function FollowUpsPage() {
 
   const sectionConfig = {
     today: { label:"Today's Follow-ups", icon: Clock, color:'#f59e0b' },
-    missed: { label:'Missed Follow-ups', icon: AlertTriangle, color:'#E10613' },
     upcoming: { label:'Upcoming', icon: ArrowRight, color:'#6366f1' },
     pending: { label:'Pending', icon: Calendar, color:'#a855f7' },
+    missed: { label:'Missed Follow-ups', icon: AlertTriangle, color:'#E10613' },
   };
 
   return (
@@ -194,6 +194,12 @@ export default function FollowUpsPage() {
                       <Clock size={12} /> Overdue
                     </span>
                   )}
+
+                  {fu.status === 'missed' && (
+                    <span className="crm-overdue-tag" style={{ background: 'rgba(225,6,19,0.15)', color: '#E10613' }}>
+                      <AlertTriangle size={12} /> Missed
+                    </span>
+                  )}
                   
                   <div className="crm-actions-row">
                     {lead?.phone && (
@@ -209,7 +215,7 @@ export default function FollowUpsPage() {
                     <button onClick={() => complete(fu.id, fu.lead_id)} className="crm-action-badge done">
                       <CheckCircle2 size={12} /> Done
                     </button>
-                    {(section === 'today' || section === 'pending') && (
+                    {fu.status === 'pending' && (
                       <button onClick={() => markMissed(fu.id)} className="crm-action-badge miss">
                         <X size={12} /> Miss
                       </button>

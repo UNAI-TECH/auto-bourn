@@ -319,6 +319,32 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
   const changeStatus = async (s: LeadStatus) => {
     await supabase.from('leads').update({ lead_status:s, updated_at:new Date().toISOString() }).eq('id',id);
     await supabase.from('crm_activity_logs').insert({ lead_id:id, employee_id:myId, action:'status_change', details:`Status → ${s}` });
+    
+    if (s === 'follow_up_pending') {
+      const { data: existing } = await supabase
+        .from('follow_ups')
+        .select('id')
+        .eq('lead_id', id)
+        .eq('status', 'pending')
+        .limit(1);
+
+      if (!existing || existing.length === 0) {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(10, 0, 0, 0);
+
+        await supabase.from('follow_ups').insert({
+          lead_id: id,
+          employee_id: lead?.assigned_to || myId || employees[0]?.id || '',
+          follow_up_type: 'call',
+          scheduled_at: tomorrow.toISOString(),
+          notes: 'Automated follow-up scheduling (status changed to Follow-up Pending)',
+          priority: 'normal',
+          status: 'pending'
+        });
+      }
+    }
+
     setEditStatus(false); loadAll(); showToast('Status updated');
   };
 

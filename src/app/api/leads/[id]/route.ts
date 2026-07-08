@@ -111,6 +111,31 @@ export async function PATCH(
 
     if (updateErr) throw updateErr;
 
+    if (updatePayload.lead_status === 'follow_up_pending') {
+      const { data: existing } = await serviceClient
+        .from('follow_ups')
+        .select('id')
+        .eq('lead_id', id)
+        .eq('status', 'pending')
+        .limit(1);
+
+      if (!existing || existing.length === 0) {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(10, 0, 0, 0);
+
+        await serviceClient.from('follow_ups').insert({
+          lead_id: id,
+          employee_id: updatePayload.assigned_to || emp.id,
+          follow_up_type: 'call',
+          scheduled_at: tomorrow.toISOString(),
+          notes: 'Automated follow-up scheduling (status changed to Follow-up Pending)',
+          priority: 'normal',
+          status: 'pending'
+        });
+      }
+    }
+
     // Sync pending follow-ups with the new assignee
     if (updatePayload.assigned_to) {
       await serviceClient

@@ -91,6 +91,21 @@ export default function LeadsPage() {
         });
       }
 
+      if (form.lead_status === 'follow_up_pending' && leadData) {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(10, 0, 0, 0);
+        await supabase.from('follow_ups').insert({
+          lead_id: leadData.id,
+          employee_id: form.assigned_to || myId || employees[0]?.id || '',
+          follow_up_type: 'call',
+          scheduled_at: tomorrow.toISOString(),
+          notes: 'Automated follow-up scheduling (status set to Follow-up Pending)',
+          priority: 'normal',
+          status: 'pending'
+        });
+      }
+
       showToast('Lead added!'); 
       setShowForm(false); 
       setForm(emptyForm); 
@@ -103,6 +118,37 @@ export default function LeadsPage() {
     setLeads(prev => prev.map(l => l.id===leadId ? {...l,lead_status:newStatus} : l));
     await supabase.from('leads').update({lead_status:newStatus, updated_at:new Date().toISOString()}).eq('id',leadId);
     await supabase.from('crm_activity_logs').insert({lead_id:leadId, employee_id:myId, action:'status_change', details:`Status changed to ${newStatus}`});
+
+    if (newStatus === 'follow_up_pending') {
+      const { data: existing } = await supabase
+        .from('follow_ups')
+        .select('id')
+        .eq('lead_id', leadId)
+        .eq('status', 'pending')
+        .limit(1);
+
+      if (!existing || existing.length === 0) {
+        const { data: targetLead } = await supabase
+          .from('leads')
+          .select('assigned_to')
+          .eq('id', leadId)
+          .single();
+
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(10, 0, 0, 0);
+
+        await supabase.from('follow_ups').insert({
+          lead_id: leadId,
+          employee_id: targetLead?.assigned_to || myId || employees[0]?.id || '',
+          follow_up_type: 'call',
+          scheduled_at: tomorrow.toISOString(),
+          notes: 'Automated follow-up scheduling (status changed to Follow-up Pending)',
+          priority: 'normal',
+          status: 'pending'
+        });
+      }
+    }
   };
 
   const filtered = leads.filter(l =>
