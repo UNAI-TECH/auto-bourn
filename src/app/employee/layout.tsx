@@ -36,6 +36,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
 
   // Notifications
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [alertConfig, setAlertConfig] = useState<{
     isOpen: boolean;
@@ -277,6 +278,20 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
     if (unreadIds.length > 0) {
       await supabase.from('notifications').update({ read: true }).in('id', unreadIds);
       setNotifications(prev => prev.map(n => unreadIds.includes(n.id) ? { ...n, read: true } : n));
+    }
+  };
+
+  const clearNotifications = async () => {
+    if (!employee || notifications.length === 0) return;
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('employee_id', employee.id);
+    if (!error) {
+      setNotifications([]);
+      setShowClearConfirm(false);
+    } else {
+      console.error('Error clearing notifications:', error);
     }
   };
 
@@ -554,12 +569,42 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
                     <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--db-tx2)' }}>
                       {notifications.filter(n => !n.read).length} unread notification{notifications.filter(n => !n.read).length !== 1 && 's'}
                     </span>
-                    <button 
-                      onClick={markNotificationsRead} 
-                      style={{ background: 'none', border: 'none', color: 'var(--db-gold, #c5a880)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', padding: 0 }}
-                    >
-                      Mark all as read
-                    </button>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                      {showClearConfirm ? (
+                        <>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--db-rd, #E10613)' }}>Confirm clear?</span>
+                          <button 
+                            onClick={clearNotifications} 
+                            style={{ background: 'none', border: 'none', color: '#10B981', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', padding: 0 }}
+                          >
+                            Yes
+                          </button>
+                          <span style={{ color: 'var(--db-bd)', fontSize: '0.75rem' }}>/</span>
+                          <button 
+                            onClick={() => setShowClearConfirm(false)} 
+                            style={{ background: 'none', border: 'none', color: 'var(--db-tx3)', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', padding: 0 }}
+                          >
+                            No
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button 
+                            onClick={markNotificationsRead} 
+                            style={{ background: 'none', border: 'none', color: 'var(--db-gold, #c5a880)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                          >
+                            Mark all as read
+                          </button>
+                          <span style={{ color: 'var(--db-bd)', fontSize: '0.75rem' }}>|</span>
+                          <button 
+                            onClick={() => setShowClearConfirm(true)} 
+                            style={{ background: 'none', border: 'none', color: '#E10613', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                          >
+                            Clear all
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 )}
 

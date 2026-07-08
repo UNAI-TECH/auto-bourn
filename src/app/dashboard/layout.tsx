@@ -58,6 +58,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [unreadReports, setUnreadReports] = useState(0);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [contactMessagesOpen, setContactMessagesOpen] = useState(false);
   const [contactMessages, setContactMessages] = useState<any[]>([]);
@@ -210,6 +211,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       await supabase.from('notifications').update({ read: true }).in('id', unreadIds);
       setUnreadNotifications(0);
       setNotifications(prev => prev.map(n => unreadIds.includes(n.id) ? { ...n, read: true } : n));
+    }
+  };
+
+  const clearNotifications = async () => {
+    if (notifications.length === 0) return;
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .not('id', 'is', null);
+    if (!error) {
+      setNotifications([]);
+      setUnreadNotifications(0);
+      setShowClearConfirm(false);
+    } else {
+      console.error('Error clearing notifications:', error);
     }
   };
 
@@ -503,12 +519,42 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--db-tx2)' }}>
                     {unreadNotifications} unread notification{unreadNotifications !== 1 && 's'}
                   </span>
-                  <button 
-                    onClick={markNotificationsRead} 
-                    style={{ background: 'none', border: 'none', color: 'var(--db-gold, #c5a880)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', padding: 0 }}
-                  >
-                    Mark all as read
-                  </button>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    {showClearConfirm ? (
+                      <>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--db-rd, #E10613)' }}>Confirm clear?</span>
+                        <button 
+                          onClick={clearNotifications} 
+                          style={{ background: 'none', border: 'none', color: '#10B981', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', padding: 0 }}
+                        >
+                          Yes
+                        </button>
+                        <span style={{ color: 'var(--db-bd)', fontSize: '0.75rem' }}>/</span>
+                        <button 
+                          onClick={() => setShowClearConfirm(false)} 
+                          style={{ background: 'none', border: 'none', color: 'var(--db-tx3)', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', padding: 0 }}
+                        >
+                          No
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button 
+                          onClick={markNotificationsRead} 
+                          style={{ background: 'none', border: 'none', color: 'var(--db-gold, #c5a880)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                        >
+                          Mark all as read
+                        </button>
+                        <span style={{ color: 'var(--db-bd)', fontSize: '0.75rem' }}>|</span>
+                        <button 
+                          onClick={() => setShowClearConfirm(true)} 
+                          style={{ background: 'none', border: 'none', color: '#E10613', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                        >
+                          Clear all
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               )}
 
