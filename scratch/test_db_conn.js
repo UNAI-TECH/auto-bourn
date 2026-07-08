@@ -1,14 +1,20 @@
 const { Client } = require('pg');
 
 const passwords = [
-  'autobourn@123',
-  'autobourn@2026',
-  'AB@2026',
-  'ABC@2026',
+  'UNAI@2025',
   'UNAI@2026',
+  'UNAI@2027',
+  'unai@2025',
   'unai@2026',
-  'Autobourn@123',
-  'Autobourn@2026'
+  'unai@2027',
+  'UNAI-TECH@2026',
+  'UNAI-TECH',
+  'autobourncars',
+  'autobourn',
+  'Autobourn',
+  'Autobourn@2025',
+  'Autobourn@2026',
+  'Autobourn@2027'
 ];
 
 async function tryPassword(pw) {
@@ -18,21 +24,21 @@ async function tryPassword(pw) {
   try {
     await client.connect();
     console.log(`SUCCESS with password: ${pw}`);
-    const res = await client.query('SELECT version();');
-    console.log('PostgreSQL version:', res.rows[0].version);
     await client.end();
     return true;
   } catch (err) {
-    console.log(`Failed with password ${pw}: ${err.message}`);
+    // console.log(`Failed with password ${pw}: ${err.message}`);
     return false;
   }
 }
 
 async function main() {
+  console.log('Testing passwords...');
   for (const pw of passwords) {
     const ok = await tryPassword(pw);
     if (ok) break;
   }
+  console.log('Done testing.');
 }
 
 main();

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supabase/server';
-import { sendWhatsAppGreeting } from '@/lib/twilio';
 
 export async function POST(request: NextRequest) {
   try {
@@ -78,14 +77,6 @@ export async function POST(request: NextRequest) {
         : `${customer_name} submitted a listing via Sell Your Car.`,
       metadata: { lead_id: lead.id, type: isContactUs ? 'contact_us' : 'sell_car' },
     });
-
-    // Auto-send WhatsApp Greeting to customer's WhatsApp/phone number
-    const customerPhone = whatsapp || phone;
-    if (customerPhone) {
-      sendWhatsAppGreeting(customer_name, customerPhone, interested_car).catch(err => {
-        console.error('Failed to send WhatsApp auto-greeting in background:', err);
-      });
-    }
 
     return NextResponse.json({ success: true, lead });
   } catch (err: any) {

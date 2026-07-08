@@ -91,20 +91,6 @@ export default function LeadsPage() {
         });
       }
 
-      // Trigger WhatsApp auto-greeting via backend API
-      const customerPhone = leadData.whatsapp || leadData.phone;
-      if (customerPhone) {
-        fetch('/api/leads/whatsapp-greeting', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            customer_name: leadData.customer_name,
-            phone: customerPhone,
-            interested_car: leadData.interested_car
-          })
-        }).catch(err => console.error('Failed to trigger manual WhatsApp greeting:', err));
-      }
-
       showToast('Lead added!'); 
       setShowForm(false); 
       setForm(emptyForm); 
