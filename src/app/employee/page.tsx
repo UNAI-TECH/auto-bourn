@@ -13,6 +13,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { formatPrice, timeAgo, getProxiedImageUrl } from '@/lib/utils';
 import type { Car as CarType, ActivityLog } from '@/types/database';
+import type { Lead } from '@/types/crm';
 
 export default function EmployeeDashboard() {
   const { employee, refreshEmployee } = useEmpContext();
@@ -80,7 +81,25 @@ export default function EmployeeDashboard() {
   const [recentCars, setRecentCars] = useState<CarType[]>([]);
   const [allCars, setAllCars] = useState<CarType[]>([]);
   const [allLogs, setAllLogs] = useState<ActivityLog[]>([]);
-  const [reportPeriod, setReportPeriod] = useState<'day' | 'week' | 'month'>('day');
+  const [allLeads, setAllLeads] = useState<Lead[]>([]);
+
+  // Customized calendar date states
+  const getInitialDates = () => {
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    
+    // Default starting date: 7 days ago
+    const start = new Date();
+    start.setDate(today.getDate() - 6);
+    const startStr = start.toISOString().split('T')[0];
+    
+    return { startStr, todayStr };
+  };
+
+  const { startStr: defaultStart, todayStr: defaultEnd } = getInitialDates();
+  const [startDate, setStartDate] = useState(defaultStart);
+  const [endDate, setEndDate] = useState(defaultEnd);
+
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
@@ -121,98 +140,85 @@ export default function EmployeeDashboard() {
         setAllLogs(logsData);
       }
 
+      // 3. Fetch Leads
+      const { data: leadsData } = await supabase
+        .from('leads')
+        .select('*')
+        .eq('assigned_to', employee.id);
+
+      if (leadsData) {
+        setAllLeads(leadsData);
+      }
+
       setLoading(false);
     };
 
     fetchData();
   }, [employee]);
 
-  // Generate Report for selected period dynamically (100% real, no mock)
-  const generatePeriodReport = (period: 'day' | 'week' | 'month') => {
-    const now = new Date();
-    
-    // Filter data based on period
-    const filteredCars = allCars.filter(car => {
-      const carDate = new Date(car.created_at);
-      if (period === 'day') {
-        return carDate.toDateString() === now.toDateString();
-      } else if (period === 'week') {
-        const sunday = new Date(now);
-        sunday.setDate(now.getDate() - now.getDay());
-        sunday.setHours(0, 0, 0, 0);
-        return carDate >= sunday;
-      } else {
-        return carDate.getMonth() === now.getMonth() && carDate.getFullYear() === now.getFullYear();
-      }
-    });
+  // Generate customized calendar report dynamically
+  const generateCustomReport = (startStr: string, endStr: string) => {
+    const start = new Date(startStr);
+    start.setHours(0, 0, 0, 0);
 
+    const end = new Date(endStr);
+    end.setHours(23, 59, 59, 999);
+
+    // Filter leads assigned in the date range
+    const assignedLeadsList = allLeads.filter(lead => {
+      const leadDate = new Date(lead.created_at);
+      return leadDate >= start && leadDate <= end;
+    });
+    const assignedLeadsCount = assignedLeadsList.length;
+
+    // Filter completed leads in the date range (status: booking_done, sold, lost)
+    const completedLeadsList = allLeads.filter(lead => {
+      const isCompleted = ['booking_done', 'sold', 'lost'].includes(lead.lead_status);
+      if (!isCompleted) return false;
+      const date = new Date(lead.updated_at || lead.created_at);
+      return date >= start && date <= end;
+    });
+    const completedLeadsCount = completedLeadsList.length;
+
+    // Filter logs in the date range
     const filteredLogs = allLogs.filter(log => {
       const logDate = new Date(log.created_at);
-      if (period === 'day') {
-        return logDate.toDateString() === now.toDateString();
-      } else if (period === 'week') {
-        const sunday = new Date(now);
-        sunday.setDate(now.getDate() - now.getDay());
-        sunday.setHours(0, 0, 0, 0);
-        return logDate >= sunday;
-      } else {
-        return logDate.getMonth() === now.getMonth() && logDate.getFullYear() === now.getFullYear();
-      }
+      return logDate >= start && logDate <= end;
     });
 
     // Counts
-    const uploads = filteredCars.length;
-    const logins = filteredLogs.filter(l => l.action === 'login').length;
-    const edits = filteredLogs.filter(l => l.action === 'edit').length;
     const soldCount = filteredLogs.filter(l => l.action === 'sold_status_change').length;
-    const deletes = filteredLogs.filter(l => l.action === 'delete').length;
+    const logins = filteredLogs.filter(l => l.action === 'login').length;
 
-    // Period label
-    let periodLabel = '';
-    let dateStr = '';
-    if (period === 'day') {
-      periodLabel = 'Today';
-      dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    } else if (period === 'week') {
-      periodLabel = 'This Week';
-      const sunday = new Date(now);
-      sunday.setDate(now.getDate() - now.getDay());
-      dateStr = `${sunday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
-    } else {
-      periodLabel = 'This Month';
-      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-      dateStr = `${firstDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
-    }
+    // Range string
+    const dateStr = `${new Date(startStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} - ${new Date(endStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
 
-    // Summary text
+    // Narrative details text in the exact order requested
     const parts: string[] = [];
-    if (uploads > 0) parts.push(`uploaded ${uploads} vehicle${uploads > 1 ? 's' : ''}`);
+    if (assignedLeadsCount > 0) parts.push(`been assigned ${assignedLeadsCount} lead${assignedLeadsCount > 1 ? 's' : ''}`);
+    if (completedLeadsCount > 0) parts.push(`completed ${completedLeadsCount} lead${completedLeadsCount > 1 ? 's' : ''}`);
     if (soldCount > 0) parts.push(`marked ${soldCount} car${soldCount > 1 ? 's' : ''} as sold`);
     if (logins > 0) parts.push(`completed ${logins} console session login${logins > 1 ? 's' : ''}`);
-    if (edits > 0 && soldCount === 0) parts.push(`updated ${edits} listing detail${edits > 1 ? 's' : ''}`);
-    if (deletes > 0) parts.push(`removed ${deletes} vehicle listing${deletes > 1 ? 's' : ''}`);
 
     let detailsText = '';
     if (parts.length === 0) {
-      detailsText = `Active console monitoring session. No inventory additions or session logins recorded for this period.`;
+      detailsText = `Active console monitoring session. No lead assignments, completions, sales, or session logins recorded for this period.`;
     } else {
       const combined = parts.join(', ');
       detailsText = `Employee ${employee?.name || 'Agent'} has successfully ${combined} during this period.`;
     }
 
     return {
-      periodLabel,
       dateStr,
-      uploads,
-      logins,
-      edits,
+      assignedLeads: assignedLeadsCount,
+      completedLeads: completedLeadsCount,
       soldCount,
-      deletes,
+      logins,
       details: detailsText
     };
   };
 
-  const currentReport = generatePeriodReport(reportPeriod);
+  const currentReport = generateCustomReport(startDate, endDate);
 
   const handleCopyReport = () => {
     navigator.clipboard.writeText(currentReport.details);
@@ -443,53 +449,64 @@ export default function EmployeeDashboard() {
               <ClipboardList size={18} style={{ color: '#E10613' }} />
             </div>
 
-            {/* Day Week Month Button Toggles */}
-            <div className="report-period-tabs">
-              <button 
-                className={reportPeriod === 'day' ? 'active' : ''} 
-                onClick={() => setReportPeriod('day')}
-              >
-                Day
-              </button>
-              <button 
-                className={reportPeriod === 'week' ? 'active' : ''} 
-                onClick={() => setReportPeriod('week')}
-              >
-                Week
-              </button>
-              <button 
-                className={reportPeriod === 'month' ? 'active' : ''} 
-                onClick={() => setReportPeriod('month')}
-              >
-                Month
-              </button>
+            {/* Custom Date Picker Fields */}
+            <div className="report-date-picker">
+              <div className="date-picker-field">
+                <label>Start Date</label>
+                <input 
+                  type="date" 
+                  value={startDate} 
+                  onChange={(e) => setStartDate(e.target.value)} 
+                />
+              </div>
+              <div className="date-picker-field">
+                <label>End Date</label>
+                <input 
+                  type="date" 
+                  value={endDate} 
+                  onChange={(e) => setEndDate(e.target.value)} 
+                />
+              </div>
             </div>
 
             <div className="report-body">
               <div className="report-meta-info">
-                <span className="report-period-badge">{currentReport.periodLabel}</span>
+                <span className="report-period-badge">Selected Range</span>
                 <span className="report-date-range">{currentReport.dateStr}</span>
               </div>
 
               {/* Metrics Breakdown Grid */}
               <div className="report-metrics-grid">
                 <div className="metric-box">
-                  <span className="metric-val">{currentReport.uploads}</span>
-                  <span className="metric-lbl">Uploads</span>
+                  <span className="metric-val">{currentReport.assignedLeads}</span>
+                  <span className="metric-lbl">Assigned Leads</span>
                 </div>
                 <div className="metric-box">
-                  <span className="metric-val">{currentReport.logins}</span>
-                  <span className="metric-lbl">Logins</span>
+                  <span className="metric-val">{currentReport.completedLeads}</span>
+                  <span className="metric-lbl">Completed Leads</span>
                 </div>
                 <div className="metric-box">
                   <span className="metric-val">{currentReport.soldCount}</span>
                   <span className="metric-lbl">Sold</span>
                 </div>
                 <div className="metric-box">
-                  <span className="metric-val">{currentReport.deletes}</span>
-                  <span className="metric-lbl">Deletes</span>
+                  <span className="metric-val">{currentReport.logins}</span>
+                  <span className="metric-lbl">Logins</span>
                 </div>
               </div>
+
+              {/* Narrative details text & Copy button */}
+              <div className="report-narrative">
+                <p>{currentReport.details}</p>
+              </div>
+              
+              <button 
+                type="button"
+                className="copy-report-btn" 
+                onClick={handleCopyReport}
+              >
+                {copied ? 'Copied!' : 'Copy Report'}
+              </button>
             </div>
           </div>
 
@@ -1027,32 +1044,44 @@ export default function EmployeeDashboard() {
   padding-bottom: 0.75rem;
 }
 .checklist-header h3 { font-size: 1.05rem; font-weight: 700; margin: 0; }
-.report-period-tabs {
+.report-date-picker {
   display: flex;
-  background: rgba(0, 0, 0, 0.03);
-  padding: 4px;
-  border-radius: 12px;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--db-sf2);
+  padding: 12px;
+  border-radius: 16px;
   border: 1px solid var(--db-bd);
-  gap: 2px;
 }
-.db-dark .report-period-tabs {
-  background: rgba(255, 255, 255, 0.05);
+.date-picker-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
-.report-period-tabs button {
-  flex: 1;
-  background: transparent;
-  border: 0;
-  padding: .45rem;
+.date-picker-field label {
+  font-size: 0.65rem;
+  font-weight: 750;
+  text-transform: uppercase;
+  color: var(--db-tx3);
+  letter-spacing: 0.05em;
+}
+.date-picker-field input {
+  background: var(--db-sf);
+  border: 1px solid var(--db-bd);
+  color: var(--db-tx);
+  padding: 8px 12px;
   border-radius: 8px;
-  font-size: .8125rem;
+  font-size: 0.8125rem;
   font-weight: 600;
-  color: var(--db-tx2);
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+  box-sizing: border-box;
   cursor: pointer;
-  transition: all .2s;
 }
-.report-period-tabs button.active {
-  background: #E10613;
-  color: #ffffff;
+.date-picker-field input:focus {
+  border-color: #E10613;
 }
 .report-body {
   display: flex;
