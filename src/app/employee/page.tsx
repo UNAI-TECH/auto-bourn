@@ -15,6 +15,223 @@ import { formatPrice, timeAgo, getProxiedImageUrl } from '@/lib/utils';
 import type { Car as CarType, ActivityLog } from '@/types/database';
 import type { Lead } from '@/types/crm';
 
+interface DayObject {
+  day: number;
+  month: number;
+  year: number;
+  isCurrentMonth: boolean;
+}
+
+const getDaysInMonth = (year: number, month: number): DayObject[] => {
+  const days: DayObject[] = [];
+  const firstDay = new Date(year, month, 1);
+  const firstDayIndex = firstDay.getDay(); // 0 = Sun, 1 = Mon, ...
+
+  // 1. Previous month padding
+  for (let i = firstDayIndex - 1; i >= 0; i--) {
+    const d = new Date(year, month, -i);
+    days.push({
+      day: d.getDate(),
+      month: d.getMonth(),
+      year: d.getFullYear(),
+      isCurrentMonth: false,
+    });
+  }
+
+  // 2. Current month days
+  const totalDays = new Date(year, month + 1, 0).getDate();
+  for (let i = 1; i <= totalDays; i++) {
+    days.push({
+      day: i,
+      month: month,
+      year: year,
+      isCurrentMonth: true,
+    });
+  }
+
+  // 3. Next month padding
+  const remaining = 42 - days.length;
+  for (let i = 1; i <= remaining; i++) {
+    const d = new Date(year, month + 1, i);
+    days.push({
+      day: d.getDate(),
+      month: d.getMonth(),
+      year: d.getFullYear(),
+      isCurrentMonth: false,
+    });
+  }
+
+  return days;
+};
+
+interface CustomDatePickerProps {
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+}
+
+const CustomDatePicker = ({ label, value, onChange }: CustomDatePickerProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  const getInitialYM = () => {
+    if (value) {
+      const parts = value.split('-');
+      if (parts.length === 3) {
+        return { year: Number(parts[0]), month: Number(parts[1]) - 1 };
+      }
+    }
+    const today = new Date();
+    return { year: today.getFullYear(), month: today.getMonth() };
+  };
+
+  const initialYM = getInitialYM();
+  const [currentYear, setCurrentYear] = useState(initialYM.year);
+  const [currentMonth, setCurrentMonth] = useState(initialYM.month);
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
+
+  const getDisplayDate = () => {
+    if (!value) return 'Select Date';
+    // Format to local date string to avoid timezone shifts
+    const parts = value.split('-');
+    if (parts.length === 3) {
+      const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      return d.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+    }
+    return new Date(value).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  const handlePrevMonth = () => {
+    if (currentMonth === 0) {
+      setCurrentMonth(11);
+      setCurrentYear(currentYear - 1);
+    } else {
+      setCurrentMonth(currentMonth - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (currentMonth === 11) {
+      setCurrentMonth(0);
+      setCurrentYear(currentYear + 1);
+    } else {
+      setCurrentMonth(currentMonth + 1);
+    }
+  };
+
+  const handleSelectDay = (dayObj: { day: number; month: number; year: number }) => {
+    const y = dayObj.year;
+    const m = String(dayObj.month + 1).padStart(2, '0');
+    const d = String(dayObj.day).padStart(2, '0');
+    onChange(`${y}-${m}-${d}`);
+    setIsOpen(false);
+  };
+
+  const calendarDays = getDaysInMonth(currentYear, currentMonth);
+
+  return (
+    <div className="custom-date-picker-container" ref={containerRef}>
+      <label className="datepicker-label">{label}</label>
+      <div 
+        className={`datepicker-trigger-btn ${isOpen ? 'active' : ''}`}
+        onClick={() => {
+          if (value) {
+            const parts = value.split('-');
+            if (parts.length === 3) {
+              setCurrentYear(Number(parts[0]));
+              setCurrentMonth(Number(parts[1]) - 1);
+            }
+          }
+          setIsOpen(!isOpen);
+        }}
+      >
+        <span>{getDisplayDate()}</span>
+        <Calendar size={14} style={{ color: 'var(--db-tx3)' }} />
+      </div>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div 
+            className="calendar-dropdown-card"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            transition={{ duration: 0.15 }}
+          >
+            <div className="calendar-dropdown-header">
+              <button type="button" className="cal-nav-btn" onClick={handlePrevMonth}>
+                &larr;
+              </button>
+              <div className="cal-current-month-year">
+                {months[currentMonth]} {currentYear}
+              </div>
+              <button type="button" className="cal-nav-btn" onClick={handleNextMonth}>
+                &rarr;
+              </button>
+            </div>
+
+            <div className="calendar-weekdays-grid">
+              {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => (
+                <div key={d} className="calendar-weekday-lbl">{d}</div>
+              ))}
+            </div>
+
+            <div className="calendar-days-grid">
+              {calendarDays.map((dObj, idx) => {
+                let isSelected = false;
+                if (value) {
+                  const parts = value.split('-');
+                  if (parts.length === 3) {
+                    isSelected = 
+                      Number(parts[2]) === dObj.day &&
+                      (Number(parts[1]) - 1) === dObj.month &&
+                      Number(parts[0]) === dObj.year;
+                  }
+                }
+
+                const dayDate = new Date(dObj.year, dObj.month, dObj.day);
+                const isToday = dayDate.toDateString() === new Date().toDateString();
+
+                return (
+                  <div 
+                    key={idx}
+                    className={`calendar-day-btn ${dObj.isCurrentMonth ? 'current' : 'outside'} ${isSelected ? 'selected' : ''} ${isToday ? 'today' : ''}`}
+                    onClick={() => handleSelectDay(dObj)}
+                  >
+                    {dObj.day}
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 export default function EmployeeDashboard() {
   const { employee, refreshEmployee } = useEmpContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -451,22 +668,16 @@ export default function EmployeeDashboard() {
 
             {/* Custom Date Picker Fields */}
             <div className="report-date-picker">
-              <div className="date-picker-field">
-                <label>Start Date</label>
-                <input 
-                  type="date" 
-                  value={startDate} 
-                  onChange={(e) => setStartDate(e.target.value)} 
-                />
-              </div>
-              <div className="date-picker-field">
-                <label>End Date</label>
-                <input 
-                  type="date" 
-                  value={endDate} 
-                  onChange={(e) => setEndDate(e.target.value)} 
-                />
-              </div>
+              <CustomDatePicker 
+                label="Start Date" 
+                value={startDate} 
+                onChange={setStartDate} 
+              />
+              <CustomDatePicker 
+                label="End Date" 
+                value={endDate} 
+                onChange={setEndDate} 
+              />
             </div>
 
             <div className="report-body">
@@ -1053,19 +1264,21 @@ export default function EmployeeDashboard() {
   border-radius: 16px;
   border: 1px solid var(--db-bd);
 }
-.date-picker-field {
+.custom-date-picker-container {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 4px;
+  width: 100%;
 }
-.date-picker-field label {
+.datepicker-label {
   font-size: 0.65rem;
   font-weight: 750;
   text-transform: uppercase;
   color: var(--db-tx3);
   letter-spacing: 0.05em;
 }
-.date-picker-field input {
+.datepicker-trigger-btn {
   background: var(--db-sf);
   border: 1px solid var(--db-bd);
   color: var(--db-tx);
@@ -1073,15 +1286,103 @@ export default function EmployeeDashboard() {
   border-radius: 8px;
   font-size: 0.8125rem;
   font-weight: 600;
-  font-family: inherit;
-  outline: none;
-  transition: border-color 0.2s;
-  width: 100%;
-  box-sizing: border-box;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
 }
-.date-picker-field input:focus {
+.datepicker-trigger-btn:hover, .datepicker-trigger-btn.active {
   border-color: #E10613;
+  box-shadow: 0 0 0 2px rgba(225, 6, 19, 0.05);
+}
+.calendar-dropdown-card {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 99;
+  margin-top: 6px;
+  width: 250px;
+  background: #ffffff;
+  border: 1px solid var(--db-bd);
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+  padding: 12px;
+  box-sizing: border-box;
+}
+.calendar-dropdown-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.cal-current-month-year {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #121212;
+}
+.cal-nav-btn {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--db-tx2);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+.cal-nav-btn:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: #E10613;
+}
+.calendar-weekdays-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  margin-bottom: 6px;
+}
+.calendar-weekday-lbl {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--db-tx3);
+  text-transform: uppercase;
+}
+.calendar-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.calendar-day-btn {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+}
+.calendar-day-btn.current {
+  color: #121212;
+}
+.calendar-day-btn.outside {
+  color: #c0c0c0;
+  font-weight: 500;
+}
+.calendar-day-btn:hover {
+  background: rgba(225, 6, 19, 0.06);
+  color: #E10613;
+}
+.calendar-day-btn.selected {
+  background: #E10613 !important;
+  color: #ffffff !important;
+}
+.calendar-day-btn.today {
+  border: 1px solid #E10613;
 }
 .report-body {
   display: flex;
