@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { Clock, CheckCircle2, AlertTriangle, ArrowRight, Filter, Phone, MessageCircle, Calendar, X } from 'lucide-react';
+import { Clock, CheckCircle2, AlertTriangle, ArrowRight, Filter, Phone, MessageCircle, Calendar, X, User } from 'lucide-react';
 import { FOLLOW_UP_TYPE_LABELS, type FollowUp } from '@/types/crm';
 
 type Section = 'today' | 'missed' | 'upcoming';
@@ -254,22 +254,32 @@ export default function FollowUpsPage() {
               </div>
 
               <div className="fu-popup-body">
-                <div className="fu-popup-field">
-                  <span className="field-label">Customer</span>
-                  <span className="field-value">{(nearingFollowUp.lead as any)?.customer_name || '—'}</span>
-                </div>
+                <div className="fu-popup-grid">
+                  <div className="fu-popup-field">
+                    <span className="field-label">
+                      <User size={12} style={{ marginRight: '4px', display: 'inline-block' }} />
+                      Customer
+                    </span>
+                    <span className="field-value">{(nearingFollowUp.lead as any)?.customer_name || '—'}</span>
+                  </div>
 
-                <div className="fu-popup-field">
-                  <span className="field-label">Scheduled Time</span>
-                  <span className="field-value">
-                    {new Date(nearingFollowUp.scheduled_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
-                  </span>
+                  <div className="fu-popup-field">
+                    <span className="field-label">
+                      <Clock size={12} style={{ marginRight: '4px', display: 'inline-block' }} />
+                      Scheduled Time
+                    </span>
+                    <span className="field-value time-highlight">
+                      {new Date(nearingFollowUp.scheduled_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                    </span>
+                  </div>
                 </div>
 
                 {nearingFollowUp.notes && (
-                  <div className="fu-popup-field">
+                  <div className="fu-popup-field note-field">
                     <span className="field-label">Instructions / Note</span>
-                    <span className="field-notes">{nearingFollowUp.notes}</span>
+                    <div className="field-notes">
+                      <p>{nearingFollowUp.notes}</p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -527,11 +537,10 @@ export default function FollowUpsPage() {
 }
 
 /* Nearing Follow-up Alert Box Style */
-.fu-popup-overlay {
+:global(.fu-popup-overlay) {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -539,176 +548,252 @@ export default function FollowUpsPage() {
   padding: 1.5rem;
 }
 
-.fu-popup-card {
-  background: var(--white);
-  border: 1px solid var(--platinum);
-  border-radius: 24px;
+:global(.fu-popup-card) {
+  background: #ffffff !important;
+  border: 1px solid var(--platinum, #ECECEC) !important;
+  border-radius: var(--radius-xl, 24px) !important;
   width: 100%;
-  max-width: 480px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+  max-width: 460px;
+  box-shadow: 
+    0 10px 40px rgba(0, 0, 0, 0.12),
+    0 2px 10px rgba(0, 0, 0, 0.05) !important;
   overflow: hidden;
 }
 
-.fu-popup-header {
-  padding: 1.5rem;
-  border-bottom: 1px solid var(--platinum);
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  position: relative;
-}
-.fu-popup-header h3 {
-  font-family: 'Outfit', sans-serif;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--graphite);
-  margin: 0;
-}
-.fu-popup-header p {
-  font-size: 0.8125rem;
-  color: var(--graphite-light);
-  margin: 0.125rem 0 0 0;
+:global(.fu-popup-header) {
+  padding: 1.5rem 1.75rem !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 1.25rem !important;
+  position: relative !important;
+  background: #ffffff !important;
 }
 
-.fu-popup-icon-wrap {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: rgba(225, 6, 19, 0.08);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--brand-red);
-  flex-shrink: 0;
+:global(.fu-popup-header) h3 {
+  font-family: var(--font-primary), 'Outfit', sans-serif !important;
+  font-size: 1.35rem !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em !important;
+  color: var(--graphite, #2A2A2A) !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
 }
 
-.fu-pulse-icon {
-  animation: pulse-ring 1.5s cubic-bezier(0.215, 0.610, 0.355, 1) infinite;
+:global(.fu-popup-header) h3::after {
+  content: '' !important;
+  display: inline-block !important;
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 50% !important;
+  background: var(--brand-red, #E10613) !important;
+  box-shadow: 0 0 8px var(--brand-red, #E10613) !important;
+}
+
+:global(.fu-popup-header) p {
+  font-size: 0.8125rem !important;
+  font-weight: 500 !important;
+  color: var(--graphite-muted, #8A8A8A) !important;
+  margin: 0.25rem 0 0 0 !important;
+}
+
+:global(.fu-popup-icon-wrap) {
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 14px !important;
+  background: linear-gradient(135deg, var(--brand-red, #E10613) 0%, #ff4b55 100%) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: var(--white, #ffffff) !important;
+  flex-shrink: 0 !important;
+  box-shadow: 0 8px 20px rgba(225, 6, 19, 0.25) !important;
+}
+
+:global(.fu-pulse-icon) {
+  animation: pulse-ring 2s infinite ease-in-out !important;
 }
 
 @keyframes pulse-ring {
-  0% { transform: scale(0.95); opacity: 0.8; }
+  0% { transform: scale(0.95); opacity: 0.9; }
   50% { transform: scale(1.1); opacity: 1; }
-  100% { transform: scale(0.95); opacity: 0.8; }
+  100% { transform: scale(0.95); opacity: 0.9; }
 }
 
-.fu-popup-close {
-  background: none;
-  border: none;
-  color: var(--graphite-light);
-  cursor: pointer;
-  padding: 6px;
-  border-radius: 50%;
-  transition: all 0.2s;
-  display: flex;
+:global(.fu-popup-close) {
+  background: rgba(0, 0, 0, 0.03) !important;
+  border: none !important;
+  color: var(--graphite-light, #4A4A4A) !important;
+  cursor: pointer !important;
+  padding: 8px !important;
+  border-radius: 50% !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
 }
-.fu-popup-close:hover {
-  background: var(--luxury-silver);
-  color: var(--graphite);
-}
-
-.fu-popup-body {
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.125rem;
+:global(.fu-popup-close):hover {
+  background: rgba(0, 0, 0, 0.08) !important;
+  color: var(--brand-red, #E10613) !important;
+  transform: rotate(90deg) !important;
 }
 
-.fu-popup-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-.field-label {
-  font-size: 0.7rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--graphite-muted);
-}
-.field-value {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--graphite);
-}
-.field-notes {
-  font-size: 0.875rem;
-  color: var(--graphite-light);
-  background: var(--luxury-silver);
-  padding: 0.75rem 1rem;
-  border-radius: 12px;
-  border: 1px solid var(--platinum);
-  line-height: 1.5;
+:global(.fu-popup-body) {
+  padding: 1.75rem !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1.25rem !important;
 }
 
-.fu-popup-footer {
-  padding: 1.25rem 1.5rem;
-  border-top: 1px solid var(--platinum);
-  background: var(--luxury-silver);
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  flex-wrap: wrap;
+:global(.fu-popup-grid) {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 1.25rem !important;
 }
 
-.popup-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0.625rem 1.125rem;
-  border-radius: 10px;
-  font-size: 0.8125rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-family: inherit;
-  text-decoration: none;
-  border: 1px solid transparent;
+:global(.fu-popup-field) {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.375rem !important;
 }
 
-.popup-btn-call {
-  background: var(--white);
-  border-color: rgba(59, 130, 246, 0.2);
-  color: #3b82f6;
-}
-.popup-btn-call:hover {
-  background: rgba(59, 130, 246, 0.05);
+:global(.fu-popup-field.note-field) {
+  grid-column: span 2 !important;
 }
 
-.popup-btn-wa {
-  background: var(--white);
-  border-color: rgba(34, 197, 94, 0.2);
-  color: #22c55e;
-}
-.popup-btn-wa:hover {
-  background: rgba(34, 197, 94, 0.05);
-}
-
-.popup-btn-done {
-  background: #22c55e;
-  color: var(--white);
-}
-.popup-btn-done:hover {
-  background: #16a34a;
+:global(.field-label) {
+  font-size: 0.72rem !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  color: var(--graphite-muted, #8A8A8A) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
 }
 
-.popup-btn-dismiss {
-  background: none;
-  border-color: var(--platinum);
-  color: var(--graphite-light);
+:global(.field-value) {
+  font-size: 1.05rem !important;
+  font-weight: 700 !important;
+  color: var(--graphite, #2A2A2A) !important;
+  word-break: break-word !important;
 }
-.popup-btn-dismiss:hover {
-  background: rgba(0,0,0,0.03);
+
+:global(.field-value.time-highlight) {
+  color: var(--brand-red, #E10613) !important;
+  background: rgba(225, 6, 19, 0.05) !important;
+  padding: 2px 8px !important;
+  border-radius: 6px !important;
+  display: inline-block !important;
+  width: fit-content !important;
+}
+
+:global(.field-notes) {
+  font-size: 0.875rem !important;
+  color: var(--graphite-light, #4A4A4A) !important;
+  background: var(--luxury-silver, #F5F5F5) !important;
+  padding: 0.875rem 1.125rem !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  border-left: 3px solid var(--brand-red, #E10613) !important;
+  line-height: 1.5 !important;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.02) !important;
+}
+
+:global(.field-notes) p {
+  margin: 0 !important;
+}
+
+:global(.fu-popup-footer) {
+  padding: 1.25rem 1.75rem !important;
+  border-top: 1px solid rgba(0, 0, 0, 0.05) !important;
+  background: var(--luxury-silver, #F5F5F5) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 0.75rem !important;
+  flex-wrap: wrap !important;
+}
+
+:global(.popup-btn) {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  padding: 0.625rem 1.25rem !important;
+  border-radius: 12px !important;
+  font-size: 0.8125rem !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  font-family: inherit !important;
+  text-decoration: none !important;
+  border: 1px solid transparent !important;
+}
+
+:global(.popup-btn-call) {
+  background: rgba(59, 130, 246, 0.08) !important;
+  border-color: rgba(59, 130, 246, 0.15) !important;
+  color: #2563eb !important;
+}
+:global(.popup-btn-call):hover {
+  background: #2563eb !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25) !important;
+}
+
+:global(.popup-btn-wa) {
+  background: rgba(34, 197, 94, 0.08) !important;
+  border-color: rgba(34, 197, 94, 0.15) !important;
+  color: #16a34a !important;
+}
+:global(.popup-btn-wa):hover {
+  background: #16a34a !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 16px rgba(22, 163, 74, 0.25) !important;
+}
+
+:global(.popup-btn-done) {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3) !important;
+}
+:global(.popup-btn-done):hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4) !important;
+}
+
+:global(.popup-btn-dismiss) {
+  background: transparent !important;
+  border-color: rgba(0, 0, 0, 0.15) !important;
+  color: var(--graphite-light, #4A4A4A) !important;
+}
+:global(.popup-btn-dismiss):hover {
+  background: rgba(0, 0, 0, 0.04) !important;
+  border-color: rgba(0, 0, 0, 0.25) !important;
 }
 
 @media (max-width: 480px) {
-  .fu-popup-footer {
-    flex-direction: column;
-    align-items: stretch;
+  :global(.fu-popup-grid) {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
   }
-  .popup-btn {
-    justify-content: center;
+  :global(.fu-popup-field.note-field) {
+    grid-column: span 1 !important;
+  }
+  :global(.fu-popup-footer) {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    padding: 1.25rem !important;
+  }
+  :global(.popup-btn) {
+    justify-content: center !important;
+    width: 100% !important;
   }
 }
       `}</style>
