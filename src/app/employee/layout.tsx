@@ -748,40 +748,33 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
                             }
                           }}
                           style={{
-                            padding: '1.25rem 1.25rem 1.25rem 1.125rem',
-                            background: isNew ? config.bgLight : 'var(--db-sf2)',
-                            borderTop: isNew ? `1px solid ${config.borderLight}` : '1px solid var(--db-bd)',
-                            borderRight: isNew ? `1px solid ${config.borderLight}` : '1px solid var(--db-bd)',
-                            borderBottom: isNew ? `1px solid ${config.borderLight}` : '1px solid var(--db-bd)',
-                            borderLeft: `4px solid ${config.color}`,
-                            borderRadius: '16px',
+                            padding: '1rem 1.25rem',
+                            background: isNew ? 'var(--db-sf)' : 'var(--db-sf2)',
+                            border: '1px solid var(--db-bd)',
+                            borderLeft: `3px solid ${isNew ? config.color : 'transparent'}`,
+                            borderRadius: '12px',
                             cursor: hasLink ? 'pointer' : 'default',
                             position: 'relative',
-                            transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
-                            boxShadow: isNew ? config.glow : 'none',
+                            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                            boxShadow: isNew ? '0 4px 12px rgba(0, 0, 0, 0.03)' : 'none',
                           }}
                           onMouseEnter={e => {
                             if (hasLink) {
-                              e.currentTarget.style.transform = 'translateY(-2px)';
-                              e.currentTarget.style.borderTopColor = config.color;
-                              e.currentTarget.style.borderRightColor = config.color;
-                              e.currentTarget.style.borderBottomColor = config.color;
-                              e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.06)';
+                              e.currentTarget.style.transform = 'translateY(-1px)';
+                              e.currentTarget.style.borderColor = 'var(--db-gold, #c5a880)';
+                              e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.05)';
                             }
                           }}
                           onMouseLeave={e => {
                             if (hasLink) {
                               e.currentTarget.style.transform = 'none';
-                              const c = isNew ? config.borderLight : 'var(--db-bd)';
-                              e.currentTarget.style.borderTopColor = c;
-                              e.currentTarget.style.borderRightColor = c;
-                              e.currentTarget.style.borderBottomColor = c;
-                              e.currentTarget.style.boxShadow = isNew ? config.glow : 'none';
+                              e.currentTarget.style.borderColor = 'var(--db-bd)';
+                              e.currentTarget.style.boxShadow = isNew ? '0 4px 12px rgba(0, 0, 0, 0.03)' : 'none';
                             }
                           }}
                         >
                           {isNew && (
-                            <span style={{ position: 'absolute', top: '16px', right: '16px', width: '8px', height: '8px', borderRadius: '50%', background: config.color, boxShadow: `0 0 10px ${config.color}` }} />
+                            <span style={{ position: 'absolute', top: '16px', right: '16px', width: '6px', height: '6px', borderRadius: '50%', background: config.color }} />
                           )}
 
                           <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
@@ -801,39 +794,26 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
                                 }}>
                                   {config.label}
                                 </span>
-                                {isNew && (
-                                  <span style={{ 
-                                    fontSize: '0.625rem', 
-                                    fontWeight: 800, 
-                                    color: '#E10613', 
-                                    background: 'rgba(225, 6, 19, 0.1)', 
-                                    padding: '2px 6px', 
-                                    borderRadius: '4px',
-                                    letterSpacing: '0.05em'
-                                  }}>
-                                    NEW
-                                  </span>
-                                )}
                               </div>
-                              <strong style={{ fontSize: '0.875rem', color: 'var(--db-tx)', display: 'block', marginBottom: '4px', fontWeight: 700, paddingRight: '12px' }}>
+                              <strong style={{ fontSize: '0.85rem', color: 'var(--db-tx)', display: 'block', marginBottom: '4px', fontWeight: 700, paddingRight: '12px' }}>
                                 {n.title.replace(/^[^\w\s\(\)]+\s*/, '')}
                               </strong>
-                              <p style={{ fontSize: '0.8125rem', color: 'var(--db-tx2)', margin: 0, lineHeight: 1.4, fontWeight: 500 }}>
+                              <p style={{ fontSize: '0.78rem', color: 'var(--db-tx2)', margin: 0, lineHeight: 1.4, fontWeight: 550 }}>
                                 {n.message}
                               </p>
                               
                               {n.metadata?.notes && (
-                                <div style={{ fontSize: '0.75rem', color: 'var(--db-tx2)', background: 'rgba(0,0,0,0.03)', padding: '0.5rem 0.75rem', borderRadius: '8px', marginTop: '0.5rem', whiteSpace: 'pre-line', border: '1px solid var(--db-bd)' }}>
+                                <div style={{ fontSize: '0.725rem', color: 'var(--db-tx2)', background: 'rgba(0,0,0,0.02)', padding: '0.5rem 0.75rem', borderRadius: '8px', marginTop: '0.5rem', whiteSpace: 'pre-line', border: '1px solid var(--db-bd)' }}>
                                   "{n.metadata.notes}"
                                 </div>
                               )}
 
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.75rem' }}>
-                                <span style={{ fontSize: '0.6875rem', color: 'var(--db-tx3)', fontWeight: 600 }}>
+                                <span style={{ fontSize: '0.65rem', color: 'var(--db-tx3)', fontWeight: 600 }}>
                                   {new Date(n.created_at).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
                                 </span>
                                 {hasLink && (
-                                  <span style={{ fontSize: '0.6875rem', color: 'var(--db-gold, #c5a880)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '2px' }}>
+                                  <span style={{ fontSize: '0.65rem', color: 'var(--db-gold, #c5a880)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '2px' }}>
                                     View Details →
                                   </span>
                                 )}

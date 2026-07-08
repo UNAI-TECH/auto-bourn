@@ -228,7 +228,10 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
     if (!lead) return false;
     return notes.some(n => 
       n.note && (n.note.includes('Vehicle Details:') || n.note.includes('Transmission:') || n.note.includes('Fuel Type:'))
-    );
+    ) || !!(lead.interested_car && (
+      lead.interested_car.includes('Sell a Vehicle') || 
+      lead.interested_car.toLowerCase().includes('sell')
+    ));
   };
 
   const hasInspectionForm = () => {

@@ -256,7 +256,10 @@ export default function EmployeeCRMPage() {
             const notesList = lead.customer_notes || [];
             const isSell = notesList.some((n: any) => 
               n.note && (n.note.includes('Vehicle Details:') || n.note.includes('Transmission:') || n.note.includes('Fuel Type:'))
-            );
+            ) || !!(lead.interested_car && (
+              lead.interested_car.includes('Sell a Vehicle') ||
+              lead.interested_car.toLowerCase().includes('sell')
+            ));
             return (
               <motion.div 
                 key={lead.id} 

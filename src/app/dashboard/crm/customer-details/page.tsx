@@ -6,7 +6,7 @@ import { useDashboard } from '@/app/dashboard/layout';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, Search, Filter, Phone, MessageSquare, Mail, 
-  Car, Calendar, Briefcase, Eye, ChevronDown, CheckCircle, 
+  Car, Calendar, Briefcase, ChevronDown, CheckCircle, 
   XCircle, Clock, MapPin, DollarSign 
 } from 'lucide-react';
 import Link from 'next/link';
@@ -295,7 +295,7 @@ export default function CustomerDetailsPage() {
                         <div className="cust-pref-cell">
                           {lead.interested_car ? (
                             <span className="cust-car-badge">
-                              <Car size={12} /> {lead.interested_car}
+                              <Car size={12} /> {lead.interested_car.replace(/^Get In Touch:\s*/i, '')}
                             </span>
                           ) : lead.preferred_brand ? (
                             <span className="cust-car-badge brand-only">
@@ -353,7 +353,7 @@ export default function CustomerDetailsPage() {
                             className="cust-view-profile-btn"
                             title="View Activity Details"
                           >
-                            <Eye size={14} /> View Details
+                            View Details
                           </Link>
                         </div>
                       </td>
