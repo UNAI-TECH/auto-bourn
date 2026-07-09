@@ -225,6 +225,7 @@ export default function CustomerDetailsPage() {
   });
 
   const [leadType, setLeadType] = useState<'buy' | 'sell'>('buy');
+  const [customSource, setCustomSource] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const supabase = createClient();
 
@@ -259,6 +260,16 @@ export default function CustomerDetailsPage() {
   const yearOptions = [
     { value: '', label: 'Select Year' },
     ...YEARS.map(y => ({ value: y, label: y }))
+  ];
+
+  const sourceOptions = [
+    { value: 'Walk-in', label: 'Walk-in' },
+    { value: 'Olx', label: 'Olx' },
+    { value: 'Facebook', label: 'Facebook' },
+    { value: 'Car trade', label: 'Car trade' },
+    { value: 'Reference', label: 'Reference' },
+    { value: 'Instagram', label: 'Instagram' },
+    { value: 'Other', label: 'Other' },
   ];
 
   useEffect(() => {
@@ -341,7 +352,8 @@ Expected Price: ₹${form.sell_expected_price}
         finalPreferredBrand = form.preferred_brand;
       }
 
-      const { dbSource, noteToAdd } = getDatabaseSource(form.source || 'Walk-in');
+      const inputSource = form.source === 'Other' ? customSource : form.source;
+      const { dbSource, noteToAdd } = getDatabaseSource(inputSource || 'Walk-in');
       if (noteToAdd) {
         finalNotes = finalNotes ? `${noteToAdd}\n\n${finalNotes}` : noteToAdd;
       }
@@ -422,6 +434,7 @@ Expected Price: ₹${form.sell_expected_price}
         sell_expected_price: '',
       });
       setLeadType('buy');
+      setCustomSource('');
     } catch (err: any) {
       console.error(err);
       setErrorMsg(err.message || 'Something went wrong. Please try again.');
@@ -520,12 +533,22 @@ Expected Price: ₹${form.sell_expected_price}
 
                   <div className="emp-field">
                     <label>Source Category *</label>
-                    <input 
-                      type="text" 
-                      required
+                    <CustomSelect
+                      options={sourceOptions}
                       value={form.source}
-                      onChange={e => setForm(f => ({ ...f, source: e.target.value }))}
+                      onChange={val => setForm(f => ({ ...f, source: val }))}
+                      placeholder="Select source..."
                     />
+                    {form.source === 'Other' && (
+                      <input
+                        type="text"
+                        placeholder="Type custom source..."
+                        value={customSource}
+                        onChange={e => setCustomSource(e.target.value)}
+                        style={{ marginTop: '0.5rem' }}
+                        required
+                      />
+                    )}
                   </div>
 
                   <div className="emp-field">
