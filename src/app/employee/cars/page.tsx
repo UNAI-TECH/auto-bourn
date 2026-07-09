@@ -11,11 +11,11 @@ import type { Car } from '@/types/database';
 import ConfirmModal from '@/components/ConfirmModal';
 
 const BRANDS = ['Mercedes-Benz','BMW','Audi','Jaguar','Land Rover','Volvo','Lexus','Porsche','Toyota','Honda','Hyundai','Kia','Tata','Mahindra','Maruti Suzuki','Volkswagen','Skoda','MG','Mini','Lamborghini','Jeep','Crysta','Tucson','Other'];
-const FUEL_TYPES = ['Petrol','Diesel','Electric','Hybrid','Petrol Mild-Hybrid','CNG','LPG'];
-const TRANSMISSIONS = ['Automatic','Manual','CVT','DCT','AMT'];
-const BODY_TYPES = ['SUV','Sedan','Hatchback','Coupe','Convertible','MPV','Pickup'];
-const OWNERSHIPS = ['1st Owner','2nd Owner','3rd Owner','4th Owner+','Unregistered'];
-const YEARS = Array.from({ length: 28 }, (_, i) => String(new Date().getFullYear() + 1 - i));
+const FUEL_TYPES = ['Petrol','Diesel','Electric','Hybrid','Petrol Mild-Hybrid','CNG','LPG','Other'];
+const TRANSMISSIONS = ['Automatic','Manual','CVT','DCT','AMT','Other'];
+const BODY_TYPES = ['SUV','Sedan','Hatchback','Coupe','Convertible','MPV','Pickup','Other'];
+const OWNERSHIPS = ['1st Owner','2nd Owner','3rd Owner','4th Owner+','Unregistered','Other'];
+const YEARS = [...Array.from({ length: 28 }, (_, i) => String(new Date().getFullYear() + 1 - i)), 'Other'];
 
 const brandOptions = [
   { value: '', label: 'Select Brand' },
@@ -208,6 +208,20 @@ export default function MyCarsPage() {
   const [deletedImageIds, setDeletedImageIds] = useState<string[]>([]);
   const [updatingImages, setUpdatingImages] = useState(false);
 
+  const [customBrand, setCustomBrand] = useState('');
+  const [customYear, setCustomYear] = useState('');
+  const [customBodyType, setCustomBodyType] = useState('');
+  const [customFuelType, setCustomFuelType] = useState('');
+  const [customTransmission, setCustomTransmission] = useState('');
+  const [customOwnership, setCustomOwnership] = useState('');
+
+  const [selectBrand, setSelectBrand] = useState('');
+  const [selectYear, setSelectYear] = useState('');
+  const [selectBodyType, setSelectBodyType] = useState('');
+  const [selectFuelType, setSelectFuelType] = useState('');
+  const [selectTransmission, setSelectTransmission] = useState('');
+  const [selectOwnership, setSelectOwnership] = useState('');
+
   const thumbInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   
@@ -225,6 +239,61 @@ export default function MyCarsPage() {
       setNewGallery([]);
       setNewGalleryPreviews([]);
       setDeletedImageIds([]);
+
+      // Brand mapping
+      if (editCar.brand && !BRANDS.filter(b => b !== 'Other').includes(editCar.brand)) {
+        setSelectBrand('Other');
+        setCustomBrand(editCar.brand);
+      } else {
+        setSelectBrand(editCar.brand || '');
+        setCustomBrand('');
+      }
+
+      // Year mapping
+      const yearStr = String(editCar.year);
+      if (editCar.year && !YEARS.filter(y => y !== 'Other').includes(yearStr)) {
+        setSelectYear('Other');
+        setCustomYear(yearStr);
+      } else {
+        setSelectYear(editCar.year ? yearStr : '');
+        setCustomYear('');
+      }
+
+      // Body Type mapping
+      if (editCar.body_type && !BODY_TYPES.filter(b => b !== 'Other').includes(editCar.body_type)) {
+        setSelectBodyType('Other');
+        setCustomBodyType(editCar.body_type);
+      } else {
+        setSelectBodyType(editCar.body_type || '');
+        setCustomBodyType('');
+      }
+
+      // Fuel Type mapping
+      if (editCar.fuel_type && !FUEL_TYPES.filter(f => f !== 'Other').includes(editCar.fuel_type)) {
+        setSelectFuelType('Other');
+        setCustomFuelType(editCar.fuel_type);
+      } else {
+        setSelectFuelType(editCar.fuel_type || '');
+        setCustomFuelType('');
+      }
+
+      // Transmission mapping
+      if (editCar.transmission && !TRANSMISSIONS.filter(t => t !== 'Other').includes(editCar.transmission)) {
+        setSelectTransmission('Other');
+        setCustomTransmission(editCar.transmission);
+      } else {
+        setSelectTransmission(editCar.transmission || '');
+        setCustomTransmission('');
+      }
+
+      // Ownership mapping
+      if (editCar.ownership && !OWNERSHIPS.filter(o => o !== 'Other').includes(editCar.ownership)) {
+        setSelectOwnership('Other');
+        setCustomOwnership(editCar.ownership);
+      } else {
+        setSelectOwnership(editCar.ownership || '');
+        setCustomOwnership('');
+      }
     } else {
       setGallery([]);
     }
@@ -334,6 +403,15 @@ export default function MyCarsPage() {
         }
       }
 
+      const brandToSubmit = selectBrand === 'Other' ? customBrand : selectBrand;
+      const yearToSubmit = selectYear === 'Other' ? customYear : selectYear;
+      const bodyTypeToSubmit = selectBodyType === 'Other' ? customBodyType : selectBodyType;
+      const fuelTypeToSubmit = selectFuelType === 'Other' ? customFuelType : selectFuelType;
+      const transmissionToSubmit = selectTransmission === 'Other' ? customTransmission : selectTransmission;
+      const ownershipToSubmit = selectOwnership === 'Other' ? customOwnership : selectOwnership;
+
+      const parsedYear = typeof yearToSubmit === 'string' ? (parseInt(yearToSubmit) || null) : (yearToSubmit || null);
+
       // 4. Update the car document
       const { id, created_at, sold_at, sold_by, featured, views, employee_id, employee: _emp, car_images, ...rest } = editCar as Car & { employee?: unknown; car_images?: unknown };
       void created_at;
@@ -353,6 +431,12 @@ export default function MyCarsPage() {
 
       const { error: updateError } = await supabase.from('cars').update({
         ...rest,
+        brand: brandToSubmit,
+        year: parsedYear,
+        body_type: bodyTypeToSubmit || null,
+        fuel_type: fuelTypeToSubmit || null,
+        transmission: transmissionToSubmit || null,
+        ownership: ownershipToSubmit || null,
         features,
         thumbnail: finalThumbnail,
         status: updatedStatus,
@@ -366,7 +450,7 @@ export default function MyCarsPage() {
           recipient_role: 'admin',
           type: 'car_upload_request',
           title: '🚗 Car Upload Re-submitted',
-          message: `Employee "${employee.name}" has re-submitted rejected car details for approval: ${editCar.brand} ${editCar.model} (${editCar.year}).`,
+          message: `Employee "${employee.name}" has re-submitted rejected car details for approval: ${brandToSubmit} ${editCar.model} (${parsedYear}).`,
           metadata: { car_id: editCar.id }
         });
       }
@@ -376,8 +460,8 @@ export default function MyCarsPage() {
         employee_id: employee.id,
         action: 'edit',
         details: editCar.status === 'rejected'
-          ? `Re-submitted ${editCar.brand} ${editCar.model} for approval after rejection`
-          : `Edited ${editCar.brand} ${editCar.model} details and images`,
+          ? `Re-submitted ${brandToSubmit} ${editCar.model} for approval after rejection`
+          : `Edited ${brandToSubmit} ${editCar.model} details and images`,
       });
 
       showToast(editCar.status === 'rejected' ? 'Car resubmitted for approval' : 'Car updated successfully');
@@ -425,53 +509,104 @@ export default function MyCarsPage() {
                 <div className="emp-field"><label>Brand *</label>
                   <CustomSelect
                     options={brandOptions}
-                    value={editCar.brand}
-                    onChange={val => setEditField('brand', val)}
+                    value={selectBrand}
+                    onChange={val => setSelectBrand(val)}
                     placeholder="Select Brand"
                   />
+                  {selectBrand === 'Other' && (
+                    <input
+                      style={{ marginTop: '0.5rem' }}
+                      placeholder="Enter custom brand"
+                      value={customBrand}
+                      onChange={e => setCustomBrand(e.target.value)}
+                      required
+                    />
+                  )}
                 </div>
                 <div className="emp-field"><label>Model *</label><input value={editCar.model || ''} onChange={e => setEditField('model', e.target.value)} required /></div>
                 <div className="emp-field"><label>Variant</label><input value={editCar.variant || ''} onChange={e => setEditField('variant', e.target.value)} /></div>
                 <div className="emp-field"><label>Year *</label>
                   <CustomSelect
                     options={yearOptions}
-                    value={String(editCar.year)}
-                    onChange={val => setEditField('year', Number(val))}
+                    value={selectYear}
+                    onChange={val => setSelectYear(val)}
                     placeholder="Select Year"
                   />
+                  {selectYear === 'Other' && (
+                    <input
+                      type="number"
+                      style={{ marginTop: '0.5rem' }}
+                      placeholder="Enter custom year"
+                      value={customYear}
+                      onChange={e => setCustomYear(e.target.value)}
+                      required
+                    />
+                  )}
                 </div>
                 <div className="emp-field"><label>Body Type</label>
                   <CustomSelect
                     options={bodyTypeOptions}
-                    value={editCar.body_type || ''}
-                    onChange={val => setEditField('body_type', val)}
+                    value={selectBodyType}
+                    onChange={val => setSelectBodyType(val)}
                     placeholder="Select Body Type"
                   />
+                  {selectBodyType === 'Other' && (
+                    <input
+                      style={{ marginTop: '0.5rem' }}
+                      placeholder="Enter custom body type"
+                      value={customBodyType}
+                      onChange={e => setCustomBodyType(e.target.value)}
+                    />
+                  )}
                 </div>
                 <div className="emp-field"><label>Fuel Type</label>
                   <CustomSelect
                     options={fuelTypeOptions}
-                    value={editCar.fuel_type || ''}
-                    onChange={val => setEditField('fuel_type', val)}
+                    value={selectFuelType}
+                    onChange={val => setSelectFuelType(val)}
                     placeholder="Select Fuel Type"
                   />
+                  {selectFuelType === 'Other' && (
+                    <input
+                      style={{ marginTop: '0.5rem' }}
+                      placeholder="Enter custom fuel type"
+                      value={customFuelType}
+                      onChange={e => setCustomFuelType(e.target.value)}
+                    />
+                  )}
                 </div>
                 <div className="emp-field"><label>Transmission</label>
                   <CustomSelect
                     options={transmissionOptions}
-                    value={editCar.transmission || ''}
-                    onChange={val => setEditField('transmission', val)}
+                    value={selectTransmission}
+                    onChange={val => setSelectTransmission(val)}
                     placeholder="Select Transmission"
                   />
+                  {selectTransmission === 'Other' && (
+                    <input
+                      style={{ marginTop: '0.5rem' }}
+                      placeholder="Enter custom transmission"
+                      value={customTransmission}
+                      onChange={e => setCustomTransmission(e.target.value)}
+                    />
+                  )}
                 </div>
                 <div className="emp-field"><label>KM Driven</label><input type="number" value={editCar.km_driven ?? 0} onChange={e => setEditField('km_driven', +e.target.value)} min={0} /></div>
                 <div className="emp-field"><label>Ownership</label>
                   <CustomSelect
                     options={ownershipOptions}
-                    value={editCar.ownership || ''}
-                    onChange={val => setEditField('ownership', val)}
+                    value={selectOwnership}
+                    onChange={val => setSelectOwnership(val)}
                     placeholder="Select Ownership"
                   />
+                  {selectOwnership === 'Other' && (
+                    <input
+                      style={{ marginTop: '0.5rem' }}
+                      placeholder="Enter custom ownership"
+                      value={customOwnership}
+                      onChange={e => setCustomOwnership(e.target.value)}
+                    />
+                  )}
                 </div>
                 <div className="emp-field"><label>Price (₹) *</label><input type="number" value={editCar.price ?? ''} onChange={e => setEditField('price', +e.target.value)} min={0} required /></div>
                 <div className="emp-field"><label>Original Price (₹)</label><input type="number" value={editCar.original_price ?? ''} onChange={e => setEditField('original_price', +e.target.value)} min={0} /></div>

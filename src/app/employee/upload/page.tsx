@@ -7,12 +7,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, X, Image, Check, AlertCircle, Loader2 } from 'lucide-react';
 
 const BRANDS = ['Mercedes-Benz','BMW','Audi','Jaguar','Land Rover','Volvo','Lexus','Porsche','Toyota','Honda','Hyundai','Kia','Tata','Mahindra','Maruti Suzuki','Volkswagen','Skoda','MG','Mini','Lamborghini','Jeep','Crysta','Tucson','Other'];
-const FUEL_TYPES = ['Petrol','Diesel','Electric','Hybrid','Petrol Mild-Hybrid','CNG','LPG'];
-const TRANSMISSIONS = ['Automatic','Manual','CVT','DCT','AMT'];
-const BODY_TYPES = ['SUV','Sedan','Hatchback','Coupe','Convertible','MPV','Pickup'];
-const OWNERSHIPS = ['1st Owner','2nd Owner','3rd Owner','4th Owner+','Unregistered'];
+const FUEL_TYPES = ['Petrol','Diesel','Electric','Hybrid','Petrol Mild-Hybrid','CNG','LPG','Other'];
+const TRANSMISSIONS = ['Automatic','Manual','CVT','DCT','AMT','Other'];
+const BODY_TYPES = ['SUV','Sedan','Hatchback','Coupe','Convertible','MPV','Pickup','Other'];
+const OWNERSHIPS = ['1st Owner','2nd Owner','3rd Owner','4th Owner+','Unregistered','Other'];
 
-const YEARS = Array.from({ length: 28 }, (_, i) => String(new Date().getFullYear() + 1 - i)); // e.g. 2027 down to 2000
+const YEARS = [...Array.from({ length: 28 }, (_, i) => String(new Date().getFullYear() + 1 - i)), 'Other']; // e.g. 2027 down to 2000
 
 const brandOptions = [
   { value: '', label: 'Select Brand' },
@@ -195,6 +195,12 @@ export default function UploadCarPage() {
     description: '', features: '', insurance_validity: '', registration_number: '',
     location: '', body_type: '', color: '', interior_color: '', engine: '', horsepower: 0,
   });
+  const [customBrand, setCustomBrand] = useState('');
+  const [customYear, setCustomYear] = useState('');
+  const [customBodyType, setCustomBodyType] = useState('');
+  const [customFuelType, setCustomFuelType] = useState('');
+  const [customTransmission, setCustomTransmission] = useState('');
+  const [customOwnership, setCustomOwnership] = useState('');
   const [thumbnail, setThumbnail] = useState<File | null>(null);
   const [thumbPreview, setThumbPreview] = useState('');
   const [gallery, setGallery] = useState<File[]>([]);
@@ -246,7 +252,15 @@ export default function UploadCarPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!employee) return;
-    if (!form.brand || !form.model || !form.price || !form.year) {
+
+    const brandToSubmit = form.brand === 'Other' ? customBrand : form.brand;
+    const yearToSubmit = form.year === 'Other' ? customYear : form.year;
+    const bodyTypeToSubmit = form.body_type === 'Other' ? customBodyType : form.body_type;
+    const fuelTypeToSubmit = form.fuel_type === 'Other' ? customFuelType : form.fuel_type;
+    const transmissionToSubmit = form.transmission === 'Other' ? customTransmission : form.transmission;
+    const ownershipToSubmit = form.ownership === 'Other' ? customOwnership : form.ownership;
+
+    if (!brandToSubmit || !form.model || !form.price || !yearToSubmit) {
       showToast('Please fill required fields (Brand, Model, Year, Price)', 'error');
       return;
     }
@@ -267,15 +281,15 @@ export default function UploadCarPage() {
       }
 
       // Insert car
-      const parsedYear = typeof form.year === 'string' ? parseInt(form.year) : form.year;
+      const parsedYear = typeof yearToSubmit === 'string' ? parseInt(yearToSubmit) : yearToSubmit;
       const { data: car, error: carError } = await supabase.from('cars').insert({
         employee_id: employee.id,
-        brand: form.brand, model: form.model, variant: form.variant, year: parsedYear,
-        fuel_type: form.fuel_type || null, transmission: form.transmission || null, km_driven: form.km_driven,
-        ownership: form.ownership || null, price: form.price, original_price: form.original_price || null,
+        brand: brandToSubmit, model: form.model, variant: form.variant, year: parsedYear,
+        fuel_type: fuelTypeToSubmit || null, transmission: transmissionToSubmit || null, km_driven: form.km_driven,
+        ownership: ownershipToSubmit || null, price: form.price, original_price: form.original_price || null,
         description: form.description, features: form.features.split(',').map(f => f.trim()).filter(Boolean),
         insurance_validity: form.insurance_validity || null, registration_number: form.registration_number || null,
-        location: form.location || null, body_type: form.body_type || null, color: form.color || null,
+        location: form.location || null, body_type: bodyTypeToSubmit || null, color: form.color || null,
         interior_color: form.interior_color || null, engine: form.engine || null,
         horsepower: form.horsepower || null, thumbnail: thumbnailUrl, status: 'pending',
       }).select().single();
@@ -298,21 +312,27 @@ export default function UploadCarPage() {
         recipient_role: 'admin',
         type: 'car_upload_request',
         title: '🚗 New Car Upload Request',
-        message: `Employee "${employee.name}" has requested approval to upload: ${form.brand} ${form.model} (${parsedYear}).`,
+        message: `Employee "${employee.name}" has requested approval to upload: ${brandToSubmit} ${form.model} (${parsedYear}).`,
         metadata: { car_id: car.id }
       });
 
       // Log activity
       await supabase.from('activity_logs').insert({
         employee_id: employee.id, action: 'upload',
-        details: `Requested upload for ${form.brand} ${form.model} (pending approval)`,
+        details: `Requested upload for ${brandToSubmit} ${form.model} (pending approval)`,
       });
 
       setProgress(100);
-      showToast(`${form.brand} ${form.model} submitted for admin approval!`);
+      showToast(`${brandToSubmit} ${form.model} submitted for admin approval!`);
 
       // Reset form
       setForm({ brand: '', model: '', variant: '', year: '', fuel_type: '', transmission: '', km_driven: 0, ownership: '', price: 0, original_price: 0, description: '', features: '', insurance_validity: '', registration_number: '', location: '', body_type: '', color: '', interior_color: '', engine: '', horsepower: 0 });
+      setCustomBrand('');
+      setCustomYear('');
+      setCustomBodyType('');
+      setCustomFuelType('');
+      setCustomTransmission('');
+      setCustomOwnership('');
       setThumbnail(null); setThumbPreview(''); setGallery([]); setGalleryPreviews([]);
     } catch (err: any) {
       console.error('Upload error details:', err);
@@ -350,6 +370,15 @@ export default function UploadCarPage() {
                 onChange={val => setField('brand', val)}
                 placeholder="Select Brand"
               />
+              {form.brand === 'Other' && (
+                <input
+                  style={{ marginTop: '0.5rem' }}
+                  placeholder="Enter custom brand"
+                  value={customBrand}
+                  onChange={e => setCustomBrand(e.target.value)}
+                  required
+                />
+              )}
             </div>
             <div className="emp-field"><label>Model *</label><input value={form.model} onChange={e => setField('model', e.target.value)} required /></div>
             <div className="emp-field"><label>Variant</label><input value={form.variant} onChange={e => setField('variant', e.target.value)} /></div>
@@ -360,6 +389,16 @@ export default function UploadCarPage() {
                 onChange={val => setField('year', val)}
                 placeholder="Select Year"
               />
+              {form.year === 'Other' && (
+                <input
+                  type="number"
+                  style={{ marginTop: '0.5rem' }}
+                  placeholder="Enter custom year"
+                  value={customYear}
+                  onChange={e => setCustomYear(e.target.value)}
+                  required
+                />
+              )}
             </div>
             <div className="emp-field"><label>Body Type</label>
               <CustomSelect
@@ -368,6 +407,14 @@ export default function UploadCarPage() {
                 onChange={val => setField('body_type', val)}
                 placeholder="Select Body Type"
               />
+              {form.body_type === 'Other' && (
+                <input
+                  style={{ marginTop: '0.5rem' }}
+                  placeholder="Enter custom body type"
+                  value={customBodyType}
+                  onChange={e => setCustomBodyType(e.target.value)}
+                />
+              )}
             </div>
             <div className="emp-field"><label>Fuel Type</label>
               <CustomSelect
@@ -376,6 +423,14 @@ export default function UploadCarPage() {
                 onChange={val => setField('fuel_type', val)}
                 placeholder="Select Fuel Type"
               />
+              {form.fuel_type === 'Other' && (
+                <input
+                  style={{ marginTop: '0.5rem' }}
+                  placeholder="Enter custom fuel type"
+                  value={customFuelType}
+                  onChange={e => setCustomFuelType(e.target.value)}
+                />
+              )}
             </div>
             <div className="emp-field"><label>Transmission</label>
               <CustomSelect
@@ -384,6 +439,14 @@ export default function UploadCarPage() {
                 onChange={val => setField('transmission', val)}
                 placeholder="Select Transmission"
               />
+              {form.transmission === 'Other' && (
+                <input
+                  style={{ marginTop: '0.5rem' }}
+                  placeholder="Enter custom transmission"
+                  value={customTransmission}
+                  onChange={e => setCustomTransmission(e.target.value)}
+                />
+              )}
             </div>
             <div className="emp-field"><label>KM Driven</label><input type="number" value={form.km_driven} onChange={e => setField('km_driven', +e.target.value)} min={0} /></div>
             <div className="emp-field"><label>Ownership</label>
@@ -393,6 +456,14 @@ export default function UploadCarPage() {
                 onChange={val => setField('ownership', val)}
                 placeholder="Select Ownership"
               />
+              {form.ownership === 'Other' && (
+                <input
+                  style={{ marginTop: '0.5rem' }}
+                  placeholder="Enter custom ownership"
+                  value={customOwnership}
+                  onChange={e => setCustomOwnership(e.target.value)}
+                />
+              )}
             </div>
             <div className="emp-field"><label>Price (₹) *</label><input type="number" value={form.price || ''} onChange={e => setField('price', +e.target.value)} min={0} required /></div>
             <div className="emp-field"><label>Original Price (₹)</label><input type="number" value={form.original_price || ''} onChange={e => setField('original_price', +e.target.value)} min={0} /></div>
