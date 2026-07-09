@@ -5,12 +5,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import DateTimePicker from '@/components/DateTimePicker';
 import { ArrowLeft, Phone, MessageCircle, Mail, Edit, Plus, Check, X, Clock, Car, UserPlus, Download, ClipboardCheck, Sparkles, Armchair, Wrench, FileCheck, Camera, ClipboardList } from 'lucide-react';
-import { LEAD_STAGES, FOLLOW_UP_TYPE_LABELS, formatBudget, type Lead, type LeadStatus, type FollowUp, type CustomerNote, type TestDrive, type Booking } from '@/types/crm';
+import { LEAD_STAGES, FOLLOW_UP_TYPE_LABELS, formatBudget, type Lead, type LeadStatus, type FollowUp, type CustomerNote, type TestDrive, type Booking, type WhatsAppMessageLog } from '@/types/crm';
 import { getProxiedImageUrl } from '@/lib/utils';
 import InspectionModal from '@/components/InspectionModal';
 import { downloadInspectionPdf, openPdf } from '@/lib/pdf-utils';
 
-const TABS = ['Timeline','Follow-ups','Notes','Test Drives','Booking'];
+const TABS = ['Timeline','Follow-ups','Notes','WhatsApp','Test Drives','Booking'];
 
 const renderInspectionReport = (note: string) => {
   if (!note.includes('Used Car Inspection Report')) {
@@ -205,6 +205,8 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
   const [notes, setNotes] = useState<CustomerNote[]>([]);
   const [testDrives, setTestDrives] = useState<TestDrive[]>([]);
   const [booking, setBooking] = useState<Booking|null>(null);
+  const [waLogs, setWaLogs] = useState<WhatsAppMessageLog[]>([]);
+  const [sendingWa, setSendingWa] = useState(false);
   const [tab, setTab] = useState('Timeline');
   const [loading, setLoading] = useState(true);
   const [myId, setMyId] = useState<string|null>(null);
@@ -239,15 +241,17 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
   };
 
   const loadAll = async () => {
-    const [{ data:l }, { data:fu }, { data:n }, { data:td }, { data:bk }] = await Promise.all([
+    const [{ data:l }, { data:fu }, { data:n }, { data:td }, { data:bk }, { data:wl }] = await Promise.all([
       supabase.from('leads').select('*, assigned_employee:employees!assigned_to(name,employee_id)').eq('id',id).single(),
       supabase.from('follow_ups').select('*, employee:employees!employee_id(name)').eq('lead_id',id).order('scheduled_at',{ascending:false}),
       supabase.from('customer_notes').select('*, employee:employees!employee_id(name)').eq('lead_id',id).order('created_at',{ascending:false}),
       supabase.from('test_drives').select('*, employee:employees!employee_id(name)').eq('lead_id',id).order('scheduled_at',{ascending:false}),
       supabase.from('bookings').select('*').eq('lead_id',id).order('created_at',{ascending:false}).limit(1).maybeSingle(),
+      supabase.from('whatsapp_message_logs').select('*').eq('lead_id',id).order('created_at',{ascending:false})
     ]);
     setLead(l as Lead); setFollowUps((fu||[]) as FollowUp[]); setNotes((n||[]) as CustomerNote[]);
     setTestDrives((td||[]) as TestDrive[]); setBooking(bk as Booking|null);
+    setWaLogs((wl||[]) as WhatsAppMessageLog[]);
     setLoading(false);
   };
 
@@ -876,6 +880,217 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
                 );
               })}
               {notes.length===0&&<p style={{color:'var(--db-tx3)',fontSize:'.875rem'}}>No notes yet.</p>}
+            </div>
+          )}
+
+          {/* WHATSAPP */}
+          {tab==='WhatsApp'&&(
+            <div className="crm-panel">
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                {/* Send Message Panel */}
+                <div style={{ background: 'var(--db-sf2)', padding: '1.25rem', borderRadius: '14px', border: '1px solid var(--db-bd)' }}>
+                  <h3 style={{ margin: '0 0 1rem 0', fontSize: '0.9375rem', fontWeight: 700, color: 'var(--db-tx)' }}>Send WhatsApp Message</h3>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div className="emp-field">
+                      <label>Message Template / Type</label>
+                      <select 
+                        value={waTemplate} 
+                        onChange={(e) => handleTemplateChange(e.target.value)}
+                        style={{ padding: '0.625rem', background: 'var(--db-sf)', border: '1px solid var(--db-bd)', borderRadius: '8px', color: 'var(--db-tx)', width: '100%', outline: 'none' }}
+                      >
+                        <option value="welcome">Welcome Greeting</option>
+                        <option value="followup">Follow-Up Message</option>
+                        <option value="testdrive">Test Drive Details</option>
+                        <option value="custom">Custom Message (Free Text)</option>
+                      </select>
+                    </div>
+
+                    <div className="emp-field">
+                      <label>Message Content</label>
+                      <textarea
+                        rows={6}
+                        value={waText}
+                        onChange={(e) => setWaText(e.target.value)}
+                        placeholder="Type message here..."
+                        style={{ padding: '0.75rem', background: 'var(--db-sf)', border: '1px solid var(--db-bd)', borderRadius: '8px', color: 'var(--db-tx)', width: '100%', resize: 'none', fontFamily: 'inherit', fontSize: '0.875rem', outline: 'none' }}
+                      />
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+                      <button
+                        type="button"
+                        className="crm-add-btn"
+                        style={{ flex: 1, display: 'flex', justifyContent: 'center', background: 'linear-gradient(135deg, #E10613, #c70511)', border: 'none', cursor: 'pointer', padding: '0.625rem' }}
+                        disabled={sendingWa}
+                        onClick={async () => {
+                          if (!waText.trim()) return;
+                          setSendingWa(true);
+                          try {
+                            const res = await fetch('/api/leads/whatsapp-greeting', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ leadId: id, force: true })
+                            });
+                            const data = await res.json();
+                            if (data.success) {
+                              showToast('Automated greeting sent successfully!');
+                              loadAll();
+                            } else {
+                              showToast('Error: ' + (data.error || 'Failed to send via Twilio'));
+                            }
+                          } catch (err: any) {
+                            showToast('Error: ' + err.message);
+                          } finally {
+                            setSendingWa(false);
+                          }
+                        }}
+                      >
+                        {sendingWa ? 'Sending...' : 'Send via Twilio API'}
+                      </button>
+                      
+                      <button
+                        type="button"
+                        className="crm-view-btn"
+                        style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px', cursor: 'pointer', border: '1px solid var(--db-bd)', padding: '0.625rem', borderRadius: '8px', color: 'var(--db-tx2)' }}
+                        onClick={sendWhatsAppMessage}
+                      >
+                        <MessageCircle size={14} /> WhatsApp Web
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Automation Summary Panel */}
+                <div style={{ background: 'var(--db-sf2)', padding: '1.25rem', borderRadius: '14px', border: '1px solid var(--db-bd)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div>
+                    <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '0.9375rem', fontWeight: 700, color: 'var(--db-tx)' }}>Automation Status</h3>
+                    <p style={{ margin: '0 0 1rem 0', fontSize: '0.75rem', color: 'var(--db-tx3)' }}>Real-time status of automated greetings for this customer lead.</p>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid var(--db-bd)' }}>
+                        <span style={{ fontSize: '0.8125rem', color: 'var(--db-tx3)' }}>Greeting Status</span>
+                        {lead.wa_greeting_sent ? (
+                          <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Greeting Sent
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: '0.75rem', color: 'var(--db-tx3)', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="12" x2="12" y2="12"/></svg> Greeting Pending
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: '1px solid var(--db-bd)' }}>
+                        <span style={{ fontSize: '0.8125rem', color: 'var(--db-tx3)' }}>Phone Number</span>
+                        <span style={{ fontSize: '0.8125rem', color: 'var(--db-tx)', fontWeight: 600 }}>{lead.whatsapp || lead.phone}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0' }}>
+                        <span style={{ fontSize: '0.8125rem', color: 'var(--db-tx3)' }}>Total Logs</span>
+                        <span style={{ fontSize: '0.8125rem', color: 'var(--db-tx)', fontWeight: 600 }}>{waLogs.length} attempts</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ borderTop: '1px solid var(--db-bd)', paddingTop: '1rem', marginTop: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: 'var(--db-tx3)', lineHeight: 1.4 }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, color: 'var(--db-gold)' }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                      <span>Automated greetings are triggered on lead registration using Twilio Sandbox. Ensure Twilio configuration is active in Deno environment secrets.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Logs History Section */}
+              <h3 style={{ margin: '1.5rem 0 1rem 0', fontSize: '1rem', fontWeight: 700, color: 'var(--db-tx)' }}>WhatsApp Outbox Logs</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {waLogs.map(log => (
+                  <div key={log.id} style={{ background: 'var(--db-sf)', border: '1px solid var(--db-bd)', borderRadius: '12px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', transition: 'border-color 0.2s' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{
+                          width: '8px',
+                          height: '8px',
+                          borderRadius: '50%',
+                          background: log.status === 'sent' || log.status === 'delivered' ? '#10b981' : '#ef4444'
+                        }} />
+                        <span style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--db-tx)' }}>
+                          {log.message_type === 'sell_car_greeting' ? '🚗 Sell Car Greeting' : 
+                           log.message_type === 'contact_greeting' ? '✉️ Contact Us Greeting' : 
+                           log.message_type === 'crm_welcome' ? '📞 CRM Welcome Greeting' : '💬 Custom Message'}
+                        </span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--db-tx3)' }}>
+                          to {log.phone}
+                        </span>
+                      </div>
+                      
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{
+                          fontSize: '0.6875rem',
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                          textTransform: 'uppercase',
+                          background: log.status === 'sent' || log.status === 'delivered' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+                          color: log.status === 'sent' || log.status === 'delivered' ? '#10b981' : '#ef4444'
+                        }}>
+                          {log.status}
+                        </span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--db-tx3)' }}>
+                          {new Date(log.created_at).toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={{ fontSize: '0.8125rem', color: 'var(--db-tx2)', background: 'var(--db-sf2)', padding: '0.75rem', borderRadius: '8px', whiteSpace: 'pre-wrap', lineHeight: 1.5, fontFamily: 'monospace' }}>
+                      {log.message_body}
+                    </div>
+
+                    {log.error_message && (
+                      <div style={{ fontSize: '0.75rem', color: '#ef4444', background: 'rgba(239,68,68,0.05)', padding: '0.5rem 0.75rem', borderRadius: '8px', borderLeft: '3px solid #ef4444' }}>
+                        <strong>Error:</strong> {log.error_message}
+                        <button
+                          onClick={async () => {
+                            try {
+                              const res = await fetch('/api/leads/whatsapp-greeting', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ leadId: id, force: true })
+                              });
+                              const data = await res.json();
+                              if (data.success) {
+                                showToast('WhatsApp greeting resent!');
+                                loadAll();
+                              } else {
+                                showToast('Error resending: ' + (data.error || 'Failed'));
+                              }
+                            } catch (err: any) {
+                              showToast('Error: ' + err.message);
+                            }
+                          }}
+                          style={{
+                            marginLeft: '1rem',
+                            background: '#ef4444',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '4px',
+                            padding: '2px 8px',
+                            fontSize: '0.6875rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          Retry Trigger
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                {waLogs.length === 0 && (
+                  <p style={{ color: 'var(--db-tx3)', fontSize: '0.875rem', padding: '1rem 0', fontStyle: 'italic' }}>No WhatsApp logs found for this customer.</p>
+                )}
+              </div>
             </div>
           )}
 
