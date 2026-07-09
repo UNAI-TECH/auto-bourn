@@ -10,11 +10,7 @@ import { getProxiedImageUrl } from '@/lib/utils';
 import InspectionModal from '@/components/InspectionModal';
 import { downloadInspectionPdf, openPdf } from '@/lib/pdf-utils';
 
-<<<<<<< HEAD
-const TABS = ['Timeline','Follow-ups','Notes','WhatsApp','Test Drives','Booking'];
-=======
-const TABS = ['Calls','Timeline','Follow-ups','Notes','Test Drives','Booking'];
->>>>>>> f40e0c6ddeff2453b751e57f8bf24f620bebd971
+const TABS = ['Calls','Timeline','Follow-ups','Notes','WhatsApp','Test Drives','Booking'];
 
 const renderInspectionReport = (note: string) => {
   if (!note.includes('Used Car Inspection Report')) {
@@ -209,14 +205,10 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
   const [notes, setNotes] = useState<CustomerNote[]>([]);
   const [testDrives, setTestDrives] = useState<TestDrive[]>([]);
   const [booking, setBooking] = useState<Booking|null>(null);
-<<<<<<< HEAD
   const [waLogs, setWaLogs] = useState<WhatsAppMessageLog[]>([]);
   const [sendingWa, setSendingWa] = useState(false);
-  const [tab, setTab] = useState('Timeline');
-=======
   const [callSessions, setCallSessions] = useState<any[]>([]);
   const [tab, setTab] = useState('Calls');
->>>>>>> f40e0c6ddeff2453b751e57f8bf24f620bebd971
   const [loading, setLoading] = useState(true);
   const [myId, setMyId] = useState<string|null>(null);
   const [employees, setEmployees] = useState<{id:string;name:string;role?:string}[]>([]);
@@ -263,28 +255,18 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
   };
 
   const loadAll = async () => {
-<<<<<<< HEAD
-    const [{ data:l }, { data:fu }, { data:n }, { data:td }, { data:bk }, { data:wl }] = await Promise.all([
-=======
-    const [{ data:l }, { data:fu }, { data:n }, { data:td }, { data:bk }, { data:calls }] = await Promise.all([
->>>>>>> f40e0c6ddeff2453b751e57f8bf24f620bebd971
+    const [{ data:l }, { data:fu }, { data:n }, { data:td }, { data:bk }, { data:wl }, { data:calls }] = await Promise.all([
       supabase.from('leads').select('*, assigned_employee:employees!assigned_to(name,employee_id)').eq('id',id).single(),
       supabase.from('follow_ups').select('*, employee:employees!employee_id(name)').eq('lead_id',id).order('scheduled_at',{ascending:false}),
       supabase.from('customer_notes').select('*, employee:employees!employee_id(name)').eq('lead_id',id).order('created_at',{ascending:false}),
       supabase.from('test_drives').select('*, employee:employees!employee_id(name)').eq('lead_id',id).order('scheduled_at',{ascending:false}),
       supabase.from('bookings').select('*').eq('lead_id',id).order('created_at',{ascending:false}).limit(1).maybeSingle(),
-<<<<<<< HEAD
-      supabase.from('whatsapp_message_logs').select('*').eq('lead_id',id).order('created_at',{ascending:false})
-    ]);
-    setLead(l as Lead); setFollowUps((fu||[]) as FollowUp[]); setNotes((n||[]) as CustomerNote[]);
-    setTestDrives((td||[]) as TestDrive[]); setBooking(bk as Booking|null);
-    setWaLogs((wl||[]) as WhatsAppMessageLog[]);
-=======
+      supabase.from('whatsapp_message_logs').select('*').eq('lead_id',id).order('created_at',{ascending:false}),
       supabase.from('employee_calls').select('*, employee:employees!employee_id(name)').eq('lead_id',id).order('created_at',{ascending:false}),
     ]);
     setLead(l as Lead); setFollowUps((fu||[]) as FollowUp[]); setNotes((n||[]) as CustomerNote[]);
-    setTestDrives((td||[]) as TestDrive[]); setBooking(bk as Booking|null); setCallSessions(calls || []);
->>>>>>> f40e0c6ddeff2453b751e57f8bf24f620bebd971
+    setTestDrives((td||[]) as TestDrive[]); setBooking(bk as Booking|null);
+    setWaLogs((wl||[]) as WhatsAppMessageLog[]); setCallSessions(calls || []);
     setLoading(false);
   };
 
