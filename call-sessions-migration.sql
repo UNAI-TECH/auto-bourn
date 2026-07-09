@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS employee_calls (
   talking_time INTEGER DEFAULT 0, -- in seconds
   review VARCHAR(50) CHECK (review IN ('highly not interested', 'not interested', 'neutral', 'interested', 'very much interested')),
   notes TEXT,
+  recording_url TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -38,3 +39,6 @@ CREATE POLICY "Employees can insert calls" ON employee_calls FOR INSERT TO authe
 DROP POLICY IF EXISTS "Employees can update own calls" ON employee_calls;
 CREATE POLICY "Employees can update own calls" ON employee_calls FOR UPDATE TO authenticated
   USING (employee_id IN (SELECT id FROM employees WHERE auth_user_id = auth.uid()));
+
+-- Add column if table already exists
+ALTER TABLE employee_calls ADD COLUMN IF NOT EXISTS recording_url TEXT;

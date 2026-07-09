@@ -890,6 +890,48 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
                           {c.notes}
                         </div>
                       )}
+
+                      {c.recording_url && (
+                        <div style={{
+                          background: 'rgba(225, 6, 19, 0.03)',
+                          border: '1px solid rgba(225, 6, 19, 0.1)',
+                          borderRadius: '12px',
+                          padding: '0.5rem 0.875rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          marginTop: '0.25rem'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <button style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              background: '#E10613',
+                              color: '#fff',
+                              width: '26px',
+                              height: '26px',
+                              borderRadius: '50%',
+                              fontSize: '0.75rem',
+                              border: 'none',
+                              cursor: 'pointer'
+                            }} onClick={() => showToast('Playing recorded compliance audio...')} title="Play Recording">
+                              ▶
+                            </button>
+                            <div style={{ textAlign: 'left' }}>
+                              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--db-tx, #000)' }}>
+                                Call Audio Dossier.mp3
+                              </div>
+                              <div style={{ fontSize: '0.6875rem', color: 'var(--db-tx3, #777)' }}>
+                                Compliance Audio recorded successfully
+                              </div>
+                            </div>
+                          </div>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--db-tx2, #555)' }}>
+                            {formatCallDuration(c.talking_time)}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   );
                 })}

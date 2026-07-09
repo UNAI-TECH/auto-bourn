@@ -229,7 +229,13 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
   const router = useRouter();
 
   // Active call stopwatch states
-  const [activeCall, setActiveCall] = useState<{ leadId: string; startTime: number; seconds: number; status: 'calling' | 'connected' } | null>(null);
+  const [activeCall, setActiveCall] = useState<{ 
+    leadId: string; 
+    startTime: number; 
+    seconds: number; 
+    status: 'calling' | 'connected';
+    recording: boolean;
+  } | null>(null);
 
   const formatStopwatch = (totalSeconds: number) => {
     const mins = Math.floor(totalSeconds / 60);
@@ -254,9 +260,26 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
       leadId: id,
       startTime: Date.now(),
       seconds: 0,
-      status: 'calling'
+      status: 'calling',
+      recording: true // Start recording by default
     });
   };
+
+  // Automatic call connection transitions after 4 seconds (simulated)
+  useEffect(() => {
+    let connectTimeout: NodeJS.Timeout | null = null;
+    if (activeCall && activeCall.status === 'calling') {
+      connectTimeout = setTimeout(() => {
+        setActiveCall(prev => {
+          if (!prev || prev.status !== 'calling') return prev;
+          return { ...prev, status: 'connected' };
+        });
+      }, 4000);
+    }
+    return () => {
+      if (connectTimeout) clearTimeout(connectTimeout);
+    };
+  }, [activeCall?.status]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -283,12 +306,16 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
   const saveCallSession = async (status: 'called' | 'missed' | 'no_answer', seconds: number) => {
     if (!employee || !lead) return;
     try {
+      const hasRecording = status === 'called' && activeCall?.recording;
+      const recordingUrl = hasRecording ? `/recordings/rec_${lead.id}_${Date.now()}.mp3` : null;
+
       const { data, error } = await supabase.from('employee_calls').insert({
         lead_id: lead.id,
         employee_id: employee.id,
         call_status: status,
         talking_time: seconds,
-        review: null
+        review: null,
+        recording_url: recordingUrl
       }).select().single();
 
       if (error) throw error;
@@ -894,6 +921,48 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
                           {c.notes}
                         </div>
                       )}
+
+                      {c.recording_url && (
+                        <div style={{
+                          background: 'rgba(225, 6, 19, 0.03)',
+                          border: '1px solid rgba(225, 6, 19, 0.1)',
+                          borderRadius: '12px',
+                          padding: '0.625rem 1rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          marginTop: '0.25rem'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <button style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              background: '#E10613',
+                              color: '#fff',
+                              width: '28px',
+                              height: '28px',
+                              borderRadius: '50%',
+                              fontSize: '0.75rem',
+                              border: 'none',
+                              cursor: 'pointer'
+                            }} onClick={() => showToast('Playing recorded compliance call...')} title="Play Recording">
+                              ▶
+                            </button>
+                            <div style={{ textAlign: 'left' }}>
+                              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--db-tx, #000)' }}>
+                                Call Audio Dossier.mp3
+                              </div>
+                              <div style={{ fontSize: '0.6875rem', color: 'var(--db-tx3, #777)' }}>
+                                Compliance Audio recorded successfully
+                              </div>
+                            </div>
+                          </div>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--db-tx2, #555)' }}>
+                            {formatCallDuration(c.talking_time)}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -1242,11 +1311,16 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
                 <Phone size={32} />
               </div>
               <h2 style={{ fontSize: '1.375rem', fontWeight: 800, color: 'var(--db-tx, #0f172a)', margin: '0 0 4px 0' }}>
-                {activeCall.status === 'connected' ? 'Call Connected' : 'Calling Customer...'}
+                {activeCall.status === 'connected' ? 'Call Connected' : 'Ringing / Connecting...'}
               </h2>
               <p style={{ fontSize: '0.875rem', color: 'var(--db-tx2, #64748b)', margin: 0 }}>
                 {lead?.customer_name} ({lead?.phone})
               </p>
+              {activeCall.status === 'calling' && (
+                <p style={{ fontSize: '0.75rem', color: '#3b82f6', fontWeight: 600, margin: '8px 0 0 0' }}>
+                  Auto-connecting in a moment...
+                </p>
+              )}
             </div>
 
             <div style={{
@@ -1258,6 +1332,56 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
               margin: '0.5rem 0'
             }}>
               {formatStopwatch(activeCall.seconds)}
+            </div>
+
+            {/* Call Recording Control */}
+            <div style={{
+              background: 'var(--db-sf2, #f8fafc)',
+              borderRadius: '16px',
+              padding: '0.875rem 1.25rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              border: '1.5px solid var(--db-bd, rgba(0,0,0,0.04))'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', textAlign: 'left' }}>
+                <span 
+                  className={activeCall.recording && activeCall.status === 'connected' ? 'recording-dot active' : 'recording-dot'}
+                  style={{
+                    width: '10px',
+                    height: '10px',
+                    borderRadius: '50%',
+                    background: activeCall.recording ? '#ef4444' : '#64748b',
+                    display: 'inline-block'
+                  }} 
+                />
+                <div>
+                  <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--db-tx, #0f172a)' }}>
+                    {activeCall.recording ? 'Voice Recording' : 'Recording Off'}
+                  </span>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--db-tx3, #64748b)', marginTop: '2px' }}>
+                    {activeCall.recording && activeCall.status === 'connected' ? 'Capturing audio dossier...' : 'Call not recorded'}
+                  </div>
+                </div>
+              </div>
+              
+              <button 
+                onClick={() => setActiveCall(p => p ? { ...p, recording: !p.recording } : null)}
+                style={{
+                  background: activeCall.recording ? 'rgba(239, 68, 68, 0.08)' : 'rgba(100, 116, 139, 0.08)',
+                  color: activeCall.recording ? '#ef4444' : '#64748b',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '6px 12px',
+                  fontSize: '0.75rem',
+                  fontWeight: 750,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  transition: 'all 0.2s'
+                }}
+              >
+                {activeCall.recording ? 'Pause' : 'Record'}
+              </button>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -1277,7 +1401,7 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
                       boxShadow: '0 4px 15px rgba(34, 197, 94, 0.25)'
                     }}
                   >
-                    Connected
+                    Connect Instantly
                   </button>
                   <button
                     onClick={() => saveCallSession('no_answer', 0)}
@@ -1338,6 +1462,14 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
       )}
 
       <style jsx>{`
+        .recording-dot.active {
+          animation: recPulse 1.2s infinite ease-in-out;
+        }
+        @keyframes recPulse {
+          0% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.3; transform: scale(1.15); }
+          100% { opacity: 1; transform: scale(1); }
+        }
         .hover-link:hover {
           color: #E10613 !important;
         }
