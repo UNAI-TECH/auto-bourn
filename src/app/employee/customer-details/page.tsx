@@ -207,7 +207,7 @@ export default function CustomerDetailsPage() {
     whatsapp: '',
     sameAsPhone: true,
     email: '',
-    source: 'Walk-in',
+    source: '',
     city: '',
     state: '',
     occupation: '',
@@ -266,6 +266,7 @@ export default function CustomerDetailsPage() {
   ];
 
   const sourceOptions = [
+    { value: '', label: 'Select Source Category...' },
     { value: 'Walk-in', label: 'Walk-in' },
     { value: 'Olx', label: 'Olx' },
     { value: 'Facebook', label: 'Facebook' },
@@ -324,6 +325,12 @@ export default function CustomerDetailsPage() {
     e.preventDefault();
     if (!employee) return;
     setErrorMsg('');
+
+    if (!form.source) {
+      setErrorMsg('Please select a Source Category.');
+      return;
+    }
+
     setSaving(true);
 
     try {
@@ -419,7 +426,7 @@ Expected Price: ₹${form.sell_expected_price}
         whatsapp: '',
         sameAsPhone: true,
         email: '',
-        source: 'Walk-in',
+        source: '',
         city: '',
         state: '',
         occupation: '',
