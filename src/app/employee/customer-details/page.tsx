@@ -19,6 +19,9 @@ interface CarItem {
 }
 
 const BRANDS = ['Mercedes-Benz','BMW','Audi','Jaguar','Land Rover','Volvo','Lexus','Porsche','Toyota','Honda','Hyundai','Kia','Tata','Mahindra','Maruti Suzuki','Volkswagen','Skoda','MG','Mini','Lamborghini','Jeep','Crysta','Tucson','Other'];
+const FUEL_TYPES = ['Petrol','Diesel','Electric','Hybrid','Petrol Mild-Hybrid','CNG','LPG','Other'];
+const TRANSMISSIONS = ['Automatic','Manual','CVT','DCT','AMT','Other'];
+const YEARS = Array.from({ length: 28 }, (_, i) => String(new Date().getFullYear() + 1 - i));
 const TIMELINES = ['Within 1 week','1–2 weeks','1 month','1–3 months','3–6 months','6+ months'];
 
 interface Option {
@@ -196,8 +199,17 @@ export default function CustomerDetailsPage() {
     budget: '',
     purchase_timeline: '',
     notes: '',
+    
+    // Selling details
+    sell_brand_model: '',
+    sell_year: '',
+    sell_km_driven: '',
+    sell_fuel_type: '',
+    sell_transmission: '',
+    sell_expected_price: '',
   });
 
+  const [leadType, setLeadType] = useState<'buy' | 'sell'>('buy');
   const [errorMsg, setErrorMsg] = useState('');
   const supabase = createClient();
 
@@ -217,6 +229,21 @@ export default function CustomerDetailsPage() {
   const timelineOptions = [
     { value: '', label: 'Select from here...' },
     ...TIMELINES.map(t => ({ value: t, label: t }))
+  ];
+
+  const fuelTypeOptions = [
+    { value: '', label: 'Select Fuel Type' },
+    ...FUEL_TYPES.map(f => ({ value: f, label: f }))
+  ];
+
+  const transmissionOptions = [
+    { value: '', label: 'Select Transmission' },
+    ...TRANSMISSIONS.map(t => ({ value: t, label: t }))
+  ];
+
+  const yearOptions = [
+    { value: '', label: 'Select Year' },
+    ...YEARS.map(y => ({ value: y, label: y }))
   ];
 
   useEffect(() => {
@@ -271,9 +298,33 @@ export default function CustomerDetailsPage() {
     setSaving(true);
 
     try {
-      const finalCarName = form.interested_car_id 
-        ? form.interested_car_manual 
-        : form.interested_car_manual;
+      let finalCarName = '';
+      let finalBudget = null;
+      let finalPreferredBrand = '';
+      let finalNotes = form.notes.trim();
+
+      if (leadType === 'sell') {
+        finalCarName = `[Selling] ${form.sell_brand_model} (${form.sell_year})`;
+        finalBudget = form.sell_expected_price ? parseInt(form.sell_expected_price) : null;
+        // Extrapolate brand from model name
+        finalPreferredBrand = form.sell_brand_model.split(' ')[0] || '';
+
+        const sellDetailsNote = `--- SELLING CAR DETAILS ---
+Brand & Model: ${form.sell_brand_model}
+Year: ${form.sell_year}
+KM Driven: ${form.sell_km_driven}
+Fuel Type: ${form.sell_fuel_type}
+Transmission: ${form.sell_transmission}
+Expected Price: ₹${form.sell_expected_price}
+----------------------------`;
+        finalNotes = finalNotes ? `${sellDetailsNote}\n\nNotes:\n${finalNotes}` : sellDetailsNote;
+      } else {
+        finalCarName = form.interested_car_id 
+          ? form.interested_car_manual 
+          : form.interested_car_manual;
+        finalBudget = form.budget ? parseInt(form.budget) : null;
+        finalPreferredBrand = form.preferred_brand;
+      }
 
       const payload = {
         customer_name: form.customer_name,
@@ -285,9 +336,9 @@ export default function CustomerDetailsPage() {
         occupation: form.occupation || null,
         source: form.source || 'Walk-in',
         interested_car: finalCarName || null,
-        preferred_brand: form.preferred_brand || null,
-        budget: form.budget ? parseInt(form.budget) : null,
-        purchase_timeline: form.purchase_timeline || null,
+        preferred_brand: finalPreferredBrand || null,
+        budget: finalBudget,
+        purchase_timeline: leadType === 'buy' ? (form.purchase_timeline || null) : null,
         lead_status: 'new',
         assigned_to: employee.id,
         created_by: employee.id,
@@ -302,11 +353,11 @@ export default function CustomerDetailsPage() {
       if (error) throw error;
 
       // Also create a customer note if notes are filled
-      if (form.notes.trim() && newLead) {
+      if (finalNotes.trim() && newLead) {
         await supabase.from('customer_notes').insert({
           lead_id: newLead.id,
           employee_id: employee.id,
-          note: form.notes.trim(),
+          note: finalNotes.trim(),
         });
       }
 
@@ -343,7 +394,14 @@ export default function CustomerDetailsPage() {
         budget: '',
         purchase_timeline: '',
         notes: '',
+        sell_brand_model: '',
+        sell_year: '',
+        sell_km_driven: '',
+        sell_fuel_type: '',
+        sell_transmission: '',
+        sell_expected_price: '',
       });
+      setLeadType('buy');
     } catch (err: any) {
       console.error(err);
       setErrorMsg(err.message || 'Something went wrong. Please try again.');
@@ -479,64 +537,149 @@ export default function CustomerDetailsPage() {
                 </div>
               </div>
 
-              {/* Car Interests & Preference */}
+              {/* Transaction Type */}
               <div className="upl-section">
-                <h3 className="upl-section-title">2. Car Interests & Preference</h3>
-                <div className="upl-grid">
-                  <div className="emp-field">
-                    <label>Interested Car (From Inventory)</label>
-                    <CustomSelect
-                      options={carOptions}
-                      value={form.interested_car_id}
-                      onChange={handleCarChange}
-                      placeholder="Select from here..."
-                      disabled={loadingCars}
-                    />
-                  </div>
-
-                  <div className="emp-field">
-                    <label>Or Type Car Name Manually</label>
-                    <input 
-                      type="text" 
-                      value={form.interested_car_manual}
-                      onChange={e => setForm(f => ({ ...f, interested_car_manual: e.target.value, interested_car_id: '' }))}
-                    />
-                  </div>
-
-                  <div className="emp-field">
-                    <label>Preferred Brand</label>
-                    <CustomSelect
-                      options={brandOptions}
-                      value={form.preferred_brand}
-                      onChange={val => setForm(f => ({ ...f, preferred_brand: val }))}
-                      placeholder="Select from here..."
-                    />
-                  </div>
-
-                  <div className="emp-field">
-                    <label>Rupees</label>
-                    <input 
-                      type="number" 
-                      value={form.budget}
-                      onChange={e => setForm(f => ({ ...f, budget: e.target.value }))}
-                    />
-                  </div>
-
-                  <div className="emp-field">
-                    <label>Purchase Timeline</label>
-                    <CustomSelect
-                      options={timelineOptions}
-                      value={form.purchase_timeline}
-                      onChange={val => setForm(f => ({ ...f, purchase_timeline: val }))}
-                      placeholder="Select from here..."
-                    />
-                  </div>
+                <h3 className="upl-section-title">2. Transaction Type</h3>
+                <div style={{ maxWidth: '400px' }}>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700, marginBottom: '0.5rem' }}>Interest Type *</label>
+                  <CustomSelect
+                    options={[
+                      { value: 'buy', label: 'Buy (Customer wants to purchase a vehicle)' },
+                      { value: 'sell', label: 'Sell (Customer wants to sell their vehicle)' }
+                    ]}
+                    value={leadType}
+                    onChange={val => setLeadType(val as 'buy' | 'sell')}
+                    placeholder="Select Type..."
+                  />
                 </div>
               </div>
 
+              {/* Conditional Details Section */}
+              {leadType === 'buy' ? (
+                <div className="upl-section">
+                  <h3 className="upl-section-title">3. Car Interests & Preference (Buying)</h3>
+                  <div className="upl-grid">
+                    <div className="emp-field">
+                      <label>Interested Car (From Inventory)</label>
+                      <CustomSelect
+                        options={carOptions}
+                        value={form.interested_car_id}
+                        onChange={handleCarChange}
+                        placeholder="Select from here..."
+                        disabled={loadingCars}
+                      />
+                    </div>
+
+                    <div className="emp-field">
+                      <label>Or Type Car Name Manually</label>
+                      <input 
+                        type="text" 
+                        value={form.interested_car_manual}
+                        onChange={e => setForm(f => ({ ...f, interested_car_manual: e.target.value, interested_car_id: '' }))}
+                      />
+                    </div>
+
+                    <div className="emp-field">
+                      <label>Preferred Brand</label>
+                      <CustomSelect
+                        options={brandOptions}
+                        value={form.preferred_brand}
+                        onChange={val => setForm(f => ({ ...f, preferred_brand: val }))}
+                        placeholder="Select from here..."
+                      />
+                    </div>
+
+                    <div className="emp-field">
+                      <label>Budget (Rupees)</label>
+                      <input 
+                        type="number" 
+                        value={form.budget}
+                        onChange={e => setForm(f => ({ ...f, budget: e.target.value }))}
+                      />
+                    </div>
+
+                    <div className="emp-field">
+                      <label>Purchase Timeline</label>
+                      <CustomSelect
+                        options={timelineOptions}
+                        value={form.purchase_timeline}
+                        onChange={val => setForm(f => ({ ...f, purchase_timeline: val }))}
+                        placeholder="Select from here..."
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="upl-section">
+                  <h3 className="upl-section-title">3. Car Details (Selling)</h3>
+                  <div className="upl-grid">
+                    <div className="emp-field">
+                      <label>Car Brand & Model *</label>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. Mercedes-Benz C-Class"
+                        value={form.sell_brand_model}
+                        onChange={e => setForm(f => ({ ...f, sell_brand_model: e.target.value }))}
+                        required={leadType === 'sell'}
+                      />
+                    </div>
+
+                    <div className="emp-field">
+                      <label>Year of Manufacture *</label>
+                      <CustomSelect
+                        options={yearOptions}
+                        value={form.sell_year}
+                        onChange={val => setForm(f => ({ ...f, sell_year: val }))}
+                        placeholder="Select Year..."
+                      />
+                    </div>
+
+                    <div className="emp-field">
+                      <label>KM Driven</label>
+                      <input 
+                        type="number" 
+                        placeholder="e.g. 45000"
+                        value={form.sell_km_driven}
+                        onChange={e => setForm(f => ({ ...f, sell_km_driven: e.target.value }))}
+                      />
+                    </div>
+
+                    <div className="emp-field">
+                      <label>Fuel Type</label>
+                      <CustomSelect
+                        options={fuelTypeOptions}
+                        value={form.sell_fuel_type}
+                        onChange={val => setForm(f => ({ ...f, sell_fuel_type: val }))}
+                        placeholder="Select Fuel Type..."
+                      />
+                    </div>
+
+                    <div className="emp-field">
+                      <label>Transmission</label>
+                      <CustomSelect
+                        options={transmissionOptions}
+                        value={form.sell_transmission}
+                        onChange={val => setForm(f => ({ ...f, sell_transmission: val }))}
+                        placeholder="Select Transmission..."
+                      />
+                    </div>
+
+                    <div className="emp-field">
+                      <label>Expected Price (Rupees)</label>
+                      <input 
+                        type="number" 
+                        placeholder="e.g. 3500000"
+                        value={form.sell_expected_price}
+                        onChange={e => setForm(f => ({ ...f, sell_expected_price: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Requirements & Notes */}
               <div className="upl-section">
-                <h3 className="upl-section-title">3. Requirements & Notes</h3>
+                <h3 className="upl-section-title">4. Requirements & Notes</h3>
                 <div className="emp-field">
                   <label>Requirements & Notes</label>
                   <textarea 

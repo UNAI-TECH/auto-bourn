@@ -229,11 +229,15 @@ export default function VehicleDetailPage() {
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
                 {[
-                  { l: 'Mileage', v: formatMileage(vehicle.mileage) }, { l: 'Fuel', v: vehicle.fuelType },
-                  { l: 'Transmission', v: vehicle.transmission }, { l: 'Drivetrain', v: vehicle.drivetrain },
-                  { l: 'Power', v: `${vehicle.horsepower} HP` }, { l: '0-100 km/h', v: vehicle.acceleration },
-                  { l: 'Ownership', v: vehicle.ownership }, { l: 'Registration', v: vehicle.registration },
-                ].map(s => (
+                  { l: 'Mileage', v: formatMileage(vehicle.mileage), show: vehicle.mileage !== null && vehicle.mileage !== undefined },
+                  { l: 'Fuel', v: vehicle.fuelType, show: !!vehicle.fuelType && vehicle.fuelType !== '—' && vehicle.fuelType !== '-' },
+                  { l: 'Transmission', v: vehicle.transmission, show: !!vehicle.transmission && vehicle.transmission !== '—' && vehicle.transmission !== '-' },
+                  { l: 'Drivetrain', v: vehicle.drivetrain, show: !!vehicle.drivetrain && vehicle.drivetrain !== '—' && vehicle.drivetrain !== '-' },
+                  { l: 'Power', v: `${vehicle.horsepower} HP`, show: !!vehicle.horsepower && vehicle.horsepower > 0 },
+                  { l: '0-100 km/h', v: vehicle.acceleration, show: !!vehicle.acceleration && vehicle.acceleration !== '—' && vehicle.acceleration !== '-' && vehicle.acceleration !== '0' && vehicle.acceleration !== '0s' },
+                  { l: 'Ownership', v: vehicle.ownership, show: !!vehicle.ownership && vehicle.ownership !== '—' && vehicle.ownership !== '-' },
+                  { l: 'Registration', v: vehicle.registration, show: !!vehicle.registration && vehicle.registration !== '—' && vehicle.registration !== '-' },
+                ].filter(s => s.show).map(s => (
                   <div key={s.l} style={{ padding: '0.75rem', background: '#FAFAFA', borderRadius: '10px', transition: 'all 0.3s', border: '1px solid transparent' }} className="spec-chip">
                     <p style={{ fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#B0B0B0', marginBottom: '4px' }}>{s.l}</p>
                     <p style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#2A2A2A' }}>{s.v}</p>
@@ -315,11 +319,15 @@ export default function VehicleDetailPage() {
                 <h3 style={{ fontFamily: 'var(--font-primary)', fontSize: '1.125rem', fontWeight: 600, marginBottom: '1rem', color: '#2A2A2A' }}>Specifications</h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
                   {[
-                    { l: 'Engine', v: vehicle.engine }, { l: 'Horsepower', v: `${vehicle.horsepower} HP` },
-                    { l: 'Torque', v: vehicle.torque }, { l: 'Top Speed', v: `${vehicle.topSpeed} km/h` },
-                    { l: 'Body Type', v: vehicle.bodyType }, { l: 'Seats', v: `${vehicle.seatingCapacity}` },
-                    { l: 'Color', v: vehicle.color }, { l: 'Interior', v: vehicle.interiorColor },
-                  ].map(s => (
+                    { l: 'Engine', v: vehicle.engine, show: !!vehicle.engine && vehicle.engine !== '—' && vehicle.engine !== '-' },
+                    { l: 'Horsepower', v: `${vehicle.horsepower} HP`, show: !!vehicle.horsepower && vehicle.horsepower > 0 },
+                    { l: 'Torque', v: vehicle.torque, show: !!vehicle.torque && vehicle.torque !== '—' && vehicle.torque !== '-' },
+                    { l: 'Top Speed', v: `${vehicle.topSpeed} km/h`, show: !!vehicle.topSpeed && vehicle.topSpeed > 0 },
+                    { l: 'Body Type', v: vehicle.bodyType, show: !!vehicle.bodyType && vehicle.bodyType !== '—' && vehicle.bodyType !== '-' },
+                    { l: 'Seats', v: `${vehicle.seatingCapacity}`, show: !!vehicle.seatingCapacity && vehicle.seatingCapacity > 0 },
+                    { l: 'Color', v: vehicle.color, show: !!vehicle.color && vehicle.color !== '—' && vehicle.color !== '-' },
+                    { l: 'Interior', v: vehicle.interiorColor, show: !!vehicle.interiorColor && vehicle.interiorColor !== '—' && vehicle.interiorColor !== '-' },
+                  ].filter(s => s.show).map(s => (
                     <div key={s.l} style={{ padding: '0.75rem', background: '#FFFFFF', borderRadius: '8px', border: '1px solid #ECECEC' }}>
                       <p style={{ fontSize: '0.6875rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#B0B0B0', marginBottom: '2px' }}>{s.l}</p>
                       <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#2A2A2A' }}>{s.v}</p>

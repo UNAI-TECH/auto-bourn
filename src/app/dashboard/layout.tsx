@@ -51,8 +51,6 @@ const crmNavItems = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [employee, setEmployee] = useState<Employee | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [updatingAvatar, setUpdatingAvatar] = useState(false);
   const darkMode = false;
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -92,53 +90,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [showTodayModal, setShowTodayModal] = useState(false);
   const [completingFUId, setCompletingFUId] = useState<string | null>(null);
   const [completingFUNote, setCompletingFUNote] = useState('');
-
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !employee) return;
-
-    if (file.size > 5 * 1024 * 1024) {
-      showAlert('Error', 'Image size must be less than 5MB', 'error');
-      return;
-    }
-
-    setUpdatingAvatar(true);
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `avatar-${employee.employee_id || 'temp'}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('car-images')
-        .upload(filePath, file);
-
-      if (uploadError) {
-        throw new Error(`Avatar upload failed: ${uploadError.message}`);
-      }
-
-      const { data } = supabase.storage
-        .from('car-images')
-        .getPublicUrl(filePath);
-
-      const uploadedAvatarUrl = data.publicUrl;
-
-      const { error: updateError } = await supabase
-        .from('employees')
-        .update({ avatar_url: uploadedAvatarUrl })
-        .eq('id', employee.id);
-
-      if (updateError) {
-        throw new Error(`Failed to update profile: ${updateError.message}`);
-      }
-
-      setEmployee({ ...employee, avatar_url: uploadedAvatarUrl });
-      showAlert('Success', 'Profile photo updated successfully!', 'success');
-    } catch (err: any) {
-      showAlert('Error', err.message || 'Failed to update profile photo', 'error');
-    } finally {
-      setUpdatingAvatar(false);
-    }
-  };
 
   const fetchContactMessages = async () => {
     setLoadingContacts(true);
@@ -426,37 +377,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 )}
               </button>
               <div 
-                onClick={() => fileInputRef.current?.click()} 
-                title="Change Photo"
                 style={{ 
                   position: 'relative', 
                   width: 36, 
                   height: 36, 
-                  cursor: 'pointer',
                   borderRadius: '50%',
                   overflow: 'hidden',
                   border: '2px solid var(--db-bd)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  transition: 'transform 0.2s',
                   flexShrink: 0
                 }}
-                className="admin-avatar-btn"
               >
-                {updatingAvatar ? (
-                  <div className="avatar-spinner-small" style={{ width: 16, height: 16, border: '2px solid var(--db-gold)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-                ) : (
-                  <Image src={getProxiedImageUrl(employee?.avatar_url || '/DEFAULT IMAGE.PNG')} alt={employee?.name || 'Avatar'} fill style={{ objectFit: 'cover', borderRadius: '50%' }} />
-                )}
+                <Image src="/logo.jpg" alt="Logo" fill style={{ objectFit: 'cover', borderRadius: '50%' }} />
               </div>
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleAvatarChange}
-                accept="image/*"
-                style={{ display: 'none' }}
-              />
             </div>
           </header>
           <main className="db-content">{children}</main>
