@@ -44,7 +44,16 @@ export default function EmployeeCRMPage() {
   const getFollowUpTime = (fu: FollowUp) => {
     try {
       const dt = new Date(fu.scheduled_at);
-      return dt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+      const today = new Date();
+      const isToday = dt.getDate() === today.getDate() &&
+                      dt.getMonth() === today.getMonth() &&
+                      dt.getFullYear() === today.getFullYear();
+      
+      if (isToday) {
+        return dt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+      } else {
+        return `${dt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} ${dt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}`;
+      }
     } catch {
       return '12:00 PM';
     }
@@ -168,7 +177,7 @@ export default function EmployeeCRMPage() {
                   onClick={() => router.push(`/employee/crm/leads/${fu.lead_id}`)} 
                   style={{ cursor: 'pointer' }}
                 >
-                  <div className="crm-timeline-time">{getFollowUpTime(fu)}</div>
+                  <div className="crm-timeline-time" style={{ fontSize: '0.65rem' }}>{getFollowUpTime(fu)}</div>
                   <div className="crm-timeline-indicator">
                     <div className="crm-timeline-dot"></div>
                     {idx < todayFollowUps.length - 1 && <div className="crm-timeline-line"></div>}
@@ -213,8 +222,8 @@ export default function EmployeeCRMPage() {
                     <p className="crm-row-sub" style={{ margin: '2px 0 0', fontSize: '0.75rem' }}>{getFollowUpCarName(fu)}</p>
                   </div>
                   <div className="crm-widget-time-block" style={{ marginLeft: 'auto', textAlign: 'right' }}>
-                    <span className="crm-row-time" style={{ fontSize: '0.75rem', display: 'block' }}>
-                      {new Date(fu.scheduled_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}
+                    <span className="crm-row-time" style={{ fontSize: '0.7rem', display: 'block', whiteSpace: 'nowrap' }}>
+                      {new Date(fu.scheduled_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })} at {new Date(fu.scheduled_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
                     </span>
                     <span className={`crm-row-badge ${getPriorityClass(fu.priority)}`} style={{ fontSize: '0.65rem' }}>{fu.priority}</span>
                   </div>

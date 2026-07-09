@@ -220,6 +220,9 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
   const [waTemplate, setWaTemplate] = useState('welcome');
   const [errorMsg, setErrorMsg] = useState('');
   const [claiming, setClaiming] = useState(false);
+  const [completingFollowUpId, setCompletingFollowUpId] = useState<string | null>(null);
+  const [completionNote, setCompletionNote] = useState('');
+  const [completingFollowUpType, setCompletingFollowUpType] = useState('');
   const supabase = createClient();
 
   // Used Car Inspection Modal States
@@ -570,8 +573,42 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
       showToast('You cannot modify an unassigned lead.');
       return;
     }
-    await supabase.from('follow_ups').update({ status:'completed', completed_at:new Date().toISOString() }).eq('id',fuId);
-    loadAll(); showToast('Done!');
+    const fu = followUps.find(f => f.id === fuId);
+    if (fu) {
+      setCompletingFollowUpId(fuId);
+      setCompletingFollowUpType(fu.follow_up_type);
+      setCompletionNote('');
+    }
+  };
+
+  const handleCompleteSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!employee || !completingFollowUpId) return;
+
+    await supabase.from('follow_ups').update({ 
+      status: 'completed', 
+      completed_at: new Date().toISOString() 
+    }).eq('id', completingFollowUpId);
+
+    if (completionNote.trim()) {
+      const formattedNote = `Completed Follow-up (${(FOLLOW_UP_TYPE_LABELS as any)[completingFollowUpType] || completingFollowUpType}): ${completionNote.trim()}`;
+      await supabase.from('customer_notes').insert({ 
+        lead_id: id, 
+        employee_id: employee.id, 
+        note: formattedNote 
+      });
+      await supabase.from('crm_activity_logs').insert({ 
+        lead_id: id, 
+        employee_id: employee.id, 
+        action: 'note_added', 
+        details: formattedNote.slice(0, 100) 
+      });
+    }
+
+    setCompletingFollowUpId(null);
+    setCompletionNote('');
+    loadAll(); 
+    showToast('Follow-up completed!');
   };
 
   const changeStatus = async (s: LeadStatus) => {
@@ -764,6 +801,7 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
                     <div style={{ fontWeight: 700, fontSize: '.9rem', color: 'var(--db-tx, #000)' }}>{FOLLOW_UP_TYPE_LABELS[fu.follow_up_type]}</div>
                     <div style={{ fontSize: '.75rem', color: 'var(--db-tx2, #555)', marginTop: '2px' }}>
                       {new Date(fu.scheduled_at).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })} {fu.notes && ` · ${fu.notes}`}
+                      {fu.completed_at && ` · Completed: ${new Date(fu.completed_at).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}`}
                     </div>
                   </div>
                   <span style={{ fontSize: '.6875rem', fontWeight: 800, padding: '.3rem .6rem', borderRadius: '8px', background: fu.status === 'completed' ? 'rgba(34,197,94,.12)' : fu.status === 'missed' ? 'rgba(225,6,19,.12)' : 'rgba(245,158,11,.12)', color: fu.status === 'completed' ? '#22c55e' : fu.status === 'missed' ? '#E10613' : '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -953,6 +991,35 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
               <button className="wa-btn cancel" onClick={() => setWaModal(false)}>Cancel</button>
               <button className="wa-btn send" onClick={sendWhatsAppMessage}>Send WhatsApp</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Complete Follow-up Modal */}
+      {completingFollowUpId && (
+        <div className="wa-modal-overlay">
+          <div className="wa-modal-content">
+            <div className="wa-modal-header">
+              <h3>Complete Follow-up</h3>
+              <button className="wa-close-btn" onClick={() => setCompletingFollowUpId(null)}><X size={18} /></button>
+            </div>
+            <form onSubmit={handleCompleteSubmit}>
+              <div className="wa-modal-body">
+                <div className="wa-form-group">
+                  <label>Add Completion Note / Customer Feedback (Optional)</label>
+                  <textarea 
+                    rows={4} 
+                    value={completionNote} 
+                    onChange={(e) => setCompletionNote(e.target.value)} 
+                    placeholder="Enter details about the customer conversation, status, next steps..."
+                  />
+                </div>
+              </div>
+              <div className="wa-modal-footer">
+                <button type="button" className="wa-btn cancel" onClick={() => setCompletingFollowUpId(null)}>Cancel</button>
+                <button type="submit" className="wa-btn send" style={{ background: '#22c55e' }}>Complete Follow-up</button>
+              </div>
+            </form>
           </div>
         </div>
       )}
