@@ -187,6 +187,9 @@ function getDatabaseSource(inputSource: string): { dbSource: string; noteToAdd: 
   if (normalized === 'walkin' || normalized === 'walk_in') {
     return { dbSource: 'walk_in', noteToAdd: null };
   }
+  if (normalized === 'reference' || normalized === 'referral') {
+    return { dbSource: 'referral', noteToAdd: null };
+  }
   return { dbSource: 'manual', noteToAdd: `Source Category: ${cleanInput}` };
 }
 
