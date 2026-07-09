@@ -38,6 +38,12 @@ export default function DashboardOverview() {
   const [updatingAvatar, setUpdatingAvatar] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
 
+  // Brand Detail Modal State
+  const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
+  const [brandCars, setBrandCars] = useState<any[]>([]);
+  const [brandModalOpen, setBrandModalOpen] = useState(false);
+  const [brandModalLoading, setBrandModalLoading] = useState(false);
+
   const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3000);
@@ -154,6 +160,29 @@ export default function DashboardOverview() {
     }
   };
 
+  const openBrandModal = async (brandName: string) => {
+    setSelectedBrand(brandName);
+    setBrandModalOpen(true);
+    setBrandModalLoading(true);
+    setBrandCars([]);
+
+    try {
+      const { data, error } = await supabase
+        .from('cars')
+        .select('*')
+        .eq('brand', brandName)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        setBrandCars(data);
+      }
+    } catch (err) {
+      console.error('Error fetching brand cars:', err);
+    } finally {
+      setBrandModalLoading(false);
+    }
+  };
+
   const handleBrandClick = (clickedData: any) => {
     if (!clickedData) return;
     let payload = null;
@@ -166,13 +195,14 @@ export default function DashboardOverview() {
     }
     
     if (payload && payload.brand) {
-      router.push(`/dashboard/cars?brand=${encodeURIComponent(payload.brand)}`);
+      openBrandModal(payload.brand);
     }
   };
 
   const CustomXAxisTick = (props: any) => {
     const { x, y, payload } = props;
     const brandName = payload.value;
+    const displayName = brandName === 'Mercedes-Benz' ? 'Mercedes' : brandName;
     return (
       <g transform={`translate(${x},${y})`}>
         <text
@@ -185,10 +215,10 @@ export default function DashboardOverview() {
           style={{ cursor: 'pointer' }}
           onClick={(e) => {
             e.stopPropagation();
-            router.push(`/dashboard/cars?brand=${encodeURIComponent(brandName)}`);
+            openBrandModal(brandName);
           }}
         >
-          {brandName}
+          {displayName}
         </text>
       </g>
     );
@@ -465,12 +495,20 @@ export default function DashboardOverview() {
           <h3>Brand Analytics</h3>
           {brandData.length > 0 ? (
             <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={brandData.slice(0, 8)} style={{ cursor: 'pointer' }}>
-                <XAxis dataKey="brand" tick={<CustomXAxisTick />} axisLine={false} tickLine={false} />
+              <BarChart 
+                data={brandData.slice(0, 8)} 
+                style={{ cursor: 'pointer' }}
+                onClick={(state) => {
+                  if (state && state.activeLabel) {
+                    openBrandModal(String(state.activeLabel));
+                  }
+                }}
+              >
+                <XAxis dataKey="brand" tick={<CustomXAxisTick />} axisLine={false} tickLine={false} interval={0} />
                 <YAxis tick={{ fill: 'var(--db-tx3)', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip contentStyle={{ background: 'var(--db-sf)', border: '1px solid var(--db-bd)', borderRadius: 10, color: 'var(--db-tx)', fontSize: 13 }} />
-                <Bar dataKey="total" fill={BRAND_RED} radius={[6, 6, 0, 0]} name="Total" onClick={(data) => handleBrandClick(data)} />
-                <Bar dataKey="sold" fill="#ef4444" radius={[6, 6, 0, 0]} name="Sold" onClick={(data) => handleBrandClick(data)} />
+                <Bar dataKey="total" fill={BRAND_RED} radius={[6, 6, 0, 0]} name="Total" />
+                <Bar dataKey="sold" fill="#ef4444" radius={[6, 6, 0, 0]} name="Sold" />
               </BarChart>
             </ResponsiveContainer>
           ) : <p className="db-empty">No brand data yet</p>}
@@ -737,6 +775,123 @@ export default function DashboardOverview() {
                 </div>
               ) : (
                 <div className="modal-error">Failed to load employee details.</div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Brand Detail Modal */}
+      <AnimatePresence>
+        {brandModalOpen && selectedBrand && (
+          <div className="modal-backdrop" onClick={() => setBrandModalOpen(false)}>
+            <motion.div
+              className="modal-card brand-modal-card"
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{ maxWidth: '800px' }}
+            >
+              <button className="modal-close" onClick={() => setBrandModalOpen(false)}>
+                <X size={20} />
+              </button>
+
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h2 className="db-page-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Car size={24} style={{ color: 'var(--db-gold)' }} />
+                  {selectedBrand} Inventory
+                </h2>
+                <p className="db-page-sub">
+                  Showing all registered {selectedBrand} vehicles in the system
+                </p>
+              </div>
+
+              {brandModalLoading ? (
+                <div className="modal-loader">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                    className="modal-spinner"
+                  />
+                </div>
+              ) : brandCars.length === 0 ? (
+                <div className="modal-no-cars">No vehicles found for {selectedBrand}.</div>
+              ) : (
+                <div className="modal-body-scroll" style={{ marginTop: 0 }}>
+                  <div className="modal-cars-grid">
+                    {brandCars.map((car) => (
+                      <div key={car.id} className="modal-car-card">
+                        <div className="modal-car-thumb-wrap">
+                          {car.thumbnail ? (
+                            <Image
+                              src={getProxiedImageUrl(car.thumbnail)}
+                              alt={`${car.brand} ${car.model}`}
+                              width={320}
+                              height={200}
+                              className="modal-car-thumb"
+                              style={{ objectFit: 'cover' }}
+                            />
+                          ) : (
+                            <div className="modal-car-thumb-placeholder">No Image</div>
+                          )}
+                          <span className={`car-status-badge ${car.status}`}>
+                            {car.status}
+                          </span>
+                        </div>
+                        <div className="modal-car-info">
+                          <h5 className="modal-car-title" title={`${car.brand} ${car.model}`}>
+                            {car.brand} {car.model}
+                          </h5>
+                          <div className="modal-car-meta">
+                            <span>{car.year}</span>
+                            <span className="meta-dot">•</span>
+                            <span>{car.fuel_type || car.transmission}</span>
+                            <span className="meta-dot">•</span>
+                            <span>{car.km_driven?.toLocaleString()} km</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: '0.5rem' }}>
+                            <div className="modal-car-price">
+                              {new Intl.NumberFormat('en-IN', {
+                                style: 'currency',
+                                currency: 'INR',
+                                maximumFractionDigits: 0,
+                              }).format(car.price)}
+                            </div>
+                            <button
+                              onClick={() => {
+                                setBrandModalOpen(false);
+                                router.push(`/dashboard/cars?brand=${encodeURIComponent(car.brand)}`);
+                              }}
+                              style={{
+                                background: 'none',
+                                border: '1px solid var(--db-bd)',
+                                color: 'var(--db-tx2)',
+                                padding: '4px 8px',
+                                borderRadius: '6px',
+                                fontSize: '0.7rem',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                              }}
+                              onMouseEnter={e => {
+                                e.currentTarget.style.borderColor = 'var(--db-gold)';
+                                e.currentTarget.style.color = 'var(--db-gold)';
+                              }}
+                              onMouseLeave={e => {
+                                e.currentTarget.style.borderColor = 'var(--db-bd)';
+                                e.currentTarget.style.color = 'var(--db-tx2)';
+                              }}
+                            >
+                              Manage
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
             </motion.div>
           </div>

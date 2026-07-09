@@ -10,7 +10,11 @@ import { getProxiedImageUrl } from '@/lib/utils';
 import InspectionModal from '@/components/InspectionModal';
 import { downloadInspectionPdf, openPdf } from '@/lib/pdf-utils';
 
+<<<<<<< HEAD
 const TABS = ['Timeline','Follow-ups','Notes','WhatsApp','Test Drives','Booking'];
+=======
+const TABS = ['Calls','Timeline','Follow-ups','Notes','Test Drives','Booking'];
+>>>>>>> f40e0c6ddeff2453b751e57f8bf24f620bebd971
 
 const renderInspectionReport = (note: string) => {
   if (!note.includes('Used Car Inspection Report')) {
@@ -205,9 +209,14 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
   const [notes, setNotes] = useState<CustomerNote[]>([]);
   const [testDrives, setTestDrives] = useState<TestDrive[]>([]);
   const [booking, setBooking] = useState<Booking|null>(null);
+<<<<<<< HEAD
   const [waLogs, setWaLogs] = useState<WhatsAppMessageLog[]>([]);
   const [sendingWa, setSendingWa] = useState(false);
   const [tab, setTab] = useState('Timeline');
+=======
+  const [callSessions, setCallSessions] = useState<any[]>([]);
+  const [tab, setTab] = useState('Calls');
+>>>>>>> f40e0c6ddeff2453b751e57f8bf24f620bebd971
   const [loading, setLoading] = useState(true);
   const [myId, setMyId] = useState<string|null>(null);
   const [employees, setEmployees] = useState<{id:string;name:string;role?:string}[]>([]);
@@ -222,6 +231,9 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
   const [acceptAssigneeId, setAcceptAssigneeId] = useState('');
   const [toast, setToast] = useState('');
   const [showInspection, setShowInspection] = useState(false);
+  const [completingFollowUpId, setCompletingFollowUpId] = useState<string | null>(null);
+  const [completionNote, setCompletionNote] = useState('');
+  const [completingFollowUpType, setCompletingFollowUpType] = useState('');
 
   const supabase = createClient();
   const showToast = (m:string) => { setToast(m); setTimeout(()=>setToast(''),3000); };
@@ -240,18 +252,39 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
     return notes.some(n => n.note && n.note.includes('Used Car Inspection Report'));
   };
 
+  const formatCallDuration = (seconds: number) => {
+    if (!seconds) return '0s';
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    if (mins > 0) {
+      return `${mins}m ${secs}s`;
+    }
+    return `${secs}s`;
+  };
+
   const loadAll = async () => {
+<<<<<<< HEAD
     const [{ data:l }, { data:fu }, { data:n }, { data:td }, { data:bk }, { data:wl }] = await Promise.all([
+=======
+    const [{ data:l }, { data:fu }, { data:n }, { data:td }, { data:bk }, { data:calls }] = await Promise.all([
+>>>>>>> f40e0c6ddeff2453b751e57f8bf24f620bebd971
       supabase.from('leads').select('*, assigned_employee:employees!assigned_to(name,employee_id)').eq('id',id).single(),
       supabase.from('follow_ups').select('*, employee:employees!employee_id(name)').eq('lead_id',id).order('scheduled_at',{ascending:false}),
       supabase.from('customer_notes').select('*, employee:employees!employee_id(name)').eq('lead_id',id).order('created_at',{ascending:false}),
       supabase.from('test_drives').select('*, employee:employees!employee_id(name)').eq('lead_id',id).order('scheduled_at',{ascending:false}),
       supabase.from('bookings').select('*').eq('lead_id',id).order('created_at',{ascending:false}).limit(1).maybeSingle(),
+<<<<<<< HEAD
       supabase.from('whatsapp_message_logs').select('*').eq('lead_id',id).order('created_at',{ascending:false})
     ]);
     setLead(l as Lead); setFollowUps((fu||[]) as FollowUp[]); setNotes((n||[]) as CustomerNote[]);
     setTestDrives((td||[]) as TestDrive[]); setBooking(bk as Booking|null);
     setWaLogs((wl||[]) as WhatsAppMessageLog[]);
+=======
+      supabase.from('employee_calls').select('*, employee:employees!employee_id(name)').eq('lead_id',id).order('created_at',{ascending:false}),
+    ]);
+    setLead(l as Lead); setFollowUps((fu||[]) as FollowUp[]); setNotes((n||[]) as CustomerNote[]);
+    setTestDrives((td||[]) as TestDrive[]); setBooking(bk as Booking|null); setCallSessions(calls || []);
+>>>>>>> f40e0c6ddeff2453b751e57f8bf24f620bebd971
     setLoading(false);
   };
 
@@ -299,8 +332,42 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
   };
 
   const completeFollowUp = async (fuId: string) => {
-    await supabase.from('follow_ups').update({ status:'completed', completed_at:new Date().toISOString() }).eq('id',fuId);
-    loadAll(); showToast('Marked complete');
+    const fu = followUps.find(f => f.id === fuId);
+    if (fu) {
+      setCompletingFollowUpId(fuId);
+      setCompletingFollowUpType(fu.follow_up_type);
+      setCompletionNote('');
+    }
+  };
+
+  const handleCompleteFollowUpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!completingFollowUpId) return;
+
+    await supabase.from('follow_ups').update({ 
+      status: 'completed', 
+      completed_at: new Date().toISOString() 
+    }).eq('id', completingFollowUpId);
+
+    if (completionNote.trim()) {
+      const formattedNote = `Completed Follow-up (${(FOLLOW_UP_TYPE_LABELS as any)[completingFollowUpType] || completingFollowUpType}): ${completionNote.trim()}`;
+      await supabase.from('customer_notes').insert({ 
+        lead_id: id, 
+        employee_id: myId, 
+        note: formattedNote 
+      });
+      await supabase.from('crm_activity_logs').insert({ 
+        lead_id: id, 
+        employee_id: myId, 
+        action: 'note_added', 
+        details: formattedNote.slice(0, 100) 
+      });
+    }
+
+    setCompletingFollowUpId(null);
+    setCompletionNote('');
+    loadAll(); 
+    showToast('Follow-up completed');
   };
 
   const addTestDrive = async (e: React.FormEvent) => {
@@ -794,6 +861,68 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
             {TABS.map(t=><button key={t} className={`crm-tab ${tab===t?'active':''}`} onClick={()=>setTab(t)}>{t}</button>)}
           </div>
 
+          {/* CALLS */}
+          {tab==='Calls'&&(
+            <div className="crm-panel">
+              <h3 style={{ margin: '0 0 1rem', fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--db-tx)' }}>
+                📞 Call Sessions History
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {callSessions.map(c => {
+                  let statusBg = 'rgba(59, 130, 246, 0.08)';
+                  let statusColor = '#3b82f6';
+                  let statusLabel = 'Called';
+                  if (c.call_status === 'missed') {
+                    statusBg = 'rgba(239, 68, 68, 0.08)';
+                    statusColor = '#ef4444';
+                    statusLabel = 'Missed';
+                  } else if (c.call_status === 'no_answer') {
+                    statusBg = 'rgba(245, 158, 11, 0.08)';
+                    statusColor = '#f59e0b';
+                    statusLabel = 'No Answer';
+                  }
+
+                  return (
+                    <div key={c.id} style={{ background: 'var(--db-sf2, #fafafa)', border: '1px solid var(--db-bd, rgba(0,0,0,0.04))', borderRadius: '12px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '0.6875rem', fontWeight: 800, padding: '2px 6px', borderRadius: '6px', background: statusBg, color: statusColor, textTransform: 'uppercase' }}>
+                            {statusLabel}
+                          </span>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--db-tx2, #555)', fontWeight: 600 }}>
+                            Duration: {formatCallDuration(c.talking_time)}
+                          </span>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--db-tx3, #777)' }}>
+                            by {c.employee?.name || 'Unknown'}
+                          </span>
+                        </div>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--db-tx3, #777)', fontWeight: 600 }}>
+                          {new Date(c.created_at).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
+                        </span>
+                      </div>
+
+                      {c.review && (
+                        <div style={{ fontSize: '0.78rem', color: '#e10613', fontWeight: 750, textTransform: 'capitalize' }}>
+                          Customer Interest: {c.review}
+                        </div>
+                      )}
+
+                      {c.notes && (
+                        <div style={{ fontSize: '0.8125rem', color: 'var(--db-tx, #000)', background: 'var(--db-sf, #ffffff)', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid var(--db-bd, rgba(0,0,0,0.04))' }}>
+                          {c.notes}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {callSessions.length === 0 && (
+                  <p style={{ color: 'var(--db-tx3, #777)', fontSize: '0.875rem', padding: '1rem 0' }}>No calls logged for this customer yet.</p>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* TIMELINE */}
           {tab==='Timeline'&&(
             <div className="crm-panel">
@@ -852,7 +981,10 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
                     <div style={{flex:1}}>
                       <div style={{fontWeight:600,fontSize:'.875rem'}}>{FOLLOW_UP_TYPE_LABELS[fu.follow_up_type]} <span style={{fontSize:'.75rem',color:'var(--db-tx3)'}}>· {new Date(fu.scheduled_at).toLocaleString('en-IN')}</span></div>
                       {fu.notes&&<div style={{fontSize:'.8125rem',color:'var(--db-tx3)',marginTop:2}}>{fu.notes}</div>}
-                      <div style={{fontSize:'.6875rem',color:'var(--db-tx3)',marginTop:4}}>{fuEmp?.name} · Priority: {fu.priority}</div>
+                      <div style={{fontSize:'.6875rem',color:'var(--db-tx3)',marginTop:4}}>
+                        {fuEmp?.name} · Priority: {fu.priority}
+                        {fu.completed_at && ` · Completed: ${new Date(fu.completed_at).toLocaleString('en-IN')}`}
+                      </div>
                     </div>
                     <span className={`crm-fu-status ${fu.status}`}>{fu.status}</span>
                     {fu.status==='pending'&&<button onClick={()=>completeFollowUp(fu.id)} className="crm-card-btn" title="Mark complete"><Check size={13}/></button>}
@@ -1197,6 +1329,36 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
           />
         )}
       </AnimatePresence>
+
+      {/* Complete Follow-up Modal */}
+      {completingFollowUpId && (
+        <div className="wa-modal-overlay">
+          <div className="wa-modal-content">
+            <div className="wa-modal-header">
+              <h3>Complete Follow-up</h3>
+              <button className="wa-close-btn" onClick={() => setCompletingFollowUpId(null)}><X size={18} /></button>
+            </div>
+            <form onSubmit={handleCompleteFollowUpSubmit}>
+              <div className="wa-modal-body">
+                <div className="wa-form-group">
+                  <label>Add Completion Note / Customer Feedback (Optional)</label>
+                  <textarea 
+                    rows={4} 
+                    value={completionNote} 
+                    onChange={(e) => setCompletionNote(e.target.value)} 
+                    placeholder="Enter details about the customer conversation, status, next steps..."
+                    style={{ background: 'var(--db-sf2)', border: '1.5px solid var(--db-bd)', color: 'var(--db-tx)', width: '100%', padding: '0.75rem', borderRadius: '10px' }}
+                  />
+                </div>
+              </div>
+              <div className="wa-modal-footer">
+                <button type="button" className="wa-btn cancel" onClick={() => setCompletingFollowUpId(null)}>Cancel</button>
+                <button type="submit" className="wa-btn send" style={{ background: '#22c55e' }}>Complete Follow-up</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <AnimatePresence>{toast&&<motion.div className="db-toast success" initial={{opacity:0,y:50}} animate={{opacity:1,y:0}} exit={{opacity:0,y:50}}>{toast}</motion.div>}</AnimatePresence>
 

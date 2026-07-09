@@ -8,7 +8,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Employee } from '@/types/database';
 import AlertModal from '@/components/AlertModal';
-import { LayoutDashboard, Car, Upload, LogOut, Menu, X, Bell, FileText, AlertCircle, Clock, CheckCircle, PhoneCall, Bookmark, Mail } from 'lucide-react';
+import { LayoutDashboard, Car, Upload, LogOut, Menu, X, Bell, FileText, AlertCircle, Clock, CheckCircle, PhoneCall, Bookmark, Mail, Phone, MessageCircle } from 'lucide-react';
 import { getProxiedImageUrl } from '@/lib/utils';
 
 const EmpContext = createContext<{ employee: Employee | null; refreshEmployee?: () => Promise<void>; darkMode: boolean; onReportSubmitted: () => void }>({ employee: null, darkMode: false, onReportSubmitted: () => {} });
@@ -16,6 +16,8 @@ export const useEmpContext = () => useContext(EmpContext);
 
 const navItems = [
   { href: '/employee', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/employee/crm', label: 'CRM / Leads', icon: PhoneCall },
+  { href: '/employee/crm/calls', label: 'Call Sessions', icon: PhoneCall },
   { href: '/employee/upload', label: 'Upload Car', icon: Upload },
   { href: '/employee/cars', label: 'My Cars', icon: Car },
   { href: '/employee/customer-details', label: 'Customer Details', icon: FileText },
@@ -59,6 +61,118 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
     });
   };
   const [logoutWarning, setLogoutWarning] = useState(false);
+
+  // Call Review blocker states
+  const [pendingCallReview, setPendingCallReview] = useState<any | null>(null);
+  const [reviewForm, setReviewForm] = useState({ review: '', notes: '' });
+  const [submittingReview, setSubmittingReview] = useState(false);
+
+  const fetchPendingCallReview = async (empId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('employee_calls')
+        .select('*, lead:leads(customer_name, interested_car)')
+        .eq('employee_id', empId)
+        .eq('call_status', 'called')
+        .is('review', null)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (data && data.length > 0) {
+        setPendingCallReview(data[0]);
+      } else {
+        setPendingCallReview(null);
+      }
+    } catch (e) {
+      console.error('Error fetching pending call reviews:', e);
+    }
+  };
+
+  const formatDuration = (seconds: number) => {
+    if (!seconds) return '0s';
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    if (mins > 0) {
+      return `${mins}m ${secs}s`;
+    }
+    return `${secs}s`;
+  };
+
+  const handleSubmitReview = async () => {
+    if (!employee || !pendingCallReview || !reviewForm.review) return;
+    setSubmittingReview(true);
+
+    try {
+      // 1. Update call session review
+      const { error: callErr } = await supabase
+        .from('employee_calls')
+        .update({
+          review: reviewForm.review,
+          notes: reviewForm.notes.trim()
+        })
+        .eq('id', pendingCallReview.id);
+
+      if (callErr) throw callErr;
+
+      // 2. Add customer timeline note
+      const durationStr = formatDuration(pendingCallReview.talking_time);
+      const noteContent = `Call Review Submitted:\n- Interest Level: ${reviewForm.review.toUpperCase()}\n- Notes: ${reviewForm.notes.trim() || 'No additional notes'}\n- Duration: ${durationStr}`;
+      
+      await supabase.from('customer_notes').insert({
+        lead_id: pendingCallReview.lead_id,
+        employee_id: employee.id,
+        note: noteContent
+      });
+
+      // 3. Automatically update lead status based on review
+      let nextStatus = null;
+      if (reviewForm.review === 'very much interested' || reviewForm.review === 'interested') {
+        nextStatus = 'interested';
+      } else if (reviewForm.review === 'not interested' || reviewForm.review === 'highly not interested') {
+        nextStatus = 'lost';
+      }
+
+      if (nextStatus) {
+        await supabase
+          .from('leads')
+          .update({
+            lead_status: nextStatus,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', pendingCallReview.lead_id);
+
+        // Insert CRM activity log
+        await supabase.from('crm_activity_logs').insert({
+          lead_id: pendingCallReview.lead_id,
+          employee_id: employee.id,
+          action: 'status_change',
+          details: `→ ${nextStatus} (Automatic from Call Review)`
+        });
+      }
+
+      setReviewForm({ review: '', notes: '' });
+      setPendingCallReview(null);
+      
+      // Refresh current page if needed or reload leads
+      if (pathname.includes('/employee/crm')) {
+        window.location.reload();
+      } else {
+        await fetchPendingCallReview(employee.id);
+      }
+      showAlert('Success', 'Call review saved and portal unlocked!', 'success');
+    } catch (err: any) {
+      console.error('Error submitting call review:', err);
+      showAlert('Error', err.message || 'Failed to submit review', 'error');
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
+  // Today's Follow-ups Alert States
+  const [todayFollowUps, setTodayFollowUps] = useState<any[]>([]);
+  const [showTodayModal, setShowTodayModal] = useState(false);
+  const [completingFUId, setCompletingFUId] = useState<string | null>(null);
+  const [completingFUNote, setCompletingFUNote] = useState('');
 
   // Contact Messages states
   const [contactMessagesOpen, setContactMessagesOpen] = useState(false);
@@ -139,6 +253,78 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
     setUnreadContactsCount(unreadContacts);
   };
 
+  const checkTodayFollowUps = async (empId: string) => {
+    try {
+      if (sessionStorage.getItem(`today_fu_shown_${empId}`)) return;
+
+      const now = new Date();
+      const startOfDay = new Date(now); startOfDay.setHours(0,0,0,0);
+      const endOfDay = new Date(now); endOfDay.setHours(23,59,59,999);
+
+      const { data, error } = await supabase
+        .from('follow_ups')
+        .select('*, lead:leads!lead_id(*)')
+        .eq('employee_id', empId)
+        .eq('status', 'pending')
+        .gte('scheduled_at', startOfDay.toISOString())
+        .lte('scheduled_at', endOfDay.toISOString())
+        .order('scheduled_at', { ascending: true });
+
+      if (!error && data && data.length > 0) {
+        setTodayFollowUps(data);
+        setShowTodayModal(true);
+        sessionStorage.setItem(`today_fu_shown_${empId}`, 'true');
+      }
+    } catch (e) {
+      console.error('Error fetching today followups:', e);
+    }
+  };
+
+  const handleFUComplete = async (fuId: string, leadId: string, type: string) => {
+    try {
+      await supabase.from('follow_ups').update({ 
+        status: 'completed', 
+        completed_at: new Date().toISOString() 
+      }).eq('id', fuId);
+
+      if (completingFUNote.trim()) {
+        const typeLabels: Record<string, string> = { call: 'Phone Call', whatsapp: 'WhatsApp', email: 'Email', visit: 'Physical Visit' };
+        const formattedNote = `Completed Follow-up (${typeLabels[type] || type}): ${completingFUNote.trim()}`;
+        await supabase.from('customer_notes').insert({ 
+          lead_id: leadId, 
+          employee_id: employee?.id, 
+          note: formattedNote 
+        });
+        await supabase.from('crm_activity_logs').insert({ 
+          lead_id: leadId, 
+          employee_id: employee?.id, 
+          action: 'note_added', 
+          details: formattedNote.slice(0, 100) 
+        });
+      } else {
+        await supabase.from('crm_activity_logs').insert({ 
+          lead_id: leadId, 
+          employee_id: employee?.id, 
+          action: 'follow_up_completed', 
+          details: 'Follow-up marked as completed' 
+        });
+      }
+
+      setTodayFollowUps(prev => prev.filter(f => f.id !== fuId));
+      setCompletingFUId(null);
+      setCompletingFUNote('');
+      showAlert('Success', 'Follow-up completed!', 'success');
+      
+      // If no more follow-ups, close the modal
+      if (todayFollowUps.length <= 1) {
+        setShowTodayModal(false);
+      }
+    } catch (e) {
+      console.error(e);
+      showAlert('Error', 'Failed to complete follow-up', 'error');
+    }
+  };
+
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -147,9 +333,11 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
       if (!data) { router.push('/console'); return; }
       if (data.role === 'admin') { router.push('/dashboard'); return; }
       setEmployee(data);
+      await fetchPendingCallReview(data.id);
       await checkTodayReport(data.id);
       await fetchNotifications(data.id);
       await fetchUnreadContactsCountOnly();
+      await checkTodayFollowUps(data.id);
       setLoading(false);
     };
     getUser();
@@ -158,6 +346,12 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
     }, 60000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (employee) {
+      fetchPendingCallReview(employee.id);
+    }
+  }, [pathname, employee?.id]);
 
 
 
@@ -829,6 +1023,199 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
             </>
           )}
         </AnimatePresence>
+
+        {/* TODAY'S FOLLOW-UP SCHEDULE ALERTS */}
+        <AnimatePresence>
+          {showTodayModal && todayFollowUps.length > 0 && (
+            <>
+              {/* Backdrop */}
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                style={{
+                  position: 'fixed',
+                  inset: 0,
+                  background: 'rgba(0, 0, 0, 0.65)',
+                  backdropFilter: 'blur(8px)',
+                  zIndex: 2000,
+                }}
+              />
+              {/* Modal Container */}
+              <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2001, padding: '1rem' }}>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                  transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+                  style={{
+                    background: 'var(--db-sf, #ffffff)',
+                    border: '1.5px solid var(--db-bd, rgba(0,0,0,0.1))',
+                    borderRadius: '24px',
+                    width: '100%',
+                    maxWidth: '560px',
+                    maxHeight: '85vh',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                    fontFamily: "'Outfit', sans-serif"
+                  }}
+                >
+                  {/* Header */}
+                  <div style={{ padding: '1.5rem 1.75rem', borderBottom: '1px solid var(--db-bd, rgba(0,0,0,0.06))', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(225, 6, 19, 0.08)', color: '#E10613', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Clock size={20} />
+                      </div>
+                      <div>
+                        <h3 style={{ fontSize: '1.125rem', fontWeight: 800, margin: 0, color: 'var(--db-tx, #000)' }}>Today's Follow-up Schedule</h3>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--db-tx3, #777)', margin: '2px 0 0' }}>You have {todayFollowUps.length} follow-up tasks scheduled for today</p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => setShowTodayModal(false)}
+                      style={{ background: 'none', border: 'none', color: 'var(--db-tx2, #555)', cursor: 'pointer', display: 'flex', padding: '6px', borderRadius: '50%', transition: 'all 0.2s' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.05)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+
+                  {/* Body - List of Followups */}
+                  <div style={{ padding: '1.5rem 1.75rem', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                    {todayFollowUps.map(fu => {
+                      const isCompletingThis = completingFUId === fu.id;
+                      const schedTime = new Date(fu.scheduled_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+                      const phoneStr = fu.lead?.phone ? fu.lead.phone.replace(/\D/g, '') : '';
+                      const isHighPriority = fu.priority === 'high';
+
+                      return (
+                        <div 
+                          key={fu.id} 
+                          style={{ 
+                            background: 'var(--db-sf2, #fdfdfd)', 
+                            border: '1.5px solid var(--db-bd, rgba(0,0,0,0.04))', 
+                            borderRadius: '16px', 
+                            padding: '1.25rem',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '0.75rem',
+                            position: 'relative'
+                          }}
+                        >
+                          {/* Top Row: Client Name & Time & Priority */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
+                            <div>
+                              <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: 'var(--db-tx, #000)' }}>
+                                {fu.lead?.customer_name || 'Client'}
+                              </h4>
+                              {fu.lead?.interested_car && (
+                                <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: 'var(--db-tx2, #555)', fontWeight: 550 }}>
+                                  Interested: {fu.lead.interested_car}
+                                </p>
+                              )}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: isHighPriority ? 'rgba(239, 68, 68, 0.08)' : 'rgba(245, 158, 11, 0.08)', color: isHighPriority ? '#ef4444' : '#f59e0b' }}>
+                                {fu.priority.toUpperCase()}
+                              </span>
+                              <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#E10613', background: 'rgba(225, 6, 19, 0.05)', padding: '3px 8px', borderRadius: '6px' }}>
+                                {schedTime}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Middle Row: Note */}
+                          {fu.notes && (
+                            <div style={{ fontSize: '0.8125rem', color: 'var(--db-tx2, #444)', background: 'var(--db-sf, #fff)', border: '1px solid var(--db-bd, rgba(0,0,0,0.04))', padding: '0.75rem 1rem', borderRadius: '10px', lineHeight: 1.4 }}>
+                              <strong style={{ display: 'block', fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--db-tx3, #777)', marginBottom: '3px', fontWeight: 750 }}>Task Description</strong>
+                              {fu.notes}
+                            </div>
+                          )}
+
+                          {/* Action Buttons Row */}
+                          {!isCompletingThis ? (
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.625rem', marginTop: '0.25rem', flexWrap: 'wrap' }}>
+                              {phoneStr && (
+                                <>
+                                  <a 
+                                    href={`tel:${fu.lead.phone}`}
+                                    style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', fontWeight: 700, color: '#2563eb', background: 'rgba(37, 99, 235, 0.07)', border: '1px solid rgba(37, 99, 235, 0.1)', padding: '0.5rem 0.875rem', borderRadius: '10px', transition: 'all 0.2s' }}
+                                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(37, 99, 235, 0.15)'}
+                                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(37, 99, 235, 0.07)'}
+                                  >
+                                    <Phone size={13} /> Call Client
+                                  </a>
+                                  <a 
+                                    href={`https://wa.me/${phoneStr}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', fontWeight: 700, color: '#16a34a', background: 'rgba(22, 163, 74, 0.07)', border: '1px solid rgba(22, 163, 74, 0.1)', padding: '0.5rem 0.875rem', borderRadius: '10px', transition: 'all 0.2s' }}
+                                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(22, 163, 74, 0.15)'}
+                                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(22, 163, 74, 0.07)'}
+                                  >
+                                    <MessageCircle size={13} /> WhatsApp
+                                  </a>
+                                </>
+                              )}
+                              <button 
+                                onClick={() => { setCompletingFUId(fu.id); setCompletingFUNote(''); }}
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', fontWeight: 700, color: '#16a34a', background: 'rgba(22, 163, 74, 0.15)', border: 'none', padding: '0.5rem 0.875rem', borderRadius: '10px', cursor: 'pointer', transition: 'all 0.2s' }}
+                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(22, 163, 74, 0.25)'}
+                                onMouseLeave={e => e.currentTarget.style.background = 'rgba(22, 163, 74, 0.15)'}
+                              >
+                                <CheckCircle size={13} /> Done
+                              </button>
+                            </div>
+                          ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem', marginTop: '0.25rem', borderTop: '1px solid var(--db-bd, rgba(0,0,0,0.05))', paddingTop: '0.75rem' }}>
+                              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--db-tx2, #555)' }}>Add Completion note / feedback</label>
+                              <textarea 
+                                rows={2}
+                                value={completingFUNote}
+                                onChange={e => setCompletingFUNote(e.target.value)}
+                                placeholder="E.g., Customer busy, requested call back tomorrow"
+                                style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1.5px solid var(--db-bd, rgba(0,0,0,0.1))', background: 'var(--db-sf, #fff)', color: 'inherit', fontSize: '0.78rem', fontFamily: 'inherit', resize: 'none', outline: 'none' }}
+                              />
+                              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                                <button 
+                                  onClick={() => setCompletingFUId(null)}
+                                  style={{ padding: '0.375rem 0.75rem', borderRadius: '6px', border: '1px solid var(--db-bd, rgba(0,0,0,0.1))', background: 'none', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                                >
+                                  Cancel
+                                </button>
+                                <button 
+                                  onClick={() => handleFUComplete(fu.id, fu.lead_id, fu.follow_up_type)}
+                                  style={{ padding: '0.375rem 0.75rem', borderRadius: '6px', border: 'none', background: '#16a34a', color: '#fff', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                                >
+                                  Save & Complete
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Footer */}
+                  <div style={{ padding: '1rem 1.75rem', background: 'var(--db-sf2, #f5f5f5)', borderTop: '1px solid var(--db-bd, rgba(0,0,0,0.06))', display: 'flex', justifyContent: 'flex-end' }}>
+                    <button 
+                      onClick={() => setShowTodayModal(false)}
+                      style={{ padding: '0.625rem 1.25rem', borderRadius: '12px', border: '1px solid var(--db-bd, rgba(0,0,0,0.15))', background: 'var(--db-sf, #fff)', color: 'var(--db-tx2, #555)', fontSize: '0.8125rem', fontWeight: 750, cursor: 'pointer', transition: 'all 0.2s' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--db-sf2, #f9f9f9)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'var(--db-sf, #fff)'}
+                    >
+                      Close Schedule
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+            </>
+          )}
+        </AnimatePresence>
       </div>
 
       <AlertModal
@@ -838,6 +1225,179 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
         type={alertConfig.type}
         onClose={() => setAlertConfig(prev => ({ ...prev, isOpen: false }))}
       />
+
+      {pendingCallReview && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(15, 23, 42, 0.85)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 999999,
+          padding: '1rem',
+          fontFamily: "'Outfit', sans-serif"
+        }}>
+          <div style={{
+            background: '#ffffff',
+            border: '1.5px solid rgba(0,0,0,0.06)',
+            borderRadius: '24px',
+            width: '100%',
+            maxWidth: '520px',
+            padding: '2.25rem',
+            boxShadow: '0 25px 60px rgba(0,0,0,0.25)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.5rem',
+            textAlign: 'center',
+            maxHeight: '90vh',
+            overflowY: 'auto'
+          }}>
+            <div>
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'rgba(225, 6, 19, 0.08)',
+                color: '#E10613',
+                width: '56px',
+                height: '56px',
+                borderRadius: '50%',
+                marginBottom: '1rem'
+              }}>
+                <PhoneCall size={28} />
+              </div>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0f172a', margin: '0 0 6px 0' }}>Call Review Required</h2>
+              <p style={{ fontSize: '0.875rem', color: '#64748b', margin: 0, lineHeight: 1.5 }}>
+                You completed a call with <strong>{pendingCallReview.lead?.customer_name || 'Customer'}</strong>. Please submit the review details below to unlock the portal.
+              </p>
+            </div>
+
+            <div style={{
+              background: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              borderRadius: '16px',
+              padding: '1rem 1.25rem',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              fontSize: '0.875rem',
+              textAlign: 'left'
+            }}>
+              <div>
+                <div style={{ fontWeight: 600, color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase' }}>Interested Vehicle</div>
+                <div style={{ fontWeight: 700, color: '#0f172a', marginTop: '2px' }}>{pendingCallReview.lead?.interested_car || 'Luxury Vehicle'}</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontWeight: 600, color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase' }}>Talking Time</div>
+                <div style={{ fontWeight: 750, color: '#E10613', marginTop: '2px' }}>{formatDuration(pendingCallReview.talking_time)}</div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', textAlign: 'left' }}>
+              <label style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#475569' }}>Customer Interest Level</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {[
+                  { value: 'very much interested', label: '🔥 Very Much Interested', color: '#10b981', bg: 'rgba(16,185,129,0.06)' },
+                  { value: 'interested', label: '👍 Interested', color: '#3b82f6', bg: 'rgba(59,130,246,0.06)' },
+                  { value: 'neutral', label: '😐 Neutral', color: '#f59e0b', bg: 'rgba(245,158,11,0.06)' },
+                  { value: 'not interested', label: '👎 Not Interested', color: '#ef4444', bg: 'rgba(239,68,68,0.06)' },
+                  { value: 'highly not interested', label: '❌ Highly Not Interested', color: '#991b1b', bg: 'rgba(153,27,27,0.06)' }
+                ].map(opt => {
+                  const isSelected = reviewForm.review === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setReviewForm(prev => ({ ...prev, review: opt.value }))}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '0.75rem 1.25rem',
+                        border: isSelected ? `2px solid ${opt.color}` : '1.5px solid #e2e8f0',
+                        borderRadius: '14px',
+                        background: isSelected ? opt.bg : '#ffffff',
+                        cursor: 'pointer',
+                        fontFamily: 'inherit',
+                        fontWeight: 700,
+                        fontSize: '0.875rem',
+                        color: isSelected ? opt.color : '#475569',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      <span>{opt.label}</span>
+                      <div style={{
+                        width: '18px',
+                        height: '18px',
+                        borderRadius: '50%',
+                        border: `2px solid ${isSelected ? opt.color : '#cbd5e1'}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: isSelected ? opt.color : 'transparent'
+                      }}>
+                        {isSelected && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ffffff' }} />}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', textAlign: 'left' }}>
+              <label style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#475569' }}>Brief Call Discussion Notes</label>
+              <textarea
+                placeholder="Summarize the discussion, objections, budget preferences, or scheduled next steps..."
+                value={reviewForm.notes}
+                onChange={e => setReviewForm(prev => ({ ...prev, notes: e.target.value }))}
+                rows={3}
+                style={{
+                  padding: '0.75rem 1rem',
+                  border: '1.5px solid #e2e8f0',
+                  borderRadius: '12px',
+                  fontFamily: 'inherit',
+                  fontSize: '0.875rem',
+                  color: '#0f172a',
+                  resize: 'none',
+                  outline: 'none',
+                  transition: 'border-color 0.2s'
+                }}
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={handleSubmitReview}
+              disabled={!reviewForm.review || submittingReview}
+              style={{
+                background: 'linear-gradient(135deg, #E10613, #c70511)',
+                color: '#ffffff',
+                border: 'none',
+                padding: '1rem',
+                borderRadius: '14px',
+                fontFamily: 'inherit',
+                fontWeight: 750,
+                fontSize: '0.925rem',
+                cursor: (!reviewForm.review || submittingReview) ? 'not-allowed' : 'pointer',
+                opacity: (!reviewForm.review || submittingReview) ? 0.6 : 1,
+                boxShadow: '0 4px 20px rgba(225, 6, 19, 0.25)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                transition: 'all 0.2s'
+              }}
+            >
+              {submittingReview ? 'Saving Review...' : 'Submit & Unlock Portal'}
+            </button>
+          </div>
+        </div>
+      )}
 
       <style jsx global>{`
 .db-loader{min-height:100vh;background:#ffffff;display:flex;align-items:center;justify-content:center}

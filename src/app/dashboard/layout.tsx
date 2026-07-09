@@ -12,7 +12,8 @@ import { getProxiedImageUrl } from '@/lib/utils';
 import {
   LayoutDashboard, Users, Car, ClipboardList, Activity,
   LogOut, Menu, X, ChevronRight, Moon, Sun, Bell, Search,
-  Users2, CalendarClock, BarChart3, PhoneCall, Bookmark, Mail, FileText, ClipboardCheck
+  Users2, CalendarClock, BarChart3, PhoneCall, Bookmark, Mail, FileText, ClipboardCheck,
+  Phone, MessageCircle, Clock, CheckCircle
 } from 'lucide-react';
 
 interface DashboardContextType {
@@ -43,6 +44,7 @@ const crmNavItems = [
   { href: '/dashboard/crm', label: 'CRM Overview', icon: Users2 },
   { href: '/dashboard/crm/leads', label: 'Leads', icon: PhoneCall },
   { href: '/dashboard/crm/follow-ups', label: 'Follow-ups', icon: CalendarClock },
+  { href: '/dashboard/crm/calls', label: 'Call Sessions', icon: PhoneCall },
   { href: '/dashboard/crm/customer-details', label: 'Customer Details', icon: FileText },
   { href: '/dashboard/crm/analytics', label: 'CRM Analytics', icon: BarChart3 },
 ];
@@ -84,6 +86,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       type,
     });
   };
+
+  // Today's Follow-ups Alert States
+  const [todayFollowUps, setTodayFollowUps] = useState<any[]>([]);
+  const [showTodayModal, setShowTodayModal] = useState(false);
+  const [completingFUId, setCompletingFUId] = useState<string | null>(null);
+  const [completingFUNote, setCompletingFUNote] = useState('');
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -229,6 +237,78 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   };
 
+  const checkTodayFollowUps = async (empId: string) => {
+    try {
+      if (sessionStorage.getItem(`today_fu_shown_${empId}`)) return;
+
+      const now = new Date();
+      const startOfDay = new Date(now); startOfDay.setHours(0,0,0,0);
+      const endOfDay = new Date(now); endOfDay.setHours(23,59,59,999);
+
+      const { data, error } = await supabase
+        .from('follow_ups')
+        .select('*, lead:leads!lead_id(*)')
+        .eq('employee_id', empId)
+        .eq('status', 'pending')
+        .gte('scheduled_at', startOfDay.toISOString())
+        .lte('scheduled_at', endOfDay.toISOString())
+        .order('scheduled_at', { ascending: true });
+
+      if (!error && data && data.length > 0) {
+        setTodayFollowUps(data);
+        setShowTodayModal(true);
+        sessionStorage.setItem(`today_fu_shown_${empId}`, 'true');
+      }
+    } catch (e) {
+      console.error('Error fetching today followups:', e);
+    }
+  };
+
+  const handleFUComplete = async (fuId: string, leadId: string, type: string) => {
+    try {
+      await supabase.from('follow_ups').update({ 
+        status: 'completed', 
+        completed_at: new Date().toISOString() 
+      }).eq('id', fuId);
+
+      if (completingFUNote.trim()) {
+        const typeLabels: Record<string, string> = { call: 'Phone Call', whatsapp: 'WhatsApp', email: 'Email', visit: 'Physical Visit' };
+        const formattedNote = `Completed Follow-up (${typeLabels[type] || type}): ${completingFUNote.trim()}`;
+        await supabase.from('customer_notes').insert({ 
+          lead_id: leadId, 
+          employee_id: employee?.id, 
+          note: formattedNote 
+        });
+        await supabase.from('crm_activity_logs').insert({ 
+          lead_id: leadId, 
+          employee_id: employee?.id, 
+          action: 'note_added', 
+          details: formattedNote.slice(0, 100) 
+        });
+      } else {
+        await supabase.from('crm_activity_logs').insert({ 
+          lead_id: leadId, 
+          employee_id: employee?.id, 
+          action: 'follow_up_completed', 
+          details: 'Follow-up marked as completed' 
+        });
+      }
+
+      setTodayFollowUps(prev => prev.filter(f => f.id !== fuId));
+      setCompletingFUId(null);
+      setCompletingFUNote('');
+      showAlert('Success', 'Follow-up completed!', 'success');
+      
+      // If no more follow-ups, close the modal
+      if (todayFollowUps.length <= 1) {
+        setShowTodayModal(false);
+      }
+    } catch (e) {
+      console.error(e);
+      showAlert('Error', 'Failed to complete follow-up', 'error');
+    }
+  };
+
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -239,6 +319,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       setLoading(false);
       fetchUnreadCount();
       fetchNotifications();
+      await checkTodayFollowUps(data.id);
     };
     getUser();
     const interval = setInterval(() => {
@@ -381,6 +462,199 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <main className="db-content">{children}</main>
         </div>
       </div>
+
+      {/* TODAY'S FOLLOW-UP SCHEDULE ALERTS */}
+      <AnimatePresence>
+        {showTodayModal && todayFollowUps.length > 0 && (
+          <>
+            {/* Backdrop */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(0, 0, 0, 0.65)',
+                backdropFilter: 'blur(8px)',
+                zIndex: 2000,
+              }}
+            />
+            {/* Modal Container */}
+            <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2001, padding: '1rem' }}>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+                style={{
+                  background: 'var(--db-sf, #ffffff)',
+                  border: '1.5px solid var(--db-bd, rgba(0,0,0,0.1))',
+                  borderRadius: '24px',
+                  width: '100%',
+                  maxWidth: '560px',
+                  maxHeight: '85vh',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                  fontFamily: "'Outfit', sans-serif"
+                }}
+              >
+                {/* Header */}
+                <div style={{ padding: '1.5rem 1.75rem', borderBottom: '1px solid var(--db-bd, rgba(0,0,0,0.06))', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(225, 6, 19, 0.08)', color: '#E10613', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Clock size={20} />
+                    </div>
+                    <div>
+                      <h3 style={{ fontSize: '1.125rem', fontWeight: 800, margin: 0, color: 'var(--db-tx, #000)' }}>Today's Follow-up Schedule</h3>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--db-tx3, #777)', margin: '2px 0 0' }}>You have {todayFollowUps.length} follow-up tasks scheduled for today</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setShowTodayModal(false)}
+                    style={{ background: 'none', border: 'none', color: 'var(--db-tx2, #555)', cursor: 'pointer', display: 'flex', padding: '6px', borderRadius: '50%', transition: 'all 0.2s' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.05)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                {/* Body - List of Followups */}
+                <div style={{ padding: '1.5rem 1.75rem', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  {todayFollowUps.map(fu => {
+                    const isCompletingThis = completingFUId === fu.id;
+                    const schedTime = new Date(fu.scheduled_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+                    const phoneStr = fu.lead?.phone ? fu.lead.phone.replace(/\D/g, '') : '';
+                    const isHighPriority = fu.priority === 'high';
+
+                    return (
+                      <div 
+                        key={fu.id} 
+                        style={{ 
+                          background: 'var(--db-sf2, #fdfdfd)', 
+                          border: '1.5px solid var(--db-bd, rgba(0,0,0,0.04))', 
+                          borderRadius: '16px', 
+                          padding: '1.25rem',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.75rem',
+                          position: 'relative'
+                        }}
+                      >
+                        {/* Top Row: Client Name & Time & Priority */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem' }}>
+                          <div>
+                            <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: 'var(--db-tx, #000)' }}>
+                              {fu.lead?.customer_name || 'Client'}
+                            </h4>
+                            {fu.lead?.interested_car && (
+                              <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: 'var(--db-tx2, #555)', fontWeight: 550 }}>
+                                Interested: {fu.lead.interested_car}
+                              </p>
+                            )}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', background: isHighPriority ? 'rgba(239, 68, 68, 0.08)' : 'rgba(245, 158, 11, 0.08)', color: isHighPriority ? '#ef4444' : '#f59e0b' }}>
+                              {fu.priority.toUpperCase()}
+                            </span>
+                            <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#E10613', background: 'rgba(225, 6, 19, 0.05)', padding: '3px 8px', borderRadius: '6px' }}>
+                              {schedTime}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Middle Row: Note */}
+                        {fu.notes && (
+                          <div style={{ fontSize: '0.8125rem', color: 'var(--db-tx2, #444)', background: 'var(--db-sf, #fff)', border: '1px solid var(--db-bd, rgba(0,0,0,0.04))', padding: '0.75rem 1rem', borderRadius: '10px', lineHeight: 1.4 }}>
+                            <strong style={{ display: 'block', fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--db-tx3, #777)', marginBottom: '3px', fontWeight: 750 }}>Task Description</strong>
+                            {fu.notes}
+                          </div>
+                        )}
+
+                        {/* Action Buttons Row */}
+                        {!isCompletingThis ? (
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.625rem', marginTop: '0.25rem', flexWrap: 'wrap' }}>
+                            {phoneStr && (
+                              <>
+                                <a 
+                                  href={`tel:${fu.lead.phone}`}
+                                  style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', fontWeight: 700, color: '#2563eb', background: 'rgba(37, 99, 235, 0.07)', border: '1px solid rgba(37, 99, 235, 0.1)', padding: '0.5rem 0.875rem', borderRadius: '10px', transition: 'all 0.2s' }}
+                                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(37, 99, 235, 0.15)'}
+                                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(37, 99, 235, 0.07)'}
+                                >
+                                  <Phone size={13} /> Call Client
+                                </a>
+                                <a 
+                                  href={`https://wa.me/${phoneStr}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', fontWeight: 700, color: '#16a34a', background: 'rgba(22, 163, 74, 0.07)', border: '1px solid rgba(22, 163, 74, 0.1)', padding: '0.5rem 0.875rem', borderRadius: '10px', transition: 'all 0.2s' }}
+                                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(22, 163, 74, 0.15)'}
+                                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(22, 163, 74, 0.07)'}
+                                >
+                                  <MessageCircle size={13} /> WhatsApp
+                                </a>
+                              </>
+                            )}
+                            <button 
+                              onClick={() => { setCompletingFUId(fu.id); setCompletingFUNote(''); }}
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', fontWeight: 700, color: '#16a34a', background: 'rgba(22, 163, 74, 0.15)', border: 'none', padding: '0.5rem 0.875rem', borderRadius: '10px', cursor: 'pointer', transition: 'all 0.2s' }}
+                              onMouseEnter={e => e.currentTarget.style.background = 'rgba(22, 163, 74, 0.25)'}
+                              onMouseLeave={e => e.currentTarget.style.background = 'rgba(22, 163, 74, 0.15)'}
+                            >
+                              <CheckCircle size={13} /> Done
+                            </button>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem', marginTop: '0.25rem', borderTop: '1px solid var(--db-bd, rgba(0,0,0,0.05))', paddingTop: '0.75rem' }}>
+                            <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--db-tx2, #555)' }}>Add Completion note / feedback</label>
+                            <textarea 
+                              rows={2}
+                              value={completingFUNote}
+                              onChange={e => setCompletingFUNote(e.target.value)}
+                              placeholder="E.g., Customer busy, requested call back tomorrow"
+                              style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1.5px solid var(--db-bd, rgba(0,0,0,0.1))', background: 'var(--db-sf, #fff)', color: 'inherit', fontSize: '0.78rem', fontFamily: 'inherit', resize: 'none', outline: 'none' }}
+                            />
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                              <button 
+                                onClick={() => setCompletingFUId(null)}
+                                style={{ padding: '0.375rem 0.75rem', borderRadius: '6px', border: '1px solid var(--db-bd, rgba(0,0,0,0.1))', background: 'none', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                              >
+                                Cancel
+                              </button>
+                              <button 
+                                onClick={() => handleFUComplete(fu.id, fu.lead_id, fu.follow_up_type)}
+                                style={{ padding: '0.375rem 0.75rem', borderRadius: '6px', border: 'none', background: '#16a34a', color: '#fff', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                              >
+                                Save & Complete
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Footer */}
+                <div style={{ padding: '1rem 1.75rem', background: 'var(--db-sf2, #f5f5f5)', borderTop: '1px solid var(--db-bd, rgba(0,0,0,0.06))', display: 'flex', justifyContent: 'flex-end' }}>
+                  <button 
+                    onClick={() => setShowTodayModal(false)}
+                    style={{ padding: '0.625rem 1.25rem', borderRadius: '12px', border: '1px solid var(--db-bd, rgba(0,0,0,0.15))', background: 'var(--db-sf, #fff)', color: 'var(--db-tx2, #555)', fontSize: '0.8125rem', fontWeight: 750, cursor: 'pointer', transition: 'all 0.2s' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--db-sf2, #f9f9f9)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'var(--db-sf, #fff)'}
+                  >
+                    Close Schedule
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
 
       <AlertModal
         isOpen={alertConfig.isOpen}

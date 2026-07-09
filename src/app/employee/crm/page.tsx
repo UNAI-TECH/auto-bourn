@@ -44,7 +44,16 @@ export default function EmployeeCRMPage() {
   const getFollowUpTime = (fu: FollowUp) => {
     try {
       const dt = new Date(fu.scheduled_at);
-      return dt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+      const today = new Date();
+      const isToday = dt.getDate() === today.getDate() &&
+                      dt.getMonth() === today.getMonth() &&
+                      dt.getFullYear() === today.getFullYear();
+      
+      if (isToday) {
+        return dt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+      } else {
+        return `${dt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} ${dt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}`;
+      }
     } catch {
       return '12:00 PM';
     }
@@ -57,6 +66,27 @@ export default function EmployeeCRMPage() {
     const todayEnd = new Date(now); todayEnd.setHours(23,59,59,999);
 
     try {
+      // Compliance Check: Mark overdue call follow-ups as missed and notify the admin
+      const { data: overdue } = await supabase
+        .from('follow_ups')
+        .select('*, lead:leads!lead_id(customer_name)')
+        .eq('status', 'pending')
+        .eq('follow_up_type', 'call')
+        .lt('scheduled_at', now.toISOString());
+
+      if (overdue && overdue.length > 0) {
+        for (const fu of overdue) {
+          await supabase.from('follow_ups').update({ status: 'missed' }).eq('id', fu.id);
+          await supabase.from('notifications').insert({
+            recipient_role: 'admin',
+            type: 'missed_call',
+            title: '⚠️ Missed Call Alert',
+            message: `Consultant ${employee.name} missed a scheduled call with customer ${fu.lead?.customer_name || 'Customer'} (Scheduled for ${new Date(fu.scheduled_at).toLocaleString('en-IN')}).`,
+            metadata: { lead_id: fu.lead_id, employee_id: fu.employee_id, follow_up_id: fu.id }
+          });
+        }
+      }
+
       // Fetch only assigned leads to calculate counts and display the current tab's leads
       const [assignedRes, todayFURes, upcomingFURes] = await Promise.all([
         fetch(`/api/leads?assigned_to=${employee.id}`),
@@ -168,7 +198,7 @@ export default function EmployeeCRMPage() {
                   onClick={() => router.push(`/employee/crm/leads/${fu.lead_id}`)} 
                   style={{ cursor: 'pointer' }}
                 >
-                  <div className="crm-timeline-time">{getFollowUpTime(fu)}</div>
+                  <div className="crm-timeline-time" style={{ fontSize: '0.65rem' }}>{getFollowUpTime(fu)}</div>
                   <div className="crm-timeline-indicator">
                     <div className="crm-timeline-dot"></div>
                     {idx < todayFollowUps.length - 1 && <div className="crm-timeline-line"></div>}
@@ -213,8 +243,8 @@ export default function EmployeeCRMPage() {
                     <p className="crm-row-sub" style={{ margin: '2px 0 0', fontSize: '0.75rem' }}>{getFollowUpCarName(fu)}</p>
                   </div>
                   <div className="crm-widget-time-block" style={{ marginLeft: 'auto', textAlign: 'right' }}>
-                    <span className="crm-row-time" style={{ fontSize: '0.75rem', display: 'block' }}>
-                      {new Date(fu.scheduled_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}
+                    <span className="crm-row-time" style={{ fontSize: '0.7rem', display: 'block', whiteSpace: 'nowrap' }}>
+                      {new Date(fu.scheduled_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })} at {new Date(fu.scheduled_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
                     </span>
                     <span className={`crm-row-badge ${getPriorityClass(fu.priority)}`} style={{ fontSize: '0.65rem' }}>{fu.priority}</span>
                   </div>
