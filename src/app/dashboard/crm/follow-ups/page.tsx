@@ -17,6 +17,10 @@ export default function FollowUpsPage() {
   const [myId, setMyId] = useState<string|null>(null);
   const [notifiedIds, setNotifiedIds] = useState<string[]>([]);
   const [nearingFollowUp, setNearingFollowUp] = useState<FollowUp | null>(null);
+  const [completingFollowUpId, setCompletingFollowUpId] = useState<string | null>(null);
+  const [completionNote, setCompletionNote] = useState('');
+  const [completingFollowUpType, setCompletingFollowUpType] = useState('');
+  const [completingFollowUpLeadId, setCompletingFollowUpLeadId] = useState<string | null>(null);
   const supabase = createClient();
 
   const showToast = (m:string) => { setToast(m); setTimeout(()=>setToast(''),3000); };
@@ -111,9 +115,50 @@ export default function FollowUpsPage() {
   }, []);
 
   const complete = async (id: string, leadId: string) => {
-    await supabase.from('follow_ups').update({ status:'completed', completed_at:new Date().toISOString() }).eq('id',id);
-    await supabase.from('crm_activity_logs').insert({ lead_id:leadId, employee_id:myId, action:'follow_up_completed', details:'Follow-up marked as completed' });
-    load(); showToast('Follow-up completed!');
+    const fu = followUps.find(f => f.id === id);
+    if (fu) {
+      setCompletingFollowUpId(id);
+      setCompletingFollowUpLeadId(leadId);
+      setCompletingFollowUpType(fu.follow_up_type);
+      setCompletionNote('');
+    }
+  };
+
+  const handleCompleteSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!completingFollowUpId) return;
+
+    await supabase.from('follow_ups').update({ 
+      status: 'completed', 
+      completed_at: new Date().toISOString() 
+    }).eq('id', completingFollowUpId);
+
+    if (completionNote.trim()) {
+      const formattedNote = `Completed Follow-up (${(FOLLOW_UP_TYPE_LABELS as any)[completingFollowUpType] || completingFollowUpType}): ${completionNote.trim()}`;
+      await supabase.from('customer_notes').insert({ 
+        lead_id: completingFollowUpLeadId, 
+        employee_id: myId, 
+        note: formattedNote 
+      });
+      await supabase.from('crm_activity_logs').insert({ 
+        lead_id: completingFollowUpLeadId, 
+        employee_id: myId, 
+        action: 'note_added', 
+        details: formattedNote.slice(0, 100) 
+      });
+    } else {
+      await supabase.from('crm_activity_logs').insert({ 
+        lead_id: completingFollowUpLeadId, 
+        employee_id: myId, 
+        action: 'follow_up_completed', 
+        details: 'Follow-up marked as completed' 
+      });
+    }
+
+    setCompletingFollowUpId(null);
+    setCompletionNote('');
+    load(); 
+    showToast('Follow-up completed!');
   };
 
   const markMissed = async (id: string) => {
@@ -332,6 +377,41 @@ export default function FollowUpsPage() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Complete Follow-up Modal */}
+      {completingFollowUpId && (
+        <div className="fu-popup-overlay">
+          <div className="fu-popup-card">
+            <div className="fu-popup-header" style={{ justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div className="fu-popup-icon-wrap" style={{ width: 36, height: 36, borderRadius: '10px', boxShadow: 'none' }}>
+                  <CheckCircle2 size={16} />
+                </div>
+                <h3>Complete Follow-up</h3>
+              </div>
+              <button className="fu-popup-close" onClick={() => setCompletingFollowUpId(null)}><X size={16} /></button>
+            </div>
+            <form onSubmit={handleCompleteSubmit}>
+              <div className="fu-popup-body">
+                <div className="fu-popup-field note-field">
+                  <label className="field-label">Add Completion Note / Customer Feedback (Optional)</label>
+                  <textarea 
+                    rows={4} 
+                    value={completionNote} 
+                    onChange={(e) => setCompletionNote(e.target.value)} 
+                    placeholder="Enter details about the customer conversation, status, next steps..."
+                    style={{ background: 'var(--luxury-silver, #F5F5F5)', border: '1.5px solid rgba(0,0,0,0.06)', color: 'var(--graphite, #2A2A2A)', width: '100%', padding: '0.75rem', borderRadius: '12px', fontFamily: 'inherit', fontSize: '0.875rem', outline: 'none', resize: 'none' }}
+                  />
+                </div>
+              </div>
+              <div className="fu-popup-footer">
+                <button type="button" className="popup-btn popup-btn-dismiss" onClick={() => setCompletingFollowUpId(null)}>Cancel</button>
+                <button type="submit" className="popup-btn popup-btn-done" style={{ background: '#22c55e', color: '#fff', border: 'none' }}>Complete Follow-up</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {toast&&<div className="db-toast success" style={{position:'fixed',bottom:'1.5rem',right:'1.5rem'}}>{toast}</div>}
 

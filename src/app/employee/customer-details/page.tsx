@@ -186,6 +186,7 @@ export default function CustomerDetailsPage() {
     whatsapp: '',
     sameAsPhone: true,
     email: '',
+    source: 'Walk-in',
     city: '',
     state: '',
     occupation: '',
@@ -282,7 +283,7 @@ export default function CustomerDetailsPage() {
         city: form.city || null,
         state: form.state || null,
         occupation: form.occupation || null,
-        source: 'walk_in', // walk-in entry default
+        source: form.source || 'Walk-in',
         interested_car: finalCarName || null,
         preferred_brand: form.preferred_brand || null,
         budget: form.budget ? parseInt(form.budget) : null,
@@ -332,6 +333,7 @@ export default function CustomerDetailsPage() {
         whatsapp: '',
         sameAsPhone: true,
         email: '',
+        source: 'Walk-in',
         city: '',
         state: '',
         occupation: '',
@@ -435,6 +437,16 @@ export default function CustomerDetailsPage() {
                       type="email" 
                       value={form.email}
                       onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                    />
+                  </div>
+
+                  <div className="emp-field">
+                    <label>Source Category *</label>
+                    <input 
+                      type="text" 
+                      required
+                      value={form.source}
+                      onChange={e => setForm(f => ({ ...f, source: e.target.value }))}
                     />
                   </div>
 
