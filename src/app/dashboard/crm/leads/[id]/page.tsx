@@ -10,7 +10,7 @@ import { getProxiedImageUrl } from '@/lib/utils';
 import InspectionModal from '@/components/InspectionModal';
 import { downloadInspectionPdf, openPdf } from '@/lib/pdf-utils';
 
-const TABS = ['Timeline','Follow-ups','Notes','Test Drives','Booking'];
+const TABS = ['Calls','Timeline','Follow-ups','Notes','Test Drives','Booking'];
 
 const renderInspectionReport = (note: string) => {
   if (!note.includes('Used Car Inspection Report')) {
@@ -205,7 +205,8 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
   const [notes, setNotes] = useState<CustomerNote[]>([]);
   const [testDrives, setTestDrives] = useState<TestDrive[]>([]);
   const [booking, setBooking] = useState<Booking|null>(null);
-  const [tab, setTab] = useState('Timeline');
+  const [callSessions, setCallSessions] = useState<any[]>([]);
+  const [tab, setTab] = useState('Calls');
   const [loading, setLoading] = useState(true);
   const [myId, setMyId] = useState<string|null>(null);
   const [employees, setEmployees] = useState<{id:string;name:string;role?:string}[]>([]);
@@ -238,16 +239,27 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
     return notes.some(n => n.note && n.note.includes('Used Car Inspection Report'));
   };
 
+  const formatCallDuration = (seconds: number) => {
+    if (!seconds) return '0s';
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    if (mins > 0) {
+      return `${mins}m ${secs}s`;
+    }
+    return `${secs}s`;
+  };
+
   const loadAll = async () => {
-    const [{ data:l }, { data:fu }, { data:n }, { data:td }, { data:bk }] = await Promise.all([
+    const [{ data:l }, { data:fu }, { data:n }, { data:td }, { data:bk }, { data:calls }] = await Promise.all([
       supabase.from('leads').select('*, assigned_employee:employees!assigned_to(name,employee_id)').eq('id',id).single(),
       supabase.from('follow_ups').select('*, employee:employees!employee_id(name)').eq('lead_id',id).order('scheduled_at',{ascending:false}),
       supabase.from('customer_notes').select('*, employee:employees!employee_id(name)').eq('lead_id',id).order('created_at',{ascending:false}),
       supabase.from('test_drives').select('*, employee:employees!employee_id(name)').eq('lead_id',id).order('scheduled_at',{ascending:false}),
       supabase.from('bookings').select('*').eq('lead_id',id).order('created_at',{ascending:false}).limit(1).maybeSingle(),
+      supabase.from('employee_calls').select('*, employee:employees!employee_id(name)').eq('lead_id',id).order('created_at',{ascending:false}),
     ]);
     setLead(l as Lead); setFollowUps((fu||[]) as FollowUp[]); setNotes((n||[]) as CustomerNote[]);
-    setTestDrives((td||[]) as TestDrive[]); setBooking(bk as Booking|null);
+    setTestDrives((td||[]) as TestDrive[]); setBooking(bk as Booking|null); setCallSessions(calls || []);
     setLoading(false);
   };
 
@@ -789,6 +801,68 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
           <div className="crm-tabs">
             {TABS.map(t=><button key={t} className={`crm-tab ${tab===t?'active':''}`} onClick={()=>setTab(t)}>{t}</button>)}
           </div>
+
+          {/* CALLS */}
+          {tab==='Calls'&&(
+            <div className="crm-panel">
+              <h3 style={{ margin: '0 0 1rem', fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--db-tx)' }}>
+                📞 Call Sessions History
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {callSessions.map(c => {
+                  let statusBg = 'rgba(59, 130, 246, 0.08)';
+                  let statusColor = '#3b82f6';
+                  let statusLabel = 'Called';
+                  if (c.call_status === 'missed') {
+                    statusBg = 'rgba(239, 68, 68, 0.08)';
+                    statusColor = '#ef4444';
+                    statusLabel = 'Missed';
+                  } else if (c.call_status === 'no_answer') {
+                    statusBg = 'rgba(245, 158, 11, 0.08)';
+                    statusColor = '#f59e0b';
+                    statusLabel = 'No Answer';
+                  }
+
+                  return (
+                    <div key={c.id} style={{ background: 'var(--db-sf2, #fafafa)', border: '1px solid var(--db-bd, rgba(0,0,0,0.04))', borderRadius: '12px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '0.6875rem', fontWeight: 800, padding: '2px 6px', borderRadius: '6px', background: statusBg, color: statusColor, textTransform: 'uppercase' }}>
+                            {statusLabel}
+                          </span>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--db-tx2, #555)', fontWeight: 600 }}>
+                            Duration: {formatCallDuration(c.talking_time)}
+                          </span>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--db-tx3, #777)' }}>
+                            by {c.employee?.name || 'Unknown'}
+                          </span>
+                        </div>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--db-tx3, #777)', fontWeight: 600 }}>
+                          {new Date(c.created_at).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
+                        </span>
+                      </div>
+
+                      {c.review && (
+                        <div style={{ fontSize: '0.78rem', color: '#e10613', fontWeight: 750, textTransform: 'capitalize' }}>
+                          Customer Interest: {c.review}
+                        </div>
+                      )}
+
+                      {c.notes && (
+                        <div style={{ fontSize: '0.8125rem', color: 'var(--db-tx, #000)', background: 'var(--db-sf, #ffffff)', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid var(--db-bd, rgba(0,0,0,0.04))' }}>
+                          {c.notes}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {callSessions.length === 0 && (
+                  <p style={{ color: 'var(--db-tx3, #777)', fontSize: '0.875rem', padding: '1rem 0' }}>No calls logged for this customer yet.</p>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* TIMELINE */}
           {tab==='Timeline'&&(

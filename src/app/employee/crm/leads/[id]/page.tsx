@@ -3,6 +3,7 @@ import { useState, useEffect, use } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import DateTimePicker from '@/components/DateTimePicker';
 import { 
   ArrowLeft, Phone, MessageCircle, Plus, CheckCircle2, X, 
@@ -210,7 +211,8 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
   const [lead, setLead] = useState<Lead|null>(null);
   const [followUps, setFollowUps] = useState<FollowUp[]>([]);
   const [notes, setNotes] = useState<CustomerNote[]>([]);
-  const [tab, setTab] = useState<'info'|'followups'|'notes'>('info');
+  const [tab, setTab] = useState<'calls'|'info'|'followups'|'notes'>('calls');
+  const [callSessions, setCallSessions] = useState<any[]>([]);
   const [newNote, setNewNote] = useState('');
   const [fuForm, setFuForm] = useState({ follow_up_type:'', scheduled_at:'', notes:'', priority:'' });
   const [toast, setToast] = useState('');
@@ -221,6 +223,107 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
   const [errorMsg, setErrorMsg] = useState('');
   const [claiming, setClaiming] = useState(false);
   const supabase = createClient();
+  const router = useRouter();
+
+  // Active call stopwatch states
+  const [activeCall, setActiveCall] = useState<{ leadId: string; startTime: number; seconds: number; status: 'calling' | 'connected' } | null>(null);
+
+  const formatStopwatch = (totalSeconds: number) => {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
+
+  const formatCallDuration = (seconds: number) => {
+    if (!seconds) return '0s';
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    if (mins > 0) {
+      return `${mins}m ${secs}s`;
+    }
+    return `${secs}s`;
+  };
+
+  const initiateCall = () => {
+    if (!lead) return;
+    window.location.href = `tel:${lead.phone}`;
+    setActiveCall({
+      leadId: id,
+      startTime: Date.now(),
+      seconds: 0,
+      status: 'calling'
+    });
+  };
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    if (activeCall && activeCall.status === 'connected') {
+      interval = setInterval(() => {
+        setActiveCall(prev => {
+          if (!prev) return null;
+          return { ...prev, seconds: prev.seconds + 1 };
+        });
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [activeCall?.status]);
+
+  const connectCall = () => {
+    setActiveCall(prev => {
+      if (!prev) return null;
+      return { ...prev, status: 'connected' };
+    });
+  };
+
+  const saveCallSession = async (status: 'called' | 'missed' | 'no_answer', seconds: number) => {
+    if (!employee || !lead) return;
+    try {
+      const { data, error } = await supabase.from('employee_calls').insert({
+        lead_id: lead.id,
+        employee_id: employee.id,
+        call_status: status,
+        talking_time: seconds,
+        review: null
+      }).select().single();
+
+      if (error) throw error;
+
+      showToast(`Call logged as ${status}`);
+      setActiveCall(null);
+      
+      const today = new Date();
+      const todayStart = new Date(today); todayStart.setHours(0,0,0,0);
+      const todayEnd = new Date(today); todayEnd.setHours(23,59,59,999);
+      
+      const { data: pendingFUs } = await supabase
+        .from('follow_ups')
+        .select('id')
+        .eq('lead_id', lead.id)
+        .eq('status', 'pending')
+        .eq('follow_up_type', 'call')
+        .gte('scheduled_at', todayStart.toISOString())
+        .lte('scheduled_at', todayEnd.toISOString())
+        .limit(1);
+
+      if (pendingFUs && pendingFUs.length > 0) {
+        await supabase
+          .from('follow_ups')
+          .update({ status: 'completed', completed_at: new Date().toISOString() })
+          .eq('id', pendingFUs[0].id);
+      }
+
+      if (status === 'called') {
+        router.push('/employee');
+      } else {
+        loadAll();
+      }
+    } catch (err: any) {
+      console.error('Error logging call session:', err);
+      showToast('Error logging call session');
+    }
+  };
 
   // Used Car Inspection Modal States
   const [showInspection, setShowInspection] = useState(false);
@@ -472,6 +575,14 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
             spareTyre: pSpare
           }));
         }
+
+        // Fetch call sessions
+        const { data: calls } = await supabase
+          .from('employee_calls')
+          .select('*')
+          .eq('lead_id', id)
+          .order('created_at', { ascending: false });
+        setCallSessions(calls || []);
       } else {
         setErrorMsg(data.error || 'Failed to load lead details');
       }
@@ -650,9 +761,9 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
             </div>
           )}
 
-          <a href={`tel:${lead.phone}`} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0.625rem 1.25rem', background: 'rgba(59, 130, 246, 0.08)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.2)', borderRadius: '12px', fontSize: '0.875rem', fontWeight: 700, textDecoration: 'none', transition: 'all 0.2s' }}>
+          <button onClick={initiateCall} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0.625rem 1.25rem', background: 'rgba(59, 130, 246, 0.08)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.2)', borderRadius: '12px', fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}>
             <Phone size={15} /> Call Customer
-          </a>
+          </button>
           <button onClick={() => openWhatsAppComposer('welcome')} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0.625rem 1.25rem', background: 'rgba(34, 197, 94, 0.08)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.2)', borderRadius: '12px', fontSize: '0.875rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s' }}>
             <MessageCircle size={15} /> WhatsApp
           </button>
@@ -670,7 +781,7 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
         <div style={{ background: 'var(--db-sf, #ffffff)', border: '1.5px solid var(--db-bd, rgba(0,0,0,0.06))', borderRadius: '24px', padding: '1.5rem', boxShadow: '0 8px 30px rgba(0,0,0,0.01)' }}>
           {/* Tab Switchers */}
           <div style={{ display: 'flex', gap: '8px', background: 'var(--db-sf2, #f5f5f5)', borderRadius: '14px', padding: '6px', marginBottom: '1.5rem' }}>
-            {(['info', 'followups', 'notes'] as const).map(t => (
+            {(['calls', 'info', 'followups', 'notes'] as const).map(t => (
               <button 
                 key={t} 
                 onClick={() => setTab(t)} 
@@ -689,10 +800,75 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
                   transition: 'all 0.2s' 
                 }}
               >
-                {t === 'info' ? 'Customer Profile' : t === 'followups' ? `Follow-ups (${followUps.length})` : `Notes (${notes.length})`}
+                {t === 'calls' ? `Calls (${callSessions.length})` : t === 'info' ? 'Customer Profile' : t === 'followups' ? `Follow-ups (${followUps.length})` : `Notes (${notes.length})`}
               </button>
             ))}
           </div>
+
+          {/* Calls Tab */}
+          {tab === 'calls' && (
+            <div>
+              <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '1.25rem', color: 'var(--db-tx, #000)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Phone size={18} style={{ color: '#E10613' }} /> Call History & Tracker
+              </h2>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {callSessions.map(c => {
+                  let statusBg = 'rgba(59, 130, 246, 0.08)';
+                  let statusColor = '#3b82f6';
+                  let statusLabel = 'Called';
+                  if (c.call_status === 'missed') {
+                    statusBg = 'rgba(239, 68, 68, 0.08)';
+                    statusColor = '#ef4444';
+                    statusLabel = 'Missed';
+                  } else if (c.call_status === 'no_answer') {
+                    statusBg = 'rgba(245, 158, 11, 0.08)';
+                    statusColor = '#f59e0b';
+                    statusLabel = 'No Answer';
+                  }
+
+                  return (
+                    <div key={c.id} style={{ background: 'var(--db-sf2, #fdfdfd)', border: '1.5px solid var(--db-bd, rgba(0,0,0,0.04))', borderRadius: '16px', padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 800, padding: '3px 8px', borderRadius: '8px', background: statusBg, color: statusColor, textTransform: 'uppercase' }}>
+                            {statusLabel}
+                          </span>
+                          <span style={{ fontSize: '0.8125rem', color: 'var(--db-tx2, #555)', fontWeight: 650 }}>
+                            {formatCallDuration(c.talking_time)}
+                          </span>
+                        </div>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--db-tx3, #777)', fontWeight: 600 }}>
+                          {new Date(c.created_at).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
+                        </span>
+                      </div>
+
+                      {c.review && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--db-tx2, #555)' }}>Customer Interest:</div>
+                          <div style={{ fontSize: '0.875rem', fontWeight: 750, color: '#e10613', textTransform: 'capitalize' }}>
+                            {c.review}
+                          </div>
+                        </div>
+                      )}
+
+                      {c.notes && (
+                        <div style={{ fontSize: '0.8125rem', color: 'var(--db-tx, #000)', background: 'var(--db-sf, #ffffff)', padding: '0.75rem 1rem', borderRadius: '10px', border: '1px solid var(--db-bd, rgba(0,0,0,0.04))', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+                          {c.notes}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {callSessions.length === 0 && (
+                  <p style={{ color: 'var(--db-tx3, #777)', fontSize: '0.875rem', textAlign: 'center', padding: '3rem' }}>
+                    No call logs recorded for this lead yet. Click "Call Customer" to start.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Info Tab */}
           {tab === 'info' && (
@@ -958,6 +1134,141 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
       )}
 
       {toast && <div style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', background: '#22c55e', color: '#fff', padding: '.75rem 1.25rem', borderRadius: '12px', fontWeight: 600, zIndex: 99999, boxShadow: '0 4px 15px rgba(34, 197, 94, 0.2)' }}>{toast}</div>}
+
+      {activeCall && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(15, 23, 42, 0.9)',
+          backdropFilter: 'blur(10px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 99999,
+          padding: '1rem'
+        }}>
+          <div style={{
+            background: 'var(--db-sf, #ffffff)',
+            border: '1.5px solid var(--db-bd, rgba(0,0,0,0.06))',
+            borderRadius: '24px',
+            width: '100%',
+            maxWidth: '440px',
+            padding: '2.5rem 2rem',
+            textAlign: 'center',
+            boxShadow: '0 25px 50px rgba(0,0,0,0.3)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.5rem'
+          }}>
+            <div>
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: activeCall.status === 'connected' ? 'rgba(34,197,94,0.1)' : 'rgba(59,130,246,0.1)',
+                color: activeCall.status === 'connected' ? '#22c55e' : '#3b82f6',
+                width: '64px',
+                height: '64px',
+                borderRadius: '50%',
+                marginBottom: '1rem'
+              }}>
+                <Phone size={32} />
+              </div>
+              <h2 style={{ fontSize: '1.375rem', fontWeight: 800, color: 'var(--db-tx, #0f172a)', margin: '0 0 4px 0' }}>
+                {activeCall.status === 'connected' ? 'Call Connected' : 'Calling Customer...'}
+              </h2>
+              <p style={{ fontSize: '0.875rem', color: 'var(--db-tx2, #64748b)', margin: 0 }}>
+                {lead?.customer_name} ({lead?.phone})
+              </p>
+            </div>
+
+            <div style={{
+              fontSize: '3rem',
+              fontWeight: 800,
+              fontFamily: 'monospace',
+              color: activeCall.status === 'connected' ? '#22c55e' : 'var(--db-tx2, #64748b)',
+              letterSpacing: '0.05em',
+              margin: '0.5rem 0'
+            }}>
+              {formatStopwatch(activeCall.seconds)}
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {activeCall.status === 'calling' && (
+                <>
+                  <button
+                    onClick={connectCall}
+                    style={{
+                      background: '#22c55e',
+                      color: '#fff',
+                      border: 'none',
+                      padding: '0.875rem',
+                      borderRadius: '12px',
+                      fontFamily: 'inherit',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 15px rgba(34, 197, 94, 0.25)'
+                    }}
+                  >
+                    Connected
+                  </button>
+                  <button
+                    onClick={() => saveCallSession('no_answer', 0)}
+                    style={{
+                      background: '#f59e0b',
+                      color: '#fff',
+                      border: 'none',
+                      padding: '0.875rem',
+                      borderRadius: '12px',
+                      fontFamily: 'inherit',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 15px rgba(245, 158, 11, 0.25)'
+                    }}
+                  >
+                    No Answer / Busy
+                  </button>
+                </>
+              )}
+
+              {activeCall.status === 'connected' && (
+                <button
+                  onClick={() => saveCallSession('called', activeCall.seconds)}
+                  style={{
+                    background: '#ef4444',
+                    color: '#fff',
+                    border: 'none',
+                    padding: '0.875rem',
+                    borderRadius: '12px',
+                    fontFamily: 'inherit',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 15px rgba(239, 68, 68, 0.25)'
+                  }}
+                >
+                  End Call & Save
+                </button>
+              )}
+
+              <button
+                onClick={() => setActiveCall(null)}
+                style={{
+                  background: 'transparent',
+                  color: 'var(--db-tx2, #64748b)',
+                  border: '1.5px solid var(--db-bd, rgba(0,0,0,0.15))',
+                  padding: '0.875rem',
+                  borderRadius: '12px',
+                  fontFamily: 'inherit',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel / Error Dial
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style jsx>{`
         .hover-link:hover {

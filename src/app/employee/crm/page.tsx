@@ -57,6 +57,27 @@ export default function EmployeeCRMPage() {
     const todayEnd = new Date(now); todayEnd.setHours(23,59,59,999);
 
     try {
+      // Compliance Check: Mark overdue call follow-ups as missed and notify the admin
+      const { data: overdue } = await supabase
+        .from('follow_ups')
+        .select('*, lead:leads!lead_id(customer_name)')
+        .eq('status', 'pending')
+        .eq('follow_up_type', 'call')
+        .lt('scheduled_at', now.toISOString());
+
+      if (overdue && overdue.length > 0) {
+        for (const fu of overdue) {
+          await supabase.from('follow_ups').update({ status: 'missed' }).eq('id', fu.id);
+          await supabase.from('notifications').insert({
+            recipient_role: 'admin',
+            type: 'missed_call',
+            title: '⚠️ Missed Call Alert',
+            message: `Consultant ${employee.name} missed a scheduled call with customer ${fu.lead?.customer_name || 'Customer'} (Scheduled for ${new Date(fu.scheduled_at).toLocaleString('en-IN')}).`,
+            metadata: { lead_id: fu.lead_id, employee_id: fu.employee_id, follow_up_id: fu.id }
+          });
+        }
+      }
+
       // Fetch only assigned leads to calculate counts and display the current tab's leads
       const [assignedRes, todayFURes, upcomingFURes] = await Promise.all([
         fetch(`/api/leads?assigned_to=${employee.id}`),

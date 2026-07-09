@@ -43,6 +43,7 @@ const crmNavItems = [
   { href: '/dashboard/crm', label: 'CRM Overview', icon: Users2 },
   { href: '/dashboard/crm/leads', label: 'Leads', icon: PhoneCall },
   { href: '/dashboard/crm/follow-ups', label: 'Follow-ups', icon: CalendarClock },
+  { href: '/dashboard/crm/calls', label: 'Call Sessions', icon: PhoneCall },
   { href: '/dashboard/crm/customer-details', label: 'Customer Details', icon: FileText },
   { href: '/dashboard/crm/analytics', label: 'CRM Analytics', icon: BarChart3 },
 ];
