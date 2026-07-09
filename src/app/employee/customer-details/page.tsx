@@ -175,6 +175,21 @@ function CustomSelect({ options, value, onChange, placeholder, disabled = false 
   );
 }
 
+const ALLOWED_SOURCES = ['website', 'instagram', 'facebook', 'whatsapp', 'walk_in', 'referral', 'olx', 'cardekho', 'manual'];
+
+function getDatabaseSource(inputSource: string): { dbSource: string; noteToAdd: string | null } {
+  const cleanInput = (inputSource || '').trim();
+  const normalized = cleanInput.toLowerCase().replace(/[-\s]/g, '_');
+  
+  if (ALLOWED_SOURCES.includes(normalized)) {
+    return { dbSource: normalized, noteToAdd: null };
+  }
+  if (normalized === 'walkin' || normalized === 'walk_in') {
+    return { dbSource: 'walk_in', noteToAdd: null };
+  }
+  return { dbSource: 'manual', noteToAdd: `Source Category: ${cleanInput}` };
+}
+
 export default function CustomerDetailsPage() {
   const { employee } = useEmpContext();
   const [cars, setCars] = useState<CarItem[]>([]);
@@ -326,6 +341,11 @@ Expected Price: ₹${form.sell_expected_price}
         finalPreferredBrand = form.preferred_brand;
       }
 
+      const { dbSource, noteToAdd } = getDatabaseSource(form.source || 'Walk-in');
+      if (noteToAdd) {
+        finalNotes = finalNotes ? `${noteToAdd}\n\n${finalNotes}` : noteToAdd;
+      }
+
       const payload = {
         customer_name: form.customer_name,
         phone: form.phone,
@@ -334,7 +354,7 @@ Expected Price: ₹${form.sell_expected_price}
         city: form.city || null,
         state: form.state || null,
         occupation: form.occupation || null,
-        source: form.source || 'Walk-in',
+        source: dbSource,
         interested_car: finalCarName || null,
         preferred_brand: finalPreferredBrand || null,
         budget: finalBudget,
