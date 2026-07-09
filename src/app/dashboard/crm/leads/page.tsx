@@ -29,6 +29,7 @@ export default function LeadsPage() {
   const [toast, setToast] = useState('');
   const [draggingId, setDraggingId] = useState<string|null>(null);
   const [myId, setMyId] = useState<string|null>(null);
+  const [sendWhatsApp, setSendWhatsApp] = useState(true);
   const supabase = createClient();
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(()=>setToast(''),3000); };
@@ -76,7 +77,13 @@ export default function LeadsPage() {
     e.preventDefault();
     if (!form.customer_name||!form.phone) return;
     setSaving(true);
-    const payload = { ...form, budget: form.budget ? parseInt(form.budget) : null, assigned_to: form.assigned_to||null, created_by: myId };
+    const payload = {
+      ...form,
+      budget: form.budget ? parseInt(form.budget) : null,
+      assigned_to: form.assigned_to||null,
+      created_by: myId,
+      wa_greeting_sent: !sendWhatsApp
+    };
     const { data: leadData, error } = await supabase.from('leads').insert(payload).select().single();
     if (error) { showToast('Error: '+error.message); }
     else { 
@@ -109,6 +116,7 @@ export default function LeadsPage() {
       showToast('Lead added!'); 
       setShowForm(false); 
       setForm(emptyForm); 
+      setSendWhatsApp(true);
       load(); 
     }
     setSaving(false);
@@ -347,16 +355,59 @@ export default function LeadsPage() {
                             router.push(`/dashboard/crm/leads/${lead.id}`);
                           }}
                         >
-                          <div style={{fontWeight:700,fontSize:'.875rem',color:'var(--db-tx)',marginBottom:'.25rem'}}>{lead.customer_name}</div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '.25rem', gap: '0.5rem' }}>
+                            <div style={{fontWeight:700,fontSize:'.875rem',color:'var(--db-tx)'}}>{lead.customer_name}</div>
+                            {lead.wa_greeting_sent ? (
+                              <span style={{ fontSize: '0.625rem', color: '#10b981', background: 'rgba(16,185,129,0.1)', padding: '2px 6px', borderRadius: '4px', whiteSpace: 'nowrap', fontWeight: 600 }} title="WhatsApp Welcome Greeting Sent">
+                                WA Sent
+                              </span>
+                            ) : (
+                              <span style={{ fontSize: '0.625rem', color: 'var(--db-tx3)', background: 'var(--db-sf2)', padding: '2px 6px', borderRadius: '4px', whiteSpace: 'nowrap', fontWeight: 600 }} title="WhatsApp Welcome Greeting Unsent">
+                                WA Pending
+                              </span>
+                            )}
+                          </div>
                           <div style={{fontSize:'.75rem',color:'var(--db-tx3)',marginBottom:'.5rem'}}>{lead.phone} {lead.city&&`· ${lead.city}`}</div>
                           {lead.interested_car&&<div style={{fontSize:'.75rem',color:'var(--db-tx2)',marginBottom:'.4rem'}}>🚗 {lead.interested_car}</div>}
                           {lead.budget&&<div style={{fontSize:'.75rem',color:'var(--db-tx2)',marginBottom:'.5rem'}}>💰 {formatBudget(lead.budget)}</div>}
                           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:'.5rem',paddingTop:'.5rem',borderTop:'1px solid var(--db-bd)'}}>
                             <div style={{fontSize:'.6875rem',color:'var(--db-tx3)'}}>{emp?.name||'Unassigned'}</div>
-                            <div style={{display:'flex',gap:4}}>
-                              <a href={`tel:${lead.phone}`} className="crm-card-btn" title="Call"><Phone size={11}/></a>
-                              <a href={`https://wa.me/${(lead.whatsapp||lead.phone).replace(/\D/g,'')}`} target="_blank" className="crm-card-btn" title="WhatsApp"><MessageCircle size={11}/></a>
-                            </div>
+                             <div style={{display:'flex',gap:4,alignItems:'center'}}>
+                               <a href={`tel:${lead.phone}`} className="crm-card-btn" title="Call"><Phone size={11}/></a>
+                               <a href={`https://wa.me/${(lead.whatsapp||lead.phone).replace(/\D/g,'')}`} target="_blank" className="crm-card-btn" title="WhatsApp Web"><MessageCircle size={11}/></a>
+                               <button
+                                 type="button"
+                                 className="crm-card-btn"
+                                 title="Resend WhatsApp Welcome Message"
+                                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}
+                                 onClick={async (e) => {
+                                   e.stopPropagation();
+                                   if (confirm(`Resend WhatsApp Welcome Greeting to ${lead.customer_name}?`)) {
+                                     try {
+                                       const res = await fetch('/api/leads/whatsapp-greeting', {
+                                         method: 'POST',
+                                         headers: { 'Content-Type': 'application/json' },
+                                         body: JSON.stringify({ leadId: lead.id, force: true })
+                                       });
+                                       const data = await res.json();
+                                       if (data.success) {
+                                         showToast('WhatsApp greeting sent!');
+                                         load();
+                                       } else {
+                                         showToast('Error: ' + (data.error || 'Failed to send'));
+                                       }
+                                     } catch (err: any) {
+                                       showToast('Error: ' + err.message);
+                                     }
+                                   }
+                                 }}
+                               >
+                                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: lead.wa_greeting_sent ? '#10b981' : 'var(--db-tx3)' }}>
+                                   <path d="m22 2-7 20-4-9-9-4Z"/>
+                                   <path d="M22 2 11 13"/>
+                                 </svg>
+                               </button>
+                             </div>
                           </div>
                         </div>
                       );
@@ -419,7 +470,18 @@ export default function LeadsPage() {
                             <span style={{ fontWeight: 600, color: 'var(--db-tx)' }}>{lead.customer_name}</span>
                           </div>
                         </td>
-                        <td style={{ verticalAlign: 'middle' }}>{lead.phone}</td>
+                        <td style={{ verticalAlign: 'middle' }}>
+                          <div>{lead.phone}</div>
+                          {lead.wa_greeting_sent ? (
+                            <span style={{ fontSize: '0.625rem', color: '#10b981', background: 'rgba(16,185,129,0.1)', padding: '2px 4px', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', marginTop: '4px', fontWeight: 600 }}>
+                              WA Sent
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: '0.625rem', color: 'var(--db-tx3)', background: 'var(--db-sf2)', padding: '2px 4px', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', marginTop: '4px', fontWeight: 600 }}>
+                              WA Pending
+                            </span>
+                          )}
+                        </td>
                         <td style={{ verticalAlign: 'middle' }}>
                           <span style={{ fontWeight: 600, color: 'var(--db-tx2)' }}>{lead.interested_car || '—'}</span>
                         </td>
@@ -434,8 +496,37 @@ export default function LeadsPage() {
                           {new Date(lead.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
                         </td>
                         <td style={{ paddingRight: '1.5rem', verticalAlign: 'middle' }}>
-                          <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                          <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
                             <a href={`tel:${lead.phone}`} className="crm-action-icon-btn" title="Call"><Phone size={13}/></a>
+                            <button
+                              type="button"
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                if (confirm(`Resend WhatsApp Welcome Greeting to ${lead.customer_name}?`)) {
+                                  try {
+                                    const res = await fetch('/api/leads/whatsapp-greeting', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ leadId: lead.id, force: true })
+                                    });
+                                    const data = await res.json();
+                                    if (data.success) {
+                                      showToast('WhatsApp greeting sent!');
+                                      load();
+                                    } else {
+                                      showToast('Error: ' + (data.error || 'Failed to send'));
+                                    }
+                                  } catch (err: any) {
+                                    showToast('Error: ' + err.message);
+                                  }
+                                }
+                              }}
+                              className="crm-action-icon-btn"
+                              title="Resend WhatsApp Welcome Message"
+                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: 'none', border: 'none', padding: '4px' }}
+                            >
+                              <MessageCircle size={13} style={{ color: lead.wa_greeting_sent ? '#10b981' : 'var(--db-tx3)' }} />
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -611,6 +702,18 @@ export default function LeadsPage() {
                       placeholder="Describe initial customer interest or requirements..."
                       className="inspo-textarea"
                     />
+                  </div>
+
+                  <div className="inspo-field full-width" style={{ marginTop: '0.25rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', cursor: 'pointer', userSelect: 'none', fontWeight: 600, fontSize: '0.8125rem', color: 'var(--db-tx)' }}>
+                      <input
+                        type="checkbox"
+                        checked={sendWhatsApp}
+                        onChange={e => setSendWhatsApp(e.target.checked)}
+                        style={{ width: '16px', height: '16px', cursor: 'pointer', borderRadius: '4px', accentColor: '#E10613' }}
+                      />
+                      <span>Send WhatsApp welcome greeting message to customer automatically</span>
+                    </label>
                   </div>
                 </div>
 

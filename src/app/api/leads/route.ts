@@ -78,6 +78,25 @@ export async function POST(request: NextRequest) {
       metadata: { lead_id: lead.id, type: isContactUs ? 'contact_us' : 'sell_car' },
     });
 
+    // Trigger WhatsApp auto-greeting asynchronously (fire-and-forget background task)
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://njvgqybtgakgevnxmetf.supabase.co';
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (serviceKey) {
+      const edgeFunctionUrl = `${supabaseUrl}/functions/v1/send-whatsapp-greeting`;
+      fetch(edgeFunctionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${serviceKey}`
+        },
+        body: JSON.stringify({ leadId: lead.id })
+      }).catch(err => {
+        console.error('[API] Failed to trigger WhatsApp greeting background task:', err);
+      });
+    } else {
+      console.warn('[API] SUPABASE_SERVICE_ROLE_KEY missing, skipping background WhatsApp trigger.');
+    }
+
     return NextResponse.json({ success: true, lead });
   } catch (err: any) {
     console.error('Unexpected error in leads API POST:', err);

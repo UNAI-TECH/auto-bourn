@@ -46,6 +46,7 @@ export interface Lead {
   lost_reason: string | null;
   created_at: string;
   updated_at: string;
+  wa_greeting_sent?: boolean;
   // Joined
   assigned_employee?: { name: string; employee_id: string } | null;
   created_by_employee?: { name: string; employee_id: string } | null;
@@ -154,3 +155,25 @@ export const formatBudget = (n: number | null): string => {
   if (n >= 100000) return `₹${(n / 100000).toFixed(1)}L`;
   return `₹${n.toLocaleString('en-IN')}`;
 };
+
+export type WhatsAppMessageType =
+  | 'sell_car_greeting'
+  | 'contact_greeting'
+  | 'crm_welcome'
+  | 'follow_up_reminder'
+  | 'booking_confirmation'
+  | 'custom';
+
+export interface WhatsAppMessageLog {
+  id: string;
+  lead_id: string;
+  phone: string;
+  message_type: WhatsAppMessageType;
+  template_sid: string | null;
+  message_body: string | null;
+  twilio_message_sid: string | null;
+  status: 'pending' | 'sent' | 'delivered' | 'failed' | 'undelivered';
+  error_message: string | null;
+  created_at: string;
+}
+
