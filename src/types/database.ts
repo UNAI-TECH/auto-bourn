@@ -3,7 +3,7 @@
 export type UserRole = 'admin' | 'employee';
 export type CarStatus = 'available' | 'sold' | 'reserved' | 'pending' | 'rejected';
 export type EmployeeStatus = 'active' | 'inactive' | 'suspended';
-export type ActivityAction = 'login' | 'logout' | 'upload' | 'edit' | 'delete' | 'sold_status_change' | 'employee_added' | 'employee_removed' | 'password_reset';
+export type ActivityAction = 'login' | 'logout' | 'upload' | 'edit' | 'delete' | 'sold_status_change' | 'employee_added' | 'employee_removed' | 'password_reset' | 'biometric_checkin' | 'biometric_checkout';
 
 export interface Employee {
   id: string;
@@ -16,6 +16,57 @@ export interface Employee {
   created_at: string;
   status: EmployeeStatus;
   auth_user_id: string;
+}
+
+export interface BiometricDevice {
+  id: string;
+  device_id: string;
+  device_name: string;
+  device_type: 'fingerprint' | 'face' | 'card' | 'mixed';
+  location?: string;
+  api_key: string;
+  status: 'active' | 'inactive';
+  last_heartbeat?: string;
+  created_at: string;
+}
+
+export interface BiometricEnrollment {
+  id: string;
+  employee_id: string;
+  device_user_id: string;
+  biometric_type: 'fingerprint' | 'face' | 'card';
+  enrolled_at: string;
+  employee?: Employee;
+}
+
+export interface BiometricPunch {
+  id: string;
+  device_id: string;
+  device_user_id: string;
+  punch_time: string;
+  punch_type: number;
+  verify_type?: number;
+  employee_id?: string;
+  raw_payload?: Record<string, unknown>;
+  synced_at: string;
+  employee?: Employee;
+}
+
+export interface AttendanceRecord {
+  id: string;
+  employee_id: string;
+  attendance_date: string;
+  first_punch_in?: string;
+  last_punch_out?: string;
+  total_hours: number;
+  punch_count: number;
+  source: 'biometric' | 'web_login' | 'manual';
+  status: 'present' | 'absent' | 'half_day' | 'late';
+  late_by_minutes: number;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+  employee?: Employee;
 }
 
 export interface Car {

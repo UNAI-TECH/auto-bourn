@@ -5,7 +5,8 @@ import { createClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, LogIn, LogOut, Users, CheckCircle2, XCircle, Clock, 
-  Calendar, ChevronLeft, ChevronRight, UserCheck, UserX, Percent, Download
+  Calendar, ChevronLeft, ChevronRight, UserCheck, UserX, Percent, Download,
+  ClipboardCheck, Fingerprint
 } from 'lucide-react';
 import Image from 'next/image';
 import { getProxiedImageUrl } from '@/lib/utils';
@@ -17,6 +18,7 @@ interface EmployeeInfo {
   role: string;
   status: string;
   avatar_url: string | null;
+  biometric_id?: string | null;
 }
 
 interface AttendanceLog {
@@ -32,6 +34,11 @@ interface AttendanceLog {
     employee_id: string;
     avatar_url: string | null;
   } | null;
+  metadata?: {
+    biometric?: boolean;
+    device_id?: string;
+    verify_type?: number;
+  } | null;
 }
 
 interface PresentInfo {
@@ -39,17 +46,22 @@ interface PresentInfo {
   firstLogin: string;
   lastLogout: string | null;
   status: 'active' | 'logged_out';
+  total_hours: number | null;
+  source: 'biometric' | 'web_login' | 'manual';
+  late_by_minutes: number;
 }
 
 export default function AttendancePage() {
   const supabase = createClient();
   const [employees, setEmployees] = useState<EmployeeInfo[]>([]);
   const [logs, setLogs] = useState<AttendanceLog[]>([]);
+  const [todayRecords, setTodayRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Filters & Search
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('all');
+  const [selectedSource, setSelectedSource] = useState<'all' | 'biometric' | 'web_login'>('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
@@ -61,13 +73,31 @@ export default function AttendancePage() {
     fetchData();
   }, []);
 
+  const updateBiometricId = async (employeeId: string, bioId: string) => {
+    try {
+      const { error } = await supabase
+        .from('employees')
+        .update({ biometric_id: bioId.trim() || null })
+        .eq('id', employeeId);
+      
+      if (error) {
+        alert('Failed to update Biometric ID / Roll Number: ' + error.message);
+      } else {
+        // Update local state to avoid full refetch delay
+        setEmployees(prev => prev.map(emp => emp.id === employeeId ? { ...emp, biometric_id: bioId.trim() || null } : emp));
+      }
+    } catch (err) {
+      console.error('Error updating biometric ID:', err);
+    }
+  };
+
   const fetchData = async () => {
     setLoading(true);
     try {
       // 1. Fetch active employees (excluding admins to match "employee" attendance requirement)
       const { data: empsData } = await supabase
         .from('employees')
-        .select('id, name, employee_id, role, status, avatar_url')
+        .select('id, name, employee_id, role, status, avatar_url, biometric_id')
         .eq('role', 'employee')
         .eq('status', 'active');
       
@@ -82,6 +112,15 @@ export default function AttendancePage() {
         .limit(300);
 
       setLogs((logsData || []) as unknown as AttendanceLog[]);
+
+      // 3. Fetch today's attendance records to build presentList
+      const today = getTodayCanadaStr();
+      const { data: recordsData } = await supabase
+        .from('attendance_records')
+        .select('*, employee:employees(name, employee_id, avatar_url)')
+        .eq('attendance_date', today);
+      
+      setTodayRecords(recordsData || []);
     } catch (error) {
       console.error('Error fetching attendance data:', error);
     } finally {
@@ -95,18 +134,21 @@ export default function AttendancePage() {
       return;
     }
 
-    const headers = ['Date', 'Time', 'Employee ID', 'Employee Name', 'Action', 'Details', 'IP Address', 'Device/User Agent'];
+    const headers = ['Date', 'Time', 'Employee ID', 'Employee Name', 'Action', 'Source', 'Details', 'IP Address / Device'];
     const rows = filteredLogs.map(log => {
       const dateStr = new Date(log.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
       const timeStr = formatLocalTime(log.created_at);
       const empId = log.employee?.employee_id || '';
       const empName = log.employee?.name || 'Unknown Employee';
-      const actionStr = log.action === 'login' ? 'Login' : 'Logout';
+      const actionStr = log.action === 'login' ? 'Login / In' : 'Logout / Out';
+      
+      const isBiometric = log.metadata?.biometric || log.details?.toLowerCase().includes('biometric');
+      const sourceStr = isBiometric ? 'Biometric' : 'Web Login';
+      
       const detailsStr = log.details ? `"${log.details.replace(/"/g, '""')}"` : '';
-      const ip = log.ip_address || '';
-      const ua = log.user_agent ? (log.user_agent.includes('Mobi') ? 'Mobile' : 'Desktop') : '';
+      const ip = log.ip_address || log.metadata?.device_id || '';
 
-      return [dateStr, timeStr, empId, empName, actionStr, detailsStr, ip, ua];
+      return [dateStr, timeStr, empId, empName, actionStr, sourceStr, detailsStr, ip];
     });
 
     const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
@@ -143,46 +185,66 @@ export default function AttendancePage() {
   };
 
   const getTodayCanadaStr = () => {
-    // We adjust today's date in local time
     return new Date().toLocaleDateString('en-CA');
   };
 
   const todayStr = getTodayCanadaStr();
 
-  // Process presence / absence today
-  const todayLogs = logs.filter(log => getLocalDateStr(log.created_at) === todayStr);
-
+  // Process presence / absence today using records, fallback to logs if empty
   const presentList: PresentInfo[] = [];
   const absentList: EmployeeInfo[] = [];
 
-  employees.forEach(emp => {
-    const empTodayLogs = todayLogs
-      .filter(l => l.employee_id === emp.id)
-      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-    
-    if (empTodayLogs.length > 0) {
-      const logins = empTodayLogs.filter(l => l.action === 'login');
-      const logouts = empTodayLogs.filter(l => l.action === 'logout');
-      
-      const firstLogin = logins.length > 0 ? logins[0].created_at : empTodayLogs[0].created_at;
-      const lastLogout = logouts.length > 0 ? logouts[logouts.length - 1].created_at : null;
-
-      // Determine current status
-      let currentStatus: 'active' | 'logged_out' = 'active';
-      if (empTodayLogs[empTodayLogs.length - 1].action === 'logout') {
-        currentStatus = 'logged_out';
+  if (todayRecords && todayRecords.length > 0) {
+    employees.forEach(emp => {
+      const rec = todayRecords.find(r => r.employee_id === emp.id);
+      if (rec) {
+        presentList.push({
+          employee: emp,
+          firstLogin: rec.first_punch_in || '',
+          lastLogout: rec.last_punch_out,
+          status: rec.last_punch_out ? 'logged_out' : 'active',
+          total_hours: rec.total_hours,
+          source: rec.source || 'biometric',
+          late_by_minutes: rec.late_by_minutes || 0
+        });
+      } else {
+        absentList.push(emp);
       }
+    });
+  } else {
+    // Fallback legacy calculation from logs
+    const todayLogs = logs.filter(log => getLocalDateStr(log.created_at) === todayStr);
+    employees.forEach(emp => {
+      const empTodayLogs = todayLogs
+        .filter(l => l.employee_id === emp.id)
+        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      
+      if (empTodayLogs.length > 0) {
+        const logins = empTodayLogs.filter(l => l.action === 'login');
+        const logouts = empTodayLogs.filter(l => l.action === 'logout');
+        
+        const firstLogin = logins.length > 0 ? logins[0].created_at : empTodayLogs[0].created_at;
+        const lastLogout = logouts.length > 0 ? logouts[logouts.length - 1].created_at : null;
 
-      presentList.push({
-        employee: emp,
-        firstLogin,
-        lastLogout,
-        status: currentStatus
-      });
-    } else {
-      absentList.push(emp);
-    }
-  });
+        let currentStatus: 'active' | 'logged_out' = 'active';
+        if (empTodayLogs[empTodayLogs.length - 1].action === 'logout') {
+          currentStatus = 'logged_out';
+        }
+
+        presentList.push({
+          employee: emp,
+          firstLogin,
+          lastLogout,
+          status: currentStatus,
+          total_hours: null,
+          source: 'web_login',
+          late_by_minutes: 0
+        });
+      } else {
+        absentList.push(emp);
+      }
+    });
+  }
 
   // Filtered Logs
   const filteredLogs = logs.filter(log => {
@@ -196,12 +258,17 @@ export default function AttendancePage() {
     
     const matchesEmployee = selectedEmployeeId === 'all' || log.employee_id === selectedEmployeeId;
     
+    const isBiometric = log.metadata?.biometric || log.details?.toLowerCase().includes('biometric');
+    const matchesSource = selectedSource === 'all' || 
+                         (selectedSource === 'biometric' && isBiometric) || 
+                         (selectedSource === 'web_login' && !isBiometric);
+
     const logDate = getLocalDateStr(log.created_at);
     const matchesDate = 
       (!startDate || logDate >= startDate) &&
       (!endDate || logDate <= endDate);
 
-    return matchesSearch && matchesEmployee && matchesDate;
+    return matchesSearch && matchesEmployee && matchesSource && matchesDate;
   });
 
   // Pagination calculations
@@ -276,7 +343,7 @@ export default function AttendancePage() {
               <div className="att-empty-state">No employees checked in today yet.</div>
             ) : (
               <div className="att-list-container">
-                {presentList.map(({ employee, firstLogin, lastLogout, status }) => (
+                {presentList.map(({ employee, firstLogin, lastLogout, status, total_hours, source, late_by_minutes }) => (
                   <div key={employee.id} className="att-list-item">
                     <div className="att-emp-profile">
                       <div className="att-avatar-wrap">
@@ -291,12 +358,42 @@ export default function AttendancePage() {
                       <div>
                         <div className="att-emp-name">{employee.name}</div>
                         <div className="att-emp-id">{employee.employee_id}</div>
+                        <div className="att-bio-id-field" style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ fontSize: '0.65rem', color: 'var(--db-tx3)' }}>Bio ID / Roll No:</span>
+                          <input 
+                            type="text" 
+                            placeholder="None" 
+                            defaultValue={employee.biometric_id || ''}
+                            onBlur={(e) => updateBiometricId(employee.id, e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                updateBiometricId(employee.id, e.currentTarget.value);
+                                e.currentTarget.blur();
+                              }
+                            }}
+                            style={{
+                              width: '45px',
+                              fontSize: '0.7rem',
+                              padding: '1px 4px',
+                              borderRadius: '4px',
+                              border: '1px solid var(--db-bd)',
+                              background: 'var(--db-sf2)',
+                              color: 'var(--db-tx)',
+                              textAlign: 'center'
+                            }}
+                          />
+                        </div>
                       </div>
                     </div>
                     <div className="att-emp-times">
                       <div className="att-time-row">
                         <LogIn size={11} className="text-green-500" />
-                        <span>In: {formatLocalTime(firstLogin)}</span>
+                        <span>In: {firstLogin ? formatLocalTime(firstLogin) : '—'}</span>
+                        {late_by_minutes > 0 && (
+                          <span style={{ fontSize: '0.65rem', color: 'var(--db-rd, #E10613)', fontWeight: 700, marginLeft: '4px' }}>
+                            (Late {late_by_minutes}m)
+                          </span>
+                        )}
                       </div>
                       {lastLogout ? (
                         <div className="att-time-row">
@@ -309,10 +406,29 @@ export default function AttendancePage() {
                           <span>On Duty</span>
                         </div>
                       )}
+                      {total_hours !== null && total_hours > 0 && (
+                        <div className="att-time-row text-slate-500" style={{ fontSize: '0.7rem' }}>
+                          <ClipboardCheck size={10} />
+                          <span>Work: {total_hours} hrs</span>
+                        </div>
+                      )}
                     </div>
-                    <span className={`att-badge ${status}`}>
-                      {status === 'active' ? 'Active' : 'Logged Out'}
-                    </span>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                      <span className={`att-badge ${status}`}>
+                        {status === 'active' ? 'Active' : 'Logged Out'}
+                      </span>
+                      <span className={`att-source-badge ${source}`} style={{
+                        fontSize: '0.6rem',
+                        fontWeight: 700,
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        background: source === 'biometric' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(156, 163, 175, 0.1)',
+                        color: source === 'biometric' ? '#3b82f6' : '#6b7280',
+                        textTransform: 'uppercase'
+                      }}>
+                        {source === 'biometric' ? 'Biometric' : 'Web'}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -348,6 +464,31 @@ export default function AttendancePage() {
                       <div>
                         <div className="att-emp-name">{employee.name}</div>
                         <div className="att-emp-id">{employee.employee_id}</div>
+                        <div className="att-bio-id-field" style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ fontSize: '0.65rem', color: 'var(--db-tx3)' }}>Bio ID / Roll No:</span>
+                          <input 
+                            type="text" 
+                            placeholder="None" 
+                            defaultValue={employee.biometric_id || ''}
+                            onBlur={(e) => updateBiometricId(employee.id, e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                updateBiometricId(employee.id, e.currentTarget.value);
+                                e.currentTarget.blur();
+                              }
+                            }}
+                            style={{
+                              width: '45px',
+                              fontSize: '0.7rem',
+                              padding: '1px 4px',
+                              borderRadius: '4px',
+                              border: '1px solid var(--db-bd)',
+                              background: 'var(--db-sf2)',
+                              color: 'var(--db-tx)',
+                              textAlign: 'center'
+                            }}
+                          />
+                        </div>
                       </div>
                     </div>
                     <div className="att-emp-times">
@@ -391,6 +532,18 @@ export default function AttendancePage() {
               {employees.map(emp => (
                 <option key={emp.id} value={emp.id}>{emp.name}</option>
               ))}
+            </select>
+          </div>
+
+          <div className="att-filter-dropdown">
+            <ClipboardCheck size={16} />
+            <select 
+              value={selectedSource}
+              onChange={(e) => { setSelectedSource(e.target.value as any); setCurrentPage(1); }}
+            >
+              <option value="all">All Sources</option>
+              <option value="biometric">Biometric Device</option>
+              <option value="web_login">Web Login</option>
             </select>
           </div>
 
@@ -474,20 +627,27 @@ export default function AttendancePage() {
                         </div>
                       </td>
                       <td>
-                        <div className={`att-action-pill ${log.action}`}>
-                          {isLogin ? <LogIn size={12} /> : <LogOut size={12} />}
-                          <span>{isLogin ? 'Login' : 'Logout'}</span>
-                        </div>
+                        {log.metadata?.biometric || log.details?.toLowerCase().includes('biometric') ? (
+                          <div className={`att-action-pill ${log.action}`} style={{ background: isLogin ? 'rgba(59, 130, 246, 0.1)' : 'rgba(245, 158, 11, 0.1)', color: isLogin ? '#3b82f6' : '#f59e0b' }}>
+                            <Fingerprint size={12} />
+                            <span>{isLogin ? 'Punch In' : 'Punch Out'}</span>
+                          </div>
+                        ) : (
+                          <div className={`att-action-pill ${log.action}`}>
+                            {isLogin ? <LogIn size={12} /> : <LogOut size={12} />}
+                            <span>{isLogin ? 'Login' : 'Logout'}</span>
+                          </div>
+                        )}
                       </td>
                       <td>
                         <span className="att-log-details">"{log.details}"</span>
                       </td>
                       <td>
                         <div className="att-device-cell">
-                          <span className="att-ip-addr">{log.ip_address || '—'}</span>
+                          <span className="att-ip-addr">{log.ip_address || log.metadata?.device_id || '—'}</span>
                           {log.user_agent && (
                             <span className="att-user-agent" title={log.user_agent}>
-                              {log.user_agent.includes('Mobi') ? 'Mobile' : 'Desktop'}
+                              {log.user_agent.includes('Mobi') ? 'Mobile' : (log.metadata?.biometric ? 'Biometric Terminal' : 'Desktop')}
                             </span>
                           )}
                         </div>
@@ -677,6 +837,8 @@ export default function AttendancePage() {
         .att-badge.active { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
         .att-badge.logged_out { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
         .att-badge.absent { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+        .att-source-badge.biometric { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+        .att-source-badge.web_login { background: rgba(156, 163, 175, 0.1); color: #6b7280; }
         
         .att-empty-state {
           padding: 2.5rem 1rem;
