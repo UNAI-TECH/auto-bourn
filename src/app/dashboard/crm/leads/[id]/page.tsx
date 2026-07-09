@@ -522,15 +522,29 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
   return (
     <div className="db-page" style={{padding:0}}>
       {/* Header */}
-      <div style={{ marginBottom: '1.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-            <Link href="/dashboard/crm/leads" className="crm-back-btn">
-              <ArrowLeft size={15} /> Back
+      <div style={{ marginBottom: '1.75rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', flexWrap: 'nowrap' }}>
+            <Link href="/dashboard/crm/leads" className="crm-back-btn" title="Back to Leads">
+              <ArrowLeft size={16} />
             </Link>
             <div>
-              <h1 className="db-page-title" style={{ margin: 0, fontSize: '1.75rem' }}>{lead.customer_name}</h1>
-              <p className="db-page-sub" style={{ margin: '0.25rem 0 0' }}>{lead.phone} {lead.city && `· ${lead.city}`} {lead.interested_car && `· ${lead.interested_car}`}</p>
+              <h1 className="db-page-title" style={{ margin: 0, fontSize: '1.875rem', fontWeight: 800 }}>{lead.customer_name}</h1>
+              <p className="db-page-sub" style={{ margin: '0.35rem 0 0', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <span style={{ fontWeight: 600 }}>{lead.phone}</span>
+                {lead.city && (
+                  <>
+                    <span style={{ color: 'var(--db-bd)' }}>·</span>
+                    <span>{lead.city}</span>
+                  </>
+                )}
+                {lead.interested_car && (
+                  <>
+                    <span style={{ color: 'var(--db-bd)' }}>·</span>
+                    <span style={{ color: '#E10613', fontWeight: 600 }}>{lead.interested_car}</span>
+                  </>
+                )}
+              </p>
               {lead.assigned_to ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
                   <div style={{
@@ -1479,22 +1493,22 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
 .crm-back-btn {
   display: flex;
   align-items: center;
-  gap: .375rem;
-  padding: .5rem .875rem;
-  border-radius: 9px;
-  font-size: .8125rem;
-  font-weight: 600;
-  text-decoration: none;
-  border: 1px solid var(--db-bd);
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1.5px solid var(--db-bd);
   color: var(--db-tx2);
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   background: var(--db-sf);
   cursor: pointer;
+  flex-shrink: 0;
 }
 .crm-back-btn:hover {
   background: var(--db-sf2);
   border-color: var(--db-gold);
   color: var(--db-gold);
+  transform: translateX(-3px);
 }
 @media(max-width:768px){.crm-detail-layout{grid-template-columns:1fr}}
       `}</style>
