@@ -437,7 +437,7 @@ export default function AttendancePage() {
                         </div>
                       )}
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                    <div className="att-list-item-right" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
                       <div style={{ display: 'flex', gap: '4px' }}>
                         <span className={`att-badge ${dbStatus || 'present'}`}>
                           {dbStatus ? dbStatus.replace('_', ' ') : 'Present'}
@@ -1141,9 +1141,54 @@ export default function AttendancePage() {
           .att-roster-grid { grid-template-columns: 1fr; }
         }
         @media(max-width: 640px) {
-          .att-stats-row { grid-template-columns: 1fr; }
-          .att-filters-bar { flex-direction: column; }
-          .att-search-wrap, .att-filter-dropdown, .att-filter-date { width: 100%; }
+          .att-stats-row { 
+            grid-template-columns: 1fr; 
+            gap: 0.75rem;
+          }
+          .att-filters-bar { 
+            flex-direction: column; 
+            gap: 10px;
+          }
+          .att-search-wrap, .att-filter-dropdown, .att-filter-date { 
+            width: 100%; 
+          }
+          .att-export-btn {
+            width: 100%;
+            justify-content: center;
+          }
+          .att-list-item {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 12px;
+            padding: 12px;
+          }
+          .att-emp-profile {
+            min-width: unset;
+            width: 100%;
+          }
+          .att-emp-times {
+            flex-direction: row;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            background: var(--db-sf);
+            padding: 8px 12px;
+            border-radius: 8px;
+            gap: 8px;
+          }
+          .att-time-row {
+            font-size: 0.75rem;
+          }
+          .att-badge.absent {
+            align-self: flex-end;
+          }
+          .att-list-item-right {
+            flex-direction: row !important;
+            justify-content: space-between;
+            align-items: center !important;
+            width: 100%;
+            border-top: 1px dashed var(--db-bd);
+            padding-top: 8px;
+          }
         }
       `}</style>
     </div>
