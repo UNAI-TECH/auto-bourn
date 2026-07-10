@@ -175,6 +175,24 @@ function CustomSelect({ options, value, onChange, placeholder, disabled = false 
   );
 }
 
+const ALLOWED_SOURCES = ['website', 'instagram', 'facebook', 'whatsapp', 'walk_in', 'referral', 'olx', 'cardekho', 'manual'];
+
+function getDatabaseSource(inputSource: string): { dbSource: string; noteToAdd: string | null } {
+  const cleanInput = (inputSource || '').trim();
+  const normalized = cleanInput.toLowerCase().replace(/[-\s]/g, '_');
+  
+  if (ALLOWED_SOURCES.includes(normalized)) {
+    return { dbSource: normalized, noteToAdd: null };
+  }
+  if (normalized === 'walkin' || normalized === 'walk_in') {
+    return { dbSource: 'walk_in', noteToAdd: null };
+  }
+  if (normalized === 'reference' || normalized === 'referral') {
+    return { dbSource: 'referral', noteToAdd: null };
+  }
+  return { dbSource: 'manual', noteToAdd: `Source Category: ${cleanInput}` };
+}
+
 export default function CustomerDetailsPage() {
   const { employee } = useEmpContext();
   const [cars, setCars] = useState<CarItem[]>([]);
@@ -189,7 +207,7 @@ export default function CustomerDetailsPage() {
     whatsapp: '',
     sameAsPhone: true,
     email: '',
-    source: 'Walk-in',
+    source: '',
     city: '',
     state: '',
     occupation: '',
@@ -210,6 +228,7 @@ export default function CustomerDetailsPage() {
   });
 
   const [leadType, setLeadType] = useState<'buy' | 'sell'>('buy');
+  const [customSource, setCustomSource] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const supabase = createClient();
 
@@ -244,6 +263,17 @@ export default function CustomerDetailsPage() {
   const yearOptions = [
     { value: '', label: 'Select Year' },
     ...YEARS.map(y => ({ value: y, label: y }))
+  ];
+
+  const sourceOptions = [
+    { value: '', label: 'Select Source Category...' },
+    { value: 'Walk-in', label: 'Walk-in' },
+    { value: 'Olx', label: 'Olx' },
+    { value: 'Facebook', label: 'Facebook' },
+    { value: 'Car trade', label: 'Car trade' },
+    { value: 'Reference', label: 'Reference' },
+    { value: 'Instagram', label: 'Instagram' },
+    { value: 'Other', label: 'Other' },
   ];
 
   useEffect(() => {
@@ -295,6 +325,12 @@ export default function CustomerDetailsPage() {
     e.preventDefault();
     if (!employee) return;
     setErrorMsg('');
+
+    if (!form.source) {
+      setErrorMsg('Please select a Source Category.');
+      return;
+    }
+
     setSaving(true);
 
     try {
@@ -326,6 +362,12 @@ Expected Price: ₹${form.sell_expected_price}
         finalPreferredBrand = form.preferred_brand;
       }
 
+      const inputSource = form.source === 'Other' ? customSource : form.source;
+      const { dbSource, noteToAdd } = getDatabaseSource(inputSource || 'Walk-in');
+      if (noteToAdd) {
+        finalNotes = finalNotes ? `${noteToAdd}\n\n${finalNotes}` : noteToAdd;
+      }
+
       const payload = {
         customer_name: form.customer_name,
         phone: form.phone,
@@ -334,7 +376,7 @@ Expected Price: ₹${form.sell_expected_price}
         city: form.city || null,
         state: form.state || null,
         occupation: form.occupation || null,
-        source: form.source || 'Walk-in',
+        source: dbSource,
         interested_car: finalCarName || null,
         preferred_brand: finalPreferredBrand || null,
         budget: finalBudget,
@@ -384,7 +426,7 @@ Expected Price: ₹${form.sell_expected_price}
         whatsapp: '',
         sameAsPhone: true,
         email: '',
-        source: 'Walk-in',
+        source: '',
         city: '',
         state: '',
         occupation: '',
@@ -402,6 +444,7 @@ Expected Price: ₹${form.sell_expected_price}
         sell_expected_price: '',
       });
       setLeadType('buy');
+      setCustomSource('');
     } catch (err: any) {
       console.error(err);
       setErrorMsg(err.message || 'Something went wrong. Please try again.');
@@ -500,12 +543,22 @@ Expected Price: ₹${form.sell_expected_price}
 
                   <div className="emp-field">
                     <label>Source Category *</label>
-                    <input 
-                      type="text" 
-                      required
+                    <CustomSelect
+                      options={sourceOptions}
                       value={form.source}
-                      onChange={e => setForm(f => ({ ...f, source: e.target.value }))}
+                      onChange={val => setForm(f => ({ ...f, source: val }))}
+                      placeholder="Select source..."
                     />
+                    {form.source === 'Other' && (
+                      <input
+                        type="text"
+                        placeholder="Type custom source..."
+                        value={customSource}
+                        onChange={e => setCustomSource(e.target.value)}
+                        style={{ marginTop: '0.5rem' }}
+                        required
+                      />
+                    )}
                   </div>
 
                   <div className="emp-field">
