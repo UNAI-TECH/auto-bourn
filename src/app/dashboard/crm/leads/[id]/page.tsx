@@ -6,7 +6,7 @@ import Link from 'next/link';
 import DateTimePicker from '@/components/DateTimePicker';
 import { ArrowLeft, Phone, MessageCircle, Mail, Edit, Plus, Check, X, Clock, Car, UserPlus, Download, ClipboardCheck, Sparkles, Armchair, Wrench, FileCheck, Camera, ClipboardList } from 'lucide-react';
 import { LEAD_STAGES, FOLLOW_UP_TYPE_LABELS, formatBudget, type Lead, type LeadStatus, type FollowUp, type CustomerNote, type TestDrive, type Booking, type WhatsAppMessageLog } from '@/types/crm';
-import { getProxiedImageUrl } from '@/lib/utils';
+import { getProxiedImageUrl, serializeNoteFollowUp, parseNoteFollowUp, sortNotesWithFollowUps } from '@/lib/utils';
 import InspectionModal from '@/components/InspectionModal';
 import { downloadInspectionPdf, openPdf } from '@/lib/pdf-utils';
 
@@ -215,6 +215,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
 
   // form state
   const [newNote, setNewNote] = useState('');
+  const [followUpDateTime, setFollowUpDateTime] = useState('');
   const [fuForm, setFuForm] = useState({ follow_up_type:'', scheduled_at:'', notes:'', priority:'' });
   const [tdForm, setTdForm] = useState({ car_name:'', scheduled_at:'', location:'', notes:'' });
   const [editStatus, setEditStatus] = useState(false);
@@ -264,7 +265,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
       supabase.from('whatsapp_message_logs').select('*').eq('lead_id',id).order('created_at',{ascending:false}),
       supabase.from('employee_calls').select('*, employee:employees!employee_id(name)').eq('lead_id',id).order('created_at',{ascending:false}),
     ]);
-    setLead(l as Lead); setFollowUps((fu||[]) as FollowUp[]); setNotes((n||[]) as CustomerNote[]);
+    setLead(l as Lead); setFollowUps((fu||[]) as FollowUp[]); setNotes(sortNotesWithFollowUps(n||[]) as CustomerNote[]);
     setTestDrives((td||[]) as TestDrive[]); setBooking(bk as Booking|null);
     setWaLogs((wl||[]) as WhatsAppMessageLog[]); setCallSessions(calls || []);
     setLoading(false);
@@ -281,9 +282,17 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
 
   const addNote = async () => {
     if (!newNote.trim()||!myId) return;
-    await supabase.from('customer_notes').insert({ lead_id:id, employee_id:myId, note:newNote });
+    if (followUpDateTime && new Date(followUpDateTime) < new Date()) {
+      showToast('Follow-up time must be in the future');
+      return;
+    }
+    const serialized = serializeNoteFollowUp(newNote, followUpDateTime ? new Date(followUpDateTime).toISOString() : null);
+    await supabase.from('customer_notes').insert({ lead_id:id, employee_id:myId, note:serialized });
     await supabase.from('crm_activity_logs').insert({ lead_id:id, employee_id:myId, action:'note_added', details:newNote.slice(0,100) });
-    setNewNote(''); loadAll(); showToast('Note saved');
+    setNewNote('');
+    setFollowUpDateTime('');
+    loadAll();
+    showToast('Note saved');
   };
 
   const addFollowUp = async (e: React.FormEvent) => {
@@ -1036,15 +1045,50 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
           {/* NOTES */}
           {tab==='Notes'&&(
             <div className="crm-panel">
-              <div style={{display:'flex',gap:'.5rem',marginBottom:'1rem'}}>
-                <textarea className="crm-note-input" rows={2} placeholder="Add a note about this customer…" value={newNote} onChange={e=>setNewNote(e.target.value)}/>
-                <button className="crm-add-btn" onClick={addNote} style={{alignSelf:'flex-start',padding:'.625rem'}}><Plus size={16}/></button>
+              <div style={{display:'flex',flexDirection:'column',gap:'.5rem',marginBottom:'1rem'}}>
+                <div style={{display:'flex',gap:'.5rem'}}>
+                  <textarea className="crm-note-input" rows={2} placeholder="Add a note about this customer…" value={newNote} onChange={e=>setNewNote(e.target.value)}/>
+                  <button className="crm-add-btn" onClick={addNote} style={{alignSelf:'flex-start',padding:'.625rem'}}><Plus size={16}/></button>
+                </div>
+                
+                {/* Follow Up Input */}
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', paddingLeft: '4px', marginTop: '4px', maxWidth: '320px' }}>
+                  <span style={{ fontSize: '0.8125rem', color: 'var(--db-tx2)', fontWeight: 600, whiteSpace: 'nowrap' }}>Next Follow-up:</span>
+                  <div style={{ flex: 1 }}>
+                    <DateTimePicker 
+                      value={followUpDateTime} 
+                      onChange={val => setFollowUpDateTime(val)} 
+                    />
+                  </div>
+                </div>
               </div>
+
               {notes.map(n=>{
                 const nEmp = n.employee as {name:string}|null;
+                const parsed = parseNoteFollowUp(n.note);
+                const isFuture = parsed.followUpDate && parsed.followUpDate.getTime() > Date.now();
                 return (
-                  <div key={n.id} className="crm-note-item" style={{ borderLeft: n.note.includes('Inspection Report') ? '4px solid #E10613' : '4px solid #6366f1' }}>
-                    <div style={{fontSize:'.875rem',lineHeight:1.6}}>{renderInspectionReport(n.note)}</div>
+                  <div key={n.id} className="crm-note-item" style={{ borderLeft: n.note.includes('Inspection Report') ? '4px solid #E10613' : '4px solid #6366f1', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    {parsed.hasFollowUp && (
+                      <div style={{ 
+                        alignSelf: 'flex-start',
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        gap: '6px', 
+                        background: isFuture ? 'rgba(99, 102, 241, 0.12)' : 'rgba(0, 0, 0, 0.05)', 
+                        color: isFuture ? '#6366f1' : 'var(--db-tx3)', 
+                        padding: '4px 8px', 
+                        borderRadius: '6px', 
+                        fontSize: '0.75rem', 
+                        fontWeight: 600,
+                        border: isFuture ? '1px solid rgba(99, 102, 241, 0.2)' : '1px solid rgba(0, 0, 0, 0.08)',
+                        marginBottom: '4px'
+                      }}>
+                        <Clock size={12} />
+                        <span>{isFuture ? '📅 Next Follow-up:' : '⌛ Follow-up set for:'} {new Date(parsed.rawDateStr!).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</span>
+                      </div>
+                    )}
+                    <div style={{fontSize:'.875rem',lineHeight:1.6}}>{renderInspectionReport(parsed.noteText)}</div>
                     <div style={{fontSize:'.6875rem',color:'var(--db-tx3)',marginTop:6}}>{nEmp?.name||'Unknown'} · {new Date(n.created_at).toLocaleString('en-IN')}</div>
                   </div>
                 );

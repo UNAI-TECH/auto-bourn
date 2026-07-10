@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { useEmpContext } from '../../../layout';
 import { LEAD_STAGES, FOLLOW_UP_TYPE_LABELS, type Lead, type LeadStatus, type FollowUp, type CustomerNote, formatBudget } from '@/types/crm';
-import { getProxiedImageUrl } from '@/lib/utils';
+import { getProxiedImageUrl, serializeNoteFollowUp, parseNoteFollowUp, sortNotesWithFollowUps } from '@/lib/utils';
 import InspectionModal from '@/components/InspectionModal';
 import { downloadInspectionPdf, openPdf } from '@/lib/pdf-utils';
 
@@ -214,6 +214,7 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
   const [tab, setTab] = useState<'calls'|'info'|'followups'|'notes'>('calls');
   const [callSessions, setCallSessions] = useState<any[]>([]);
   const [newNote, setNewNote] = useState('');
+  const [followUpDateTime, setFollowUpDateTime] = useState('');
   const [fuForm, setFuForm] = useState({ follow_up_type:'', scheduled_at:'', notes:'', priority:'' });
   const [toast, setToast] = useState('');
   const [editStatus, setEditStatus] = useState(false);
@@ -516,7 +517,7 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
       if (data.success) {
         setLead(data.lead);
         setFollowUps(data.followUps || []);
-        setNotes(data.notes || []);
+        setNotes(sortNotesWithFollowUps(data.notes || []));
         setHasInspection(!!data.inspection);
         
         // Auto pre-populate brand/model/variant if lead details exist
@@ -640,8 +641,16 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
       showToast('You cannot comment on an unassigned lead or lead assigned to someone else.');
       return;
     }
-    await supabase.from('customer_notes').insert({ lead_id:id, employee_id:employee.id, note:newNote });
-    setNewNote(''); loadAll(); showToast('Note saved');
+    if (followUpDateTime && new Date(followUpDateTime) < new Date()) {
+      showToast('Follow-up time must be in the future');
+      return;
+    }
+    const serialized = serializeNoteFollowUp(newNote, followUpDateTime ? new Date(followUpDateTime).toISOString() : null);
+    await supabase.from('customer_notes').insert({ lead_id:id, employee_id:employee.id, note:serialized });
+    setNewNote('');
+    setFollowUpDateTime('');
+    loadAll();
+    showToast('Note saved');
   };
 
   const claimLeadSilent = async () => {
@@ -1067,29 +1076,65 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
           {tab === 'notes' && (
             <div>
               <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--db-tx, #000)' }}>Customer Timeline Notes</h2>
-              <div className="notes-form-container">
-                <textarea 
-                  value={newNote} 
-                  onChange={e => setNewNote(e.target.value)} 
-                  placeholder="Add details about customer phone call, preferences, next steps..." 
-                  rows={2} 
-                  style={{ flex: 1, padding: '0.75rem 1rem', background: 'var(--db-sf2, #f9f9f9)', border: '1.5px solid var(--db-bd, rgba(0,0,0,0.08))', borderRadius: '12px', color: 'inherit', fontFamily: 'inherit', fontSize: '.875rem', resize: 'none', outline: 'none' }}
-                />
-                <button onClick={addNote} className="notes-submit-btn">
-                  <Plus size={20} />
-                </button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                <div className="notes-form-container">
+                  <textarea 
+                    value={newNote} 
+                    onChange={e => setNewNote(e.target.value)} 
+                    placeholder="Add details about customer phone call, preferences, next steps..." 
+                    rows={2} 
+                    style={{ flex: 1, padding: '0.75rem 1rem', background: 'var(--db-sf2, #f9f9f9)', border: '1.5px solid var(--db-bd, rgba(0,0,0,0.08))', borderRadius: '12px', color: 'inherit', fontFamily: 'inherit', fontSize: '.875rem', resize: 'none', outline: 'none' }}
+                  />
+                  <button onClick={addNote} className="notes-submit-btn">
+                    <Plus size={20} />
+                  </button>
+                </div>
+                
+                {/* Follow Up Input */}
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', paddingLeft: '4px', marginTop: '4px', maxWidth: '320px' }}>
+                  <span style={{ fontSize: '0.8125rem', color: 'var(--db-tx2, #555)', fontWeight: 600, whiteSpace: 'nowrap' }}>Next Follow-up:</span>
+                  <div style={{ flex: 1 }}>
+                    <DateTimePicker 
+                      value={followUpDateTime} 
+                      onChange={val => setFollowUpDateTime(val)} 
+                    />
+                  </div>
+                </div>
               </div>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {notes.map(n => (
-                  <div key={n.id} style={{ background: 'var(--db-sf2, #fafafa)', border: '1.5px solid var(--db-bd, rgba(0,0,0,0.04))', borderLeft: n.note.includes('Inspection Report') ? '4px solid #E10613' : '4px solid #6366f1', borderRadius: '14px' }} className="timeline-note-item">
-                    <div style={{ fontSize: '.9rem', lineHeight: 1.5, color: 'var(--db-tx, #000)', fontWeight: 500 }}>{renderInspectionReport(n.note)}</div>
-                    <div style={{ fontSize: '.75rem', color: 'var(--db-tx3, #777)', marginTop: '6px', display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
-                      <span>👤 {(n.employee as {name:string}|null)?.name || 'Admin'}</span>
-                      <span>{new Date(n.created_at).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                {notes.map(n => {
+                  const parsed = parseNoteFollowUp(n.note);
+                  const isFuture = parsed.followUpDate && parsed.followUpDate.getTime() > Date.now();
+                  return (
+                    <div key={n.id} style={{ background: 'var(--db-sf2, #fafafa)', border: '1.5px solid var(--db-bd, rgba(0,0,0,0.04))', borderLeft: n.note.includes('Inspection Report') ? '4px solid #E10613' : '4px solid #6366f1', borderRadius: '14px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '6px' }} className="timeline-note-item">
+                      {parsed.hasFollowUp && (
+                        <div style={{ 
+                          alignSelf: 'flex-start',
+                          display: 'inline-flex', 
+                          alignItems: 'center', 
+                          gap: '6px', 
+                          background: isFuture ? 'rgba(99, 102, 241, 0.12)' : 'rgba(0, 0, 0, 0.05)', 
+                          color: isFuture ? '#6366f1' : 'var(--db-tx3, #777)', 
+                          padding: '4px 8px', 
+                          borderRadius: '6px', 
+                          fontSize: '0.75rem', 
+                          fontWeight: 600,
+                          border: isFuture ? '1px solid rgba(99, 102, 241, 0.2)' : '1px solid rgba(0, 0, 0, 0.08)',
+                          marginBottom: '4px'
+                        }}>
+                          <Clock size={12} />
+                          <span>{isFuture ? '📅 Next Follow-up:' : '⌛ Follow-up set for:'} {new Date(parsed.rawDateStr!).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</span>
+                        </div>
+                      )}
+                      <div style={{ fontSize: '.9rem', lineHeight: 1.5, color: 'var(--db-tx, #000)', fontWeight: 500 }}>{renderInspectionReport(parsed.noteText)}</div>
+                      <div style={{ fontSize: '.75rem', color: 'var(--db-tx3, #777)', marginTop: '6px', display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
+                        <span>👤 {(n.employee as {name:string}|null)?.name || 'Admin'}</span>
+                        <span>{new Date(n.created_at).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               {notes.length === 0 && <p style={{ color: 'var(--db-tx3, #777)', fontSize: '.875rem', textAlign: 'center', padding: '2rem' }}>No customer notes yet.</p>}
             </div>

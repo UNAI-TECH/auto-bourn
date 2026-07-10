@@ -115,7 +115,25 @@ export default function DateTimePicker({ value, onChange, required = false }: Da
         });
       }
     } else {
-      resetToCurrentFutureTime();
+      const now = new Date();
+      const min = now.getMinutes();
+      const roundedMin = Math.ceil(min / 5) * 5;
+      const futureDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), roundedMin, 0, 0);
+      
+      setSelectedDate(futureDate);
+      setCurrentMonth(new Date(futureDate.getFullYear(), futureDate.getMonth(), 1));
+      
+      let hr = futureDate.getHours();
+      const minStr = String(futureDate.getMinutes() === 60 ? 0 : futureDate.getMinutes()).padStart(2, '0');
+      const per = hr >= 12 ? 'PM' : 'AM';
+      if (hr === 0) hr = 12;
+      else if (hr > 12) hr = hr - 12;
+      
+      setTime({
+        hour: String(hr),
+        minute: minStr,
+        period: per
+      });
     }
   }, [value]);
 
@@ -133,10 +151,6 @@ export default function DateTimePicker({ value, onChange, required = false }: Da
     function handleClickOutside(event: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
-        const isPast = checkIsPast(selectedDateRef.current, timeRef.current.hour, timeRef.current.minute, timeRef.current.period);
-        if (isPast) {
-          resetToCurrentFutureTime();
-        }
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -506,25 +520,49 @@ export default function DateTimePicker({ value, onChange, required = false }: Da
                   </span>
                 )}
               </div>
-              <button
-                type="button"
-                disabled={isPastSelection}
-                onClick={() => !isPastSelection && setIsOpen(false)}
-                style={{
-                  background: isPastSelection ? 'var(--db-bd, rgba(0,0,0,0.08))' : '#E10613',
-                  color: isPastSelection ? 'var(--db-tx3, #64748b)' : '#ffffff',
-                  border: 'none',
-                  borderRadius: '6px',
-                  padding: '6px 14px',
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
-                  cursor: isPastSelection ? 'not-allowed' : 'pointer',
-                  transition: 'opacity 0.2s',
-                  fontFamily: 'inherit'
-                }}
-              >
-                Confirm
-              </button>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {!required && value && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onChange('');
+                      setIsOpen(false);
+                    }}
+                    style={{
+                      background: 'none',
+                      border: '1px solid var(--db-bd, rgba(0,0,0,0.08))',
+                      color: 'var(--db-tx2, #555)',
+                      borderRadius: '6px',
+                      padding: '6px 14px',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      fontFamily: 'inherit'
+                    }}
+                  >
+                    Clear
+                  </button>
+                )}
+                <button
+                  type="button"
+                  disabled={isPastSelection}
+                  onClick={() => !isPastSelection && setIsOpen(false)}
+                  style={{
+                    background: isPastSelection ? 'var(--db-bd, rgba(0,0,0,0.08))' : '#E10613',
+                    color: isPastSelection ? 'var(--db-tx3, #64748b)' : '#ffffff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '6px 14px',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    cursor: isPastSelection ? 'not-allowed' : 'pointer',
+                    transition: 'opacity 0.2s',
+                    fontFamily: 'inherit'
+                  }}
+                >
+                  Confirm
+                </button>
+              </div>
             </div>
           </motion.div>
         )}

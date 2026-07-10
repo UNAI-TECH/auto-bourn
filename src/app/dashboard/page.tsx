@@ -597,13 +597,15 @@ export default function DashboardOverview() {
                         className={`modal-tab-btn ${activeTab === 'profile' ? 'active' : ''}`}
                         onClick={() => setActiveTab('profile')}
                       >
-                        Profile & Stats
+                        <span className="tab-desktop-txt">Profile & Stats</span>
+                        <span className="tab-mobile-txt">Profile</span>
                       </button>
                       <button
                         className={`modal-tab-btn ${activeTab === 'cars' ? 'active' : ''}`}
                         onClick={() => setActiveTab('cars')}
                       >
-                        Managed Cars ({employeeCars.length})
+                        <span className="tab-desktop-txt">Managed Cars ({employeeCars.length})</span>
+                        <span className="tab-mobile-txt">Cars ({employeeCars.length})</span>
                       </button>
                     </div>
 
@@ -962,12 +964,120 @@ export default function DashboardOverview() {
 @media (max-width: 768px) {
   :global(.modal-grid) {
     grid-template-columns: 1fr;
-    gap: 1.5rem;
+    gap: 1.25rem;
+    flex: none;
+    height: auto;
   }
   :global(.modal-card) {
     max-width: 580px;
-    padding: 1.75rem;
+    padding: 1.25rem;
+    max-height: 94vh;
+    overflow-y: auto;
   }
+  :global(.modal-right-col) {
+    overflow: visible;
+    flex: none;
+    height: auto;
+  }
+  :global(.modal-body-scroll) {
+    overflow: visible;
+    flex: none;
+    height: auto;
+    padding-right: 0;
+    margin-top: 0.25rem;
+  }
+  :global(.founder-card-wrap) {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    border-radius: 16px;
+  }
+  :global(.founder-card-photo-container) {
+    width: 80px !important;
+    height: 80px !important;
+    aspect-ratio: 1/1 !important;
+    flex-shrink: 0;
+    border-radius: 12px;
+  }
+  :global(.founder-card-photo-container) :global(.status-badge) {
+    top: 4px;
+    right: 4px;
+    font-size: 0.5rem;
+    padding: 2px 4px;
+  }
+  :global(.founder-card-info) {
+    margin-top: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+  }
+  :global(.founder-card-name) {
+    font-size: 1.05rem;
+    margin-bottom: 0.125rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  :global(.founder-card-role) {
+    font-size: 0.65rem;
+    margin-bottom: 0.125rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  :global(.founder-card-id) {
+    font-size: 0.65rem;
+  }
+  
+  /* Tabs Font and Padding */
+  :global(.modal-tabs) {
+    gap: 0.25rem;
+    margin-bottom: 1rem;
+  }
+  :global(.modal-tab-btn) {
+    font-size: 0.725rem;
+    padding: 0.4rem 0.5rem;
+  }
+  
+  /* Details and Performance text sizes */
+  :global(.modal-details-grid) {
+    gap: 0.75rem !important;
+  }
+  :global(.modal-detail-item) {
+    padding: 8px 10px !important;
+  }
+  :global(.modal-detail-item) label {
+    font-size: 0.65rem !important;
+  }
+  :global(.modal-detail-item) span, 
+  :global(.modal-detail-item) a {
+    font-size: 0.775rem !important;
+  }
+  :global(.modal-stat-box) {
+    padding: 10px !important;
+  }
+  :global(.modal-stat-num) {
+    font-size: 1.125rem !important;
+  }
+  :global(.modal-stat-lbl) {
+    font-size: 0.65rem !important;
+  }
+  :global(.tab-mobile-txt) {
+    display: inline !important;
+  }
+  :global(.tab-desktop-txt) {
+    display: none !important;
+  }
+}
+
+:global(.tab-mobile-txt) {
+  display: none;
+}
+:global(.tab-desktop-txt) {
+  display: inline;
 }
 
 :global(.modal-left-col) {

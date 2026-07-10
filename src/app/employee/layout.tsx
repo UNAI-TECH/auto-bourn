@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { Employee } from '@/types/database';
 import AlertModal from '@/components/AlertModal';
 import { LayoutDashboard, Car, Upload, LogOut, Menu, X, Bell, FileText, AlertCircle, Clock, CheckCircle, PhoneCall, Bookmark, Mail, Phone, MessageCircle } from 'lucide-react';
-import { getProxiedImageUrl } from '@/lib/utils';
+import { getProxiedImageUrl, parseNoteFollowUp } from '@/lib/utils';
 
 const EmpContext = createContext<{ employee: Employee | null; refreshEmployee?: () => Promise<void>; darkMode: boolean; onReportSubmitted: () => void }>({ employee: null, darkMode: false, onReportSubmitted: () => {} });
 export const useEmpContext = () => useContext(EmpContext);
@@ -178,6 +178,9 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
   const [contactMessagesOpen, setContactMessagesOpen] = useState(false);
   const [contactMessages, setContactMessages] = useState<any[]>([]);
   const [unreadContactsCount, setUnreadContactsCount] = useState(0);
+  const [followUpNotes, setFollowUpNotes] = useState<any[]>([]);
+  const [shownNoteAlerts, setShownNoteAlerts] = useState<Record<string, boolean>>({});
+  const [activeNoteAlert, setActiveNoteAlert] = useState<any | null>(null);
   const [loadingContacts, setLoadingContacts] = useState(false);
 
   const fetchContactMessages = async () => {
@@ -242,6 +245,21 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
       .order('created_at', { ascending: false })
       .limit(15);
     setNotifications(data || []);
+  };
+
+  const fetchNoteFollowUps = async (empId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('customer_notes')
+        .select('id, note, lead_id, employee_id, created_at, lead:leads(customer_name)')
+        .eq('employee_id', empId)
+        .like('note', '%__FOLLOWUP_DATE__:%');
+      if (!error && data) {
+        setFollowUpNotes(data);
+      }
+    } catch (e) {
+      console.error('Error fetching note follow-ups:', e);
+    }
   };
 
   const fetchUnreadContactsCountOnly = async () => {
@@ -338,14 +356,50 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
       await fetchNotifications(data.id);
       await fetchUnreadContactsCountOnly();
       await checkTodayFollowUps(data.id);
+      await fetchNoteFollowUps(data.id);
       setLoading(false);
     };
     getUser();
     const interval = setInterval(() => {
       fetchUnreadContactsCountOnly();
+      if (employee?.id) {
+        fetchNoteFollowUps(employee.id);
+      }
     }, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [employee?.id]);
+
+  useEffect(() => {
+    if (!employee || followUpNotes.length === 0) return;
+
+    const checkInterval = setInterval(() => {
+      const now = Date.now();
+      followUpNotes.forEach(note => {
+        const parsed = parseNoteFollowUp(note.note);
+        if (parsed.hasFollowUp && parsed.followUpDate) {
+          const scheduledTime = parsed.followUpDate.getTime();
+          const diff = scheduledTime - now;
+
+          // Alert 2 minutes before the follow-up time (between 2 mins and -30 seconds)
+          if (diff <= 120000 && diff > -30000) {
+            if (!shownNoteAlerts[note.id]) {
+              setShownNoteAlerts(prev => ({ ...prev, [note.id]: true }));
+              setActiveNoteAlert({
+                id: note.id,
+                customerName: note.lead?.customer_name || 'Customer',
+                noteText: parsed.noteText,
+                time: parsed.followUpDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+                date: parsed.followUpDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+                leadId: note.lead_id
+              });
+            }
+          }
+        }
+      });
+    }, 10000);
+
+    return () => clearInterval(checkInterval);
+  }, [employee, followUpNotes, shownNoteAlerts]);
 
   useEffect(() => {
     if (employee) {
@@ -1020,6 +1074,112 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
                   )}
                 </div>
               </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* PREMIUM NOTE FOLLOW-UP ALERTS (2 MINUTES BEFORE) */}
+        <AnimatePresence>
+          {activeNoteAlert && (
+            <>
+              {/* Backdrop */}
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                style={{
+                  position: 'fixed',
+                  inset: 0,
+                  background: 'rgba(15, 23, 42, 0.4)',
+                  backdropFilter: 'blur(10px)',
+                  zIndex: 3000,
+                }}
+              />
+              {/* Modal Container */}
+              <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3001, padding: '1rem' }}>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                  transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+                  style={{
+                    background: 'var(--db-sf, #ffffff)',
+                    border: '1px solid var(--db-bd)',
+                    borderRadius: '24px',
+                    width: '100%',
+                    maxWidth: '440px',
+                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                    padding: '1.75rem',
+                    fontFamily: "'Outfit', sans-serif",
+                    position: 'relative'
+                  }}
+                >
+                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                    <div style={{ background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1', padding: '12px', borderRadius: '16px' }}>
+                      <Clock size={24} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', tracking: '0.05em' }}>Follow-up Reminder</span>
+                      <h3 style={{ margin: '4px 0 8px', fontSize: '1.25rem', fontWeight: 800, color: 'var(--db-tx)' }}>
+                        {activeNoteAlert.customerName}
+                      </h3>
+                      <div style={{ 
+                        background: 'var(--db-sf2)', 
+                        padding: '10px 14px', 
+                        borderRadius: '12px', 
+                        fontSize: '0.875rem', 
+                        color: 'var(--db-tx2)', 
+                        border: '1px solid var(--db-bd)',
+                        lineHeight: 1.5,
+                        marginBottom: '1rem'
+                      }}>
+                        {activeNoteAlert.noteText}
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px', fontSize: '0.8125rem', color: 'var(--db-tx3)', fontWeight: 600, marginBottom: '1.25rem' }}>
+                        <span>📅 {activeNoteAlert.date}</span>
+                        <span>·</span>
+                        <span>⏰ {activeNoteAlert.time} (In 2 mins)</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                    <button 
+                      onClick={() => setActiveNoteAlert(null)}
+                      style={{ 
+                        padding: '10px 16px', 
+                        borderRadius: '12px', 
+                        border: '1px solid var(--db-bd)', 
+                        background: 'transparent', 
+                        color: 'var(--db-tx2)', 
+                        fontSize: '0.875rem', 
+                        fontWeight: 700, 
+                        cursor: 'pointer' 
+                      }}
+                    >
+                      Dismiss
+                    </button>
+                    <Link
+                      href={`/employee/crm/leads/${activeNoteAlert.leadId}`}
+                      onClick={() => setActiveNoteAlert(null)}
+                      style={{ 
+                        padding: '10px 18px', 
+                        borderRadius: '12px', 
+                        border: 'none', 
+                        background: '#6366f1', 
+                        color: '#ffffff', 
+                        fontSize: '0.875rem', 
+                        fontWeight: 700, 
+                        cursor: 'pointer',
+                        textDecoration: 'none',
+                        display: 'inline-flex',
+                        alignItems: 'center'
+                      }}
+                    >
+                      View Lead
+                    </Link>
+                  </div>
+                </motion.div>
+              </div>
             </>
           )}
         </AnimatePresence>
