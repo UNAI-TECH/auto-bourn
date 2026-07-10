@@ -49,6 +49,13 @@ interface PresentInfo {
   total_hours: number | null;
   source: 'biometric' | 'web_login' | 'manual';
   late_by_minutes: number;
+  dbStatus: string;
+}
+
+interface AbsentInfo {
+  employee: EmployeeInfo;
+  firstLogin?: string | null;
+  dbStatus?: string;
 }
 
 export default function AttendancePage() {
@@ -172,7 +179,9 @@ export default function AttendancePage() {
 
   // Determine local date string
   const getLocalDateStr = (isoString: string) => {
-    return new Date(isoString).toLocaleDateString('en-CA'); // YYYY-MM-DD
+    return new Date(isoString).toLocaleDateString('en-CA', {
+      timeZone: 'Asia/Kolkata'
+    }); // YYYY-MM-DD
   };
 
   const formatLocalTime = (isoString: string) => {
@@ -180,24 +189,30 @@ export default function AttendancePage() {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
-      hour12: true
+      hour12: true,
+      timeZone: 'Asia/Kolkata'
     });
   };
 
   const getTodayCanadaStr = () => {
-    return new Date().toLocaleDateString('en-CA');
+    return new Date().toLocaleDateString('en-CA', {
+      timeZone: 'Asia/Kolkata'
+    });
   };
 
   const todayStr = getTodayCanadaStr();
 
   // Process presence / absence today using records, fallback to logs if empty
   const presentList: PresentInfo[] = [];
-  const absentList: EmployeeInfo[] = [];
+  const absentList: AbsentInfo[] = [];
 
-  if (todayRecords && todayRecords.length > 0) {
+  // Filter out any web login records from todayRecords
+  const todayBiometricRecords = todayRecords.filter(r => r.source !== 'web_login');
+
+  if (todayBiometricRecords && todayBiometricRecords.length > 0) {
     employees.forEach(emp => {
-      const rec = todayRecords.find(r => r.employee_id === emp.id);
-      if (rec) {
+      const rec = todayBiometricRecords.find(r => r.employee_id === emp.id);
+      if (rec && rec.status !== 'absent') {
         presentList.push({
           employee: emp,
           firstLogin: rec.first_punch_in || '',
@@ -205,15 +220,23 @@ export default function AttendancePage() {
           status: rec.last_punch_out ? 'logged_out' : 'active',
           total_hours: rec.total_hours,
           source: rec.source || 'biometric',
-          late_by_minutes: rec.late_by_minutes || 0
+          late_by_minutes: rec.late_by_minutes || 0,
+          dbStatus: rec.status
         });
       } else {
-        absentList.push(emp);
+        absentList.push({
+          employee: emp,
+          firstLogin: rec?.first_punch_in || null,
+          dbStatus: rec?.status || 'absent'
+        });
       }
     });
   } else {
-    // Fallback legacy calculation from logs
-    const todayLogs = logs.filter(log => getLocalDateStr(log.created_at) === todayStr);
+    // Fallback legacy calculation from logs (only biometric logs)
+    const todayLogs = logs.filter(log => 
+      getLocalDateStr(log.created_at) === todayStr &&
+      (log.metadata?.biometric || log.details?.toLowerCase().includes('biometric'))
+    );
     employees.forEach(emp => {
       const empTodayLogs = todayLogs
         .filter(l => l.employee_id === emp.id)
@@ -237,11 +260,12 @@ export default function AttendancePage() {
           lastLogout,
           status: currentStatus,
           total_hours: null,
-          source: 'web_login',
-          late_by_minutes: 0
+          source: 'biometric',
+          late_by_minutes: 0,
+          dbStatus: 'present'
         });
       } else {
-        absentList.push(emp);
+        absentList.push({ employee: emp });
       }
     });
   }
@@ -343,7 +367,7 @@ export default function AttendancePage() {
               <div className="att-empty-state">No employees checked in today yet.</div>
             ) : (
               <div className="att-list-container">
-                {presentList.map(({ employee, firstLogin, lastLogout, status, total_hours, source, late_by_minutes }) => (
+                {presentList.map(({ employee, firstLogin, lastLogout, status, total_hours, source, late_by_minutes, dbStatus }) => (
                   <div key={employee.id} className="att-list-item">
                     <div className="att-emp-profile">
                       <div className="att-avatar-wrap">
@@ -414,9 +438,14 @@ export default function AttendancePage() {
                       )}
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
-                      <span className={`att-badge ${status}`}>
-                        {status === 'active' ? 'Active' : 'Logged Out'}
-                      </span>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        <span className={`att-badge ${dbStatus || 'present'}`}>
+                          {dbStatus ? dbStatus.replace('_', ' ') : 'Present'}
+                        </span>
+                        <span className={`att-badge ${status}`}>
+                          {status === 'active' ? 'Active' : 'Logged Out'}
+                        </span>
+                      </div>
                       <span className={`att-source-badge ${source}`} style={{
                         fontSize: '0.6rem',
                         fontWeight: 700,
@@ -449,7 +478,7 @@ export default function AttendancePage() {
               <div className="att-empty-state green">All employees checked in today! 🌟</div>
             ) : (
               <div className="att-list-container">
-                {absentList.map((employee) => (
+                {absentList.map(({ employee, firstLogin, dbStatus }) => (
                   <div key={employee.id} className="att-list-item">
                     <div className="att-emp-profile">
                       <div className="att-avatar-wrap">
@@ -492,7 +521,17 @@ export default function AttendancePage() {
                       </div>
                     </div>
                     <div className="att-emp-times">
-                      <span style={{ fontSize: '0.8rem', color: 'var(--db-rd, #E10613)', fontWeight: 600 }}>No check-in detected</span>
+                      {firstLogin ? (
+                        <div className="att-time-row">
+                          <LogIn size={11} className="text-red-500" />
+                          <span style={{ fontSize: '0.75rem' }}>In: {formatLocalTime(firstLogin)}</span>
+                          <span style={{ fontSize: '0.65rem', color: 'var(--db-rd, #E10613)', fontWeight: 700, marginLeft: '4px' }}>
+                            (After 5pm)
+                          </span>
+                        </div>
+                      ) : (
+                        <span style={{ fontSize: '0.8rem', color: 'var(--db-rd, #E10613)', fontWeight: 600 }}>No check-in detected</span>
+                      )}
                     </div>
                     <span className="att-badge absent">
                       Absent
@@ -837,6 +876,9 @@ export default function AttendancePage() {
         .att-badge.active { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
         .att-badge.logged_out { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
         .att-badge.absent { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+        .att-badge.present { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
+        .att-badge.late { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+        .att-badge.early_out { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
         .att-source-badge.biometric { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
         .att-source-badge.web_login { background: rgba(156, 163, 175, 0.1); color: #6b7280; }
         

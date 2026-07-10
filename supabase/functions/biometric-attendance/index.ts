@@ -7,316 +7,265 @@ declare const Deno: any;
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS, GET',
   'Access-Control-Max-Age': '86400',
 }
 
-serve(async (req: Request) => {
-  // Handle CORS preflight request
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { 
-      status: 200, 
-      headers: corsHeaders 
-    })
-  }
+// ==========================================
+// Boxtel Response Helper
+// The Boxtel Attendance Monitor middleware expects this EXACT JSON shape.
+// Without it, the middleware retries the same punch forever.
+// ==========================================
+function boxtelResponse(status: boolean, message: string, value: string = "") {
+  return new Response(
+    JSON.stringify({
+      returnStatus: status ? "true" : "false",
+      returnMessage: message,
+      returnValue: value
+    }),
+    { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
 
-  // Allow GET requests for simple status checks (e.g. from biometric test server utility)
-  if (req.method === 'GET') {
-    return new Response(
-      JSON.stringify({ status: 'ok', message: 'Biometric Attendance Edge Function is online' }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
-  }
-
-  // Only allow POST requests for punch data
-  if (req.method !== 'POST') {
-    return new Response(
-      JSON.stringify({ error: 'Method Not Allowed' }),
-      { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
-  }
-
+// ==========================================
+// Date Parser - handles Boxtel's DD-MM-YYYY HH:mm:ss format
+// Also handles DD/MM/YYYY, ISO strings, and 2-digit years
+// ==========================================
+function parseBoxtelDate(dateString: string): Date {
   try {
-    // Initialize Supabase Client using Service Role key
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    const trimmed = dateString.trim();
 
-    if (!supabaseUrl || !supabaseKey) {
-      console.error('[BIOMETRIC] Missing environment variables: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY')
-      return new Response(
-        JSON.stringify({ error: 'Server configuration error' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+    // If already ISO or YYYY-MM-DD
+    if (trimmed.includes('T') || (trimmed.includes('-') && trimmed.indexOf('-') === 4)) {
+      const hasOffset = trimmed.includes('+') || trimmed.includes('Z') || (trimmed.lastIndexOf('-') > trimmed.indexOf('T'));
+      const suffix = hasOffset ? '' : '+05:30';
+      const parsed = new Date(trimmed + suffix);
+      if (!isNaN(parsed.getTime())) return parsed;
     }
 
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    // Parse dd/MM/yyyy HH:mm:ss or dd-MM-yyyy HH:mm:ss
+    const [datePart, timePart] = trimmed.split(' ');
+    const separator = datePart.includes('/') ? '/' : '-';
+    const [day, month, year] = datePart.split(separator);
+    const fullYear = year.length === 2 ? `20${year}` : year;
+    const isoString = `${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${timePart}+05:30`;
+    
+    console.log(`[BIOMETRIC] Parsed date: ${dateString} -> ${isoString}`);
+    return new Date(isoString);
+  } catch (e) {
+    console.error(`[BIOMETRIC] Date parse failed for: ${dateString}`, e);
+    return new Date(); // fallback to now
+  }
+}
 
-    // Parse payload body
-    let body;
-    try {
-      body = await req.json()
-    } catch (jsonErr) {
-      console.error('[BIOMETRIC] Failed to parse JSON body:', jsonErr)
-      return new Response(
-        JSON.stringify({ error: 'Bad Request: Invalid JSON body' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
+serve(async (req: Request) => {
+  const url = new URL(req.url);
+  const method = req.method;
 
-    // Log request details to activity_logs table for remote debugging
+  console.log(`[BIOMETRIC] ===== [${method}] ${url.pathname}${url.search} =====`);
+
+  // Handle CORS preflight
+  if (method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
+  // ==========================================
+  // 1. Gather payload from ALL sources (query string + body)
+  // ==========================================
+  let payload: any = {};
+
+  // Read query params
+  url.searchParams.forEach((value, key) => {
+    payload[key] = value;
+  });
+
+  // Read body (POST/PUT)
+  if (method !== 'GET' && method !== 'HEAD') {
     try {
-      await supabase.from('activity_logs').insert({
-        action: 'upload',
-        details: `BIOMETRIC DEBUG: Raw payload received`,
-        metadata: {
-          biometric_debug: true,
-          method: req.method,
-          url: req.url,
-          headers: Object.fromEntries(req.headers.entries()),
-          raw_body: body
+      const rawBody = await req.text();
+      console.log(`[BIOMETRIC] Raw Body: ${rawBody}`);
+
+      if (rawBody) {
+        try {
+          const jsonBody = JSON.parse(rawBody);
+          payload = { ...payload, ...jsonBody };
+        } catch (_) {
+          // Fallback: try URL-encoded form data
+          const params = new URLSearchParams(rawBody);
+          params.forEach((v, k) => { payload[k] = v; });
         }
-      });
-      console.log('[BIOMETRIC] Successfully logged debug info to database activity_logs');
-    } catch (logErr) {
-      console.error('[BIOMETRIC] Failed to write debug log to DB:', logErr);
+      }
+    } catch (e) {
+      console.error(`[BIOMETRIC] Error reading body:`, e);
     }
+  }
 
-    console.log('[BIOMETRIC] Received raw body payload:', JSON.stringify(body))
+  console.log(`[BIOMETRIC] Payload:`, JSON.stringify(payload));
 
-    // Handle case where body itself is an array of punches, or flat object
-    const firstPunch = Array.isArray(body) ? body[0] : body;
+  // ==========================================
+  // 2. Normalize keys to lowercase for case-insensitive lookup
+  // ==========================================
+  const norm: Record<string, any> = {};
+  for (const [key, value] of Object.entries(payload)) {
+    norm[key.toLowerCase()] = value;
+  }
 
-    // Extract device ID / Cloud ID from payload
-    const deviceIdFromBody = firstPunch?.cloudIDC ||
-                             firstPunch?.device_id || 
-                             firstPunch?.['Cloud ID'] || 
-                             firstPunch?.cloud_id || 
-                             firstPunch?.CloudID || 
-                             firstPunch?.serial_number || 
-                             firstPunch?.device_sn ||
-                             (firstPunch?.punch && (firstPunch.punch.device_id || firstPunch.punch.cloudIDC || firstPunch.punch['Cloud ID'])) ||
-                             (Array.isArray(firstPunch?.punches) && firstPunch.punches[0] && (firstPunch.punches[0].device_id || firstPunch.punches[0].cloudIDC || firstPunch.punches[0]['Cloud ID']))
+  // Extract key fields (case-insensitive with exact-case fallback)
+  const clockDateTime = norm['clockdatetimed'] || payload.clockDateTimeD;
+  const biometricUserId = norm['biometricuseridc'] || payload.biometricUserIDC;
+  const cloudId = norm['cloudidc'] || payload.cloudIDC;
+  const statusC = norm['statusc'] || payload.statusC || payload.StatusC;
+  const verifyC = norm['verifyc'] || payload.verifyC;
 
-    // Authenticate the device using api_key OR device_id (Cloud ID)
-    const apiKey = req.headers.get('x-api-key') || new URL(req.url).searchParams.get('api_key')
-    
-    let device = null
-    let deviceError = null
-    
-    if (apiKey) {
-      const res = await supabase
-        .from('biometric_devices')
-        .select('*')
-        .eq('api_key', apiKey)
-        .eq('status', 'active')
-        .single()
-      device = res.data
-      deviceError = res.error
-    } else if (deviceIdFromBody) {
-      const res = await supabase
-        .from('biometric_devices')
-        .select('*')
-        .eq('device_id', deviceIdFromBody)
-        .eq('status', 'active')
-        .single()
-      device = res.data
-      deviceError = res.error
-    }
+  // ==========================================
+  // A. ATTENDANCE LOG — when we have punch data
+  // ==========================================
+  if (clockDateTime && biometricUserId && cloudId) {
+    try {
+      console.log(`[BIOMETRIC] >>> ATTENDANCE LOG for user: ${biometricUserId}, device: ${cloudId}`);
 
-    if (deviceError || !device) {
-      console.warn(`[BIOMETRIC] Authentication failed. API Key: ${apiKey ? 'Provided' : 'None'}, Device ID: ${deviceIdFromBody || 'None'}`)
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized: Missing API Key or Unregistered Device ID' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      );
 
-    // Update heartbeat of the authenticated device
-    await supabase
-      .from('biometric_devices')
-      .update({ last_heartbeat: new Date().toISOString() })
-      .eq('id', device.id)
+      const punchTime = parseBoxtelDate(clockDateTime);
+      const deviceUserId = String(biometricUserId).trim();
 
-    // Normalize payload to handle single punch or batch punches
-    const punches = Array.isArray(body.punches) ? body.punches : (body.punch ? [body.punch] : (Array.isArray(body) ? body : [body]))
-    
-    if (punches.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'Bad Request: No punch data found in payload' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Filter out heartbeat pings (e.g. {"StatusC":"New","CloudIDC":"..."}) that don't contain punch data
-    const validPunches = punches.filter(p => p.biometricUserIDC || p.user_id || p.device_user_id || p.employee_id)
-    if (validPunches.length === 0) {
-      console.log('[BIOMETRIC] Received heartbeat ping, no punch data. Returning ok.')
-      return new Response(
-        JSON.stringify({ success: true, message: 'Heartbeat received successfully' }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const punchesToInsert = []
-    const invalidPunches = []
-
-    for (const p of validPunches) {
-      // Extract device user ID (Support 'biometricUserIDC', 'Biometric User ID', 'BiometricUserID', 'user_id', 'device_user_id', 'employee_id')
-      const deviceUserId = p.biometricUserIDC || p['Biometric User ID'] || p.BiometricUserID || p.user_id || p.device_user_id || p.employee_id
-      
-      // Extract log time (Support 'clockDateTimeD', 'Log', 'log', 'log_time', 'punch_time', 'timestamp')
-      const logTimeRaw = p.clockDateTimeD || p.Log || p.log || p.log_time || p.punch_time || p.timestamp
-      
       // Determine punch type (0 = check-in, 1 = check-out)
-      let punchType = 0
-      if (p.punch_type !== undefined) {
-        punchType = parseInt(p.punch_type, 10)
-      } else if (p.statusC !== undefined) {
-        const st = p.statusC.toString().toLowerCase().trim();
+      let punchType = 0;
+      if (statusC) {
+        const st = String(statusC).toLowerCase().trim();
         if (st === 'out' || st === 'checkout' || st === 'check_out' || st === '1') {
-          punchType = 1
+          punchType = 1;
         }
-      } else if (p.status === 'out' || p.action === 'logout' || p.punch_type_str === 'check_out') {
-        punchType = 1
       }
 
-      // Determine verification type (1 = Fingerprint, 2 = Face, 4 = Card)
-      let verifyType = 1
-      if (p.verifyC !== undefined) {
-        const v = p.verifyC.toString().toUpperCase().trim();
+      // Determine verification type
+      let verifyType = 1; // default fingerprint
+      if (verifyC) {
+        const v = String(verifyC).toUpperCase().trim();
         if (v === 'FP' || v === 'FINGERPRINT') verifyType = 1;
         else if (v === 'FACE') verifyType = 2;
         else if (v === 'CARD' || v === 'RFID') verifyType = 4;
-      } else if (p.verify_type !== undefined) {
-        verifyType = parseInt(p.verify_type, 10)
       }
 
-      // Validate mandatory fields
-      if (!deviceUserId || !logTimeRaw) {
-        invalidPunches.push({ payload: p, reason: 'Missing user_id / biometricUserIDC or log_time / clockDateTimeD' })
-        continue
+      // Authenticate device
+      const { data: device, error: deviceErr } = await supabase
+        .from('biometric_devices')
+        .select('*')
+        .eq('device_id', cloudId)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (deviceErr) {
+        console.error(`[BIOMETRIC] Device lookup error:`, JSON.stringify(deviceErr));
+        return boxtelResponse(true, "Device error (accepted)");
       }
 
-      let punchTime: string
-      try {
-        // Handle format like "06-07-2026 12:10:53" (DD-MM-YYYY HH:MM:SS)
-        let parseableTime = logTimeRaw
-        if (typeof logTimeRaw === 'string' && logTimeRaw.includes('-') && !logTimeRaw.includes('T')) {
-          const parts = logTimeRaw.split(' ')
-          const dateParts = parts[0].split('-')
-          if (dateParts[0].length === 2 && dateParts[2].length === 4) {
-            parseableTime = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`
-            if (parts[1]) parseableTime += `T${parts[1]}`
-          }
-        }
-        punchTime = new Date(parseableTime).toISOString()
-      } catch (dateErr) {
-        invalidPunches.push({ payload: p, reason: `Invalid log_time format: ${logTimeRaw}` })
-        continue
+      if (!device) {
+        console.warn(`[BIOMETRIC] Device not registered: ${cloudId}`);
+        // Return TRUE so the middleware clears the punch from its queue
+        return boxtelResponse(true, "Device not registered (accepted)");
       }
 
-      punchesToInsert.push({
-        device_id: p.device_id || p.cloudIDC || p['Cloud ID'] || device.device_id,
-        device_user_id: deviceUserId.toString().trim(),
-        punch_time: punchTime,
-        punch_type: punchType,
-        verify_type: parseInt(verifyType, 10),
-        raw_payload: p
-      })
-    }
+      // Update device heartbeat
+      await supabase
+        .from('biometric_devices')
+        .update({ last_heartbeat: new Date().toISOString() })
+        .eq('id', device.id);
 
-    if (punchesToInsert.length === 0) {
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          message: 'All punches failed validation', 
-          invalid: invalidPunches 
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // 3. Insert punches into biometric_punches table (ignore duplicate logs if they are re-sent)
-    const { data: insertedPunches, error: insertError } = await supabase
-      .from('biometric_punches')
-      .upsert(punchesToInsert, { 
-        onConflict: 'device_id,device_user_id,punch_time', 
-        ignoreDuplicates: true 
-      })
-      .select()
-
-    if (insertError) {
-      console.error('[BIOMETRIC] Database insert error:', insertError)
-      return new Response(
-        JSON.stringify({ error: 'Database insert failed', details: insertError.message }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // 4. Create backward-compatible activity logs for dashboard/audit trail
-    // Since the daily attendance trigger handles updating the `attendance_records` table,
-    // we only insert into `activity_logs` so the old logs viewer and other modules keep showing check-in events.
-    if (insertedPunches && insertedPunches.length > 0) {
-      const activityLogs = []
-      
-      for (const p of insertedPunches) {
-        if (!p.employee_id) {
-          // If employee_id is null (unregistered card/fingerprint), skip activity logs
-          continue
-        }
-
-        const isCheckIn = p.punch_type === 0
-        const action = isCheckIn ? 'biometric_checkin' : 'biometric_checkout'
-        const typeLabels = { 1: 'Fingerprint', 2: 'Face', 4: 'Card' }
-        const verifyLabel = typeLabels[p.verify_type] || 'Biometric'
-        
-        activityLogs.push({
-          employee_id: p.employee_id,
-          action: isCheckIn ? 'login' : 'logout', // Keep 'login'/'logout' action to maintain compatibility with legacy UI
-          details: `Biometric ${isCheckIn ? 'Check-in' : 'Check-out'} via ${device.device_name} (${verifyLabel})`,
-          metadata: {
-            biometric: true,
-            punch_id: p.id,
-            device_id: device.device_id,
-            verify_type: p.verify_type
-          },
-          created_at: p.punch_time
+      // Insert punch into biometric_punches (ignore duplicates via unique constraint)
+      const { data: insertedPunch, error: insertErr } = await supabase
+        .from('biometric_punches')
+        .upsert({
+          device_id: cloudId,
+          device_user_id: deviceUserId,
+          punch_time: punchTime.toISOString(),
+          punch_type: punchType,
+          verify_type: verifyType,
+          raw_payload: payload
+        }, {
+          onConflict: 'device_id,device_user_id,punch_time',
+          ignoreDuplicates: true
         })
-      }
+        .select()
+        .maybeSingle();
 
-      if (activityLogs.length > 0) {
-        const { error: activityError } = await supabase
-          .from('activity_logs')
-          .insert(activityLogs)
-        if (activityError) {
-          console.error('[BIOMETRIC] Failed to insert activity logs:', activityError)
+      if (insertErr) {
+        // Handle unique constraint violation (duplicate)
+        if (insertErr.code === '23505') {
+          console.log(`[BIOMETRIC] Duplicate punch ignored for ${deviceUserId} at ${punchTime.toISOString()}`);
+          return boxtelResponse(true, "Already recorded");
         }
+        console.error(`[BIOMETRIC] Insert error:`, JSON.stringify(insertErr));
+        return boxtelResponse(true, "Insert error (accepted)");
       }
+
+      if (insertedPunch) {
+        console.log(`[BIOMETRIC] NEW punch inserted: ${deviceUserId} at ${punchTime.toISOString()}, employee_id: ${insertedPunch.employee_id}`);
+
+        // Create activity log if punch was mapped to an employee
+        if (insertedPunch.employee_id) {
+          const isCheckIn = punchType === 0;
+          const typeLabels: Record<number, string> = { 1: 'Fingerprint', 2: 'Face', 4: 'Card' };
+          const verifyLabel = typeLabels[verifyType] || 'Biometric';
+
+          await supabase.from('activity_logs').insert({
+            employee_id: insertedPunch.employee_id,
+            action: isCheckIn ? 'login' : 'logout',
+            details: `Biometric ${isCheckIn ? 'Check-in' : 'Check-out'} via ${device.device_name} (${verifyLabel})`,
+            metadata: {
+              biometric: true,
+              punch_id: insertedPunch.id,
+              device_id: device.device_id,
+              verify_type: verifyType
+            },
+            created_at: punchTime.toISOString()
+          });
+        }
+
+        return boxtelResponse(true, "Successfully added");
+      }
+
+      // Upsert returned no data = it was a duplicate (ignoreDuplicates: true)
+      console.log(`[BIOMETRIC] Duplicate punch for ${deviceUserId} at ${punchTime.toISOString()}`);
+      return boxtelResponse(true, "Already recorded");
+
+    } catch (err: any) {
+      console.error(`[BIOMETRIC] CRASH in attendance handler:`, err.message, err.stack);
+      // ALWAYS return true so the middleware moves on
+      return boxtelResponse(true, "Server error (accepted)");
     }
-
-    // 5. Response report
-    const processedCount = punchesToInsert.length
-    const insertedCount = insertedPunches ? insertedPunches.length : 0
-    const skippedCount = processedCount - insertedCount
-
-    console.log(`[BIOMETRIC] Successfully processed ${processedCount} punches. New: ${insertedCount}, Skipped (Duplicate): ${skippedCount}`)
-
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        processed: processedCount,
-        inserted: insertedCount,
-        skipped: skippedCount,
-        invalid: invalidPunches.length > 0 ? invalidPunches : undefined
-      }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
-
-  } catch (err: any) {
-    console.error('[BIOMETRIC] Unexpected edge function error:', err)
-    return new Response(
-      JSON.stringify({ error: 'Internal Server Error', message: err.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
   }
+
+  // ==========================================
+  // B. HEARTBEAT — device status check (StatusC: "New", CloudIDC: "...")
+  // ==========================================
+  if (cloudId) {
+    try {
+      console.log(`[BIOMETRIC] >>> HEARTBEAT for device: ${cloudId}`);
+
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      );
+
+      await supabase
+        .from('biometric_devices')
+        .update({ last_heartbeat: new Date().toISOString() })
+        .eq('device_id', cloudId);
+
+      return boxtelResponse(true, "Heartbeat received");
+    } catch (err: any) {
+      console.error(`[BIOMETRIC] CRASH in heartbeat handler:`, err.message);
+      return boxtelResponse(true, "Heartbeat error (accepted)");
+    }
+  }
+
+  // ==========================================
+  // C. DEFAULT — test connection
+  // ==========================================
+  console.log(`[BIOMETRIC] >>> DEFAULT handler (test connection)`);
+  return boxtelResponse(true, "Successfully connected");
 })

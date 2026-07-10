@@ -122,10 +122,19 @@ CREATE OR REPLACE FUNCTION resolve_punch_employee()
 RETURNS TRIGGER AS $$
 BEGIN
   IF NEW.employee_id IS NULL THEN
-    SELECT employee_id INTO NEW.employee_id
-    FROM biometric_enrollments
-    WHERE device_user_id = NEW.device_user_id
+    -- Try employees table directly (via biometric_id or employee_id)
+    SELECT id INTO NEW.employee_id
+    FROM employees
+    WHERE biometric_id = NEW.device_user_id OR employee_id = NEW.device_user_id
     LIMIT 1;
+    
+    -- Fallback to biometric_enrollments mapping
+    IF NEW.employee_id IS NULL THEN
+      SELECT employee_id INTO NEW.employee_id
+      FROM biometric_enrollments
+      WHERE device_user_id = NEW.device_user_id
+      LIMIT 1;
+    END IF;
   END IF;
   RETURN NEW;
 END;
@@ -243,108 +252,4 @@ CREATE TRIGGER trg_update_daily_attendance_record
   FOR EACH ROW EXECUTE FUNCTION update_daily_attendance_record();
 
 
--- C. After insert trigger on activity_logs (web logins/logouts) to also sync into attendance_records (backward-compatible / hybrid support)
-CREATE OR REPLACE FUNCTION sync_activity_log_to_attendance()
-RETURNS TRIGGER AS $$
-DECLARE
-  v_date DATE;
-  v_first_in TIMESTAMPTZ;
-  v_last_out TIMESTAMPTZ;
-  v_total_hours DECIMAL(5,2);
-  v_punch_count INTEGER;
-  v_late_minutes INTEGER;
-  v_office_start TIMESTAMPTZ;
-BEGIN
-  IF NEW.action NOT IN ('login', 'logout') THEN
-    RETURN NEW;
-  END IF;
 
-  v_date := (NEW.created_at AT TIME ZONE 'Asia/Kolkata')::DATE;
-
-  -- Get all logins and logouts for this date from activity logs
-  SELECT 
-    MIN(created_at) FILTER (WHERE action = 'login'),
-    MAX(created_at) FILTER (WHERE action = 'logout'),
-    COUNT(*)
-  INTO 
-    v_first_in,
-    v_last_out,
-    v_punch_count
-  FROM activity_logs
-  WHERE employee_id = NEW.employee_id 
-    AND (created_at AT TIME ZONE 'Asia/Kolkata')::DATE = v_date
-    AND action IN ('login', 'logout');
-
-  -- Calculate total hours
-  IF v_first_in IS NOT NULL AND v_last_out IS NOT NULL AND v_first_in < v_last_out THEN
-    v_total_hours := ROUND(EXTRACT(EPOCH FROM (v_last_out - v_first_in)) / 3600.0, 2);
-  ELSE
-    v_total_hours := 0.00;
-    v_last_out := NULL;
-  END IF;
-
-  -- Calculate late minutes (Office starts at 09:30 AM IST)
-  v_office_start := (v_date || ' 09:30:00')::TIMESTAMP AT TIME ZONE 'Asia/Kolkata';
-  IF v_first_in > v_office_start THEN
-    v_late_minutes := EXTRACT(EPOCH FROM (v_first_in - v_office_start)) / 60;
-  ELSE
-    v_late_minutes := 0;
-  END IF;
-
-  -- Upsert daily record, but ONLY overwrite if existing source is 'web_login' or doesn't exist yet
-  INSERT INTO attendance_records (
-    employee_id,
-    attendance_date,
-    first_punch_in,
-    last_punch_out,
-    total_hours,
-    punch_count,
-    source,
-    status,
-    late_by_minutes,
-    updated_at
-  )
-  VALUES (
-    NEW.employee_id,
-    v_date,
-    v_first_in,
-    v_last_out,
-    v_total_hours,
-    v_punch_count,
-    'web_login',
-    CASE 
-      WHEN v_total_hours >= 8.00 THEN 'present'
-      WHEN v_total_hours >= 4.00 THEN 'half_day'
-      WHEN v_late_minutes > 0 THEN 'late'
-      ELSE 'present'
-    END,
-    v_late_minutes,
-    NOW()
-  )
-  ON CONFLICT (employee_id, attendance_date) DO UPDATE
-  SET 
-    first_punch_in = CASE WHEN attendance_records.source = 'web_login' THEN EXCLUDED.first_punch_in ELSE attendance_records.first_punch_in END,
-    last_punch_out = CASE WHEN attendance_records.source = 'web_login' THEN EXCLUDED.last_punch_out ELSE attendance_records.last_punch_out END,
-    total_hours = CASE WHEN attendance_records.source = 'web_login' THEN EXCLUDED.total_hours ELSE attendance_records.total_hours END,
-    punch_count = CASE WHEN attendance_records.source = 'web_login' THEN EXCLUDED.punch_count ELSE attendance_records.punch_count END,
-    late_by_minutes = CASE WHEN attendance_records.source = 'web_login' THEN EXCLUDED.late_by_minutes ELSE attendance_records.late_by_minutes END,
-    status = CASE 
-      WHEN attendance_records.source = 'web_login' THEN 
-        CASE 
-          WHEN EXCLUDED.total_hours >= 8.00 THEN 'present'
-          WHEN EXCLUDED.total_hours >= 4.00 THEN 'half_day'
-          WHEN EXCLUDED.late_by_minutes > 0 THEN 'late'
-          ELSE EXCLUDED.status
-        END
-      ELSE attendance_records.status
-    END,
-    updated_at = NOW();
-
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
-DROP TRIGGER IF EXISTS trg_sync_activity_log_to_attendance ON activity_logs;
-CREATE TRIGGER trg_sync_activity_log_to_attendance
-  AFTER INSERT ON activity_logs
-  FOR EACH ROW EXECUTE FUNCTION sync_activity_log_to_attendance();
