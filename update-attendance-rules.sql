@@ -196,7 +196,14 @@ UPDATE biometric_punches
 SET punch_time = punch_time - INTERVAL '5 hours 30 minutes'
 WHERE (punch_time AT TIME ZONE 'UTC')::DATE = '2026-07-10';
 
--- 5. Force trigger execution on today's punches to recalculate attendance_records
+-- 5. Shift today's existing activity logs by -5.5 hours to fix the timezone offset mismatch
+UPDATE activity_logs
+SET created_at = created_at - INTERVAL '5 hours 30 minutes'
+WHERE (created_at AT TIME ZONE 'UTC')::DATE = '2026-07-10'
+  AND action IN ('login', 'logout')
+  AND metadata->>'biometric' = 'true';
+
+-- 6. Force trigger execution on today's punches to recalculate attendance_records
 UPDATE biometric_punches
 SET punch_time = punch_time
 WHERE (punch_time AT TIME ZONE 'Asia/Kolkata')::DATE = '2026-07-10';
