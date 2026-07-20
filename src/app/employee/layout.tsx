@@ -1119,7 +1119,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
                       <Clock size={24} />
                     </div>
                     <div style={{ flex: 1 }}>
-                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', tracking: '0.05em' }}>Follow-up Reminder</span>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Follow-up Reminder</span>
                       <h3 style={{ margin: '4px 0 8px', fontSize: '1.25rem', fontWeight: 800, color: 'var(--db-tx)' }}>
                         {activeNoteAlert.customerName}
                       </h3>
@@ -2019,6 +2019,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
   flex-direction: column;
   min-height: 100vh;
   padding-top: 105px;
+  overflow-x: hidden;
 }
 .saas-content {
   flex: 1;
@@ -2026,6 +2027,8 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
   max-width: 1440px;
   margin: 0 auto;
   width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 /* RESPONSIVE MOBILE ASIDE */
@@ -2153,7 +2156,8 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
     color: var(--db-tx);
   }
   .saas-content {
-    padding: 1.5rem 1rem;
+    padding: 1rem 0.75rem;
+    box-sizing: border-box;
   }
   .db-page-header {
     position: relative;

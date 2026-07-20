@@ -740,10 +740,13 @@ export default function EmployeeDashboard() {
   flex-direction: column;
   gap: 1.5rem;
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 @media (max-width: 768px) {
   .crextio-dashboard {
-    padding: 0 0.5rem 1.5rem 0.5rem;
+    padding: 0 0 1.5rem 0;
+    box-sizing: border-box;
   }
 }
 
@@ -1469,33 +1472,57 @@ export default function EmployeeDashboard() {
 }
 @media(max-width: 768px) {
   .crextio-dashboard {
-    padding: 0.75rem 0 !important;
+    padding: 0 0 1.5rem 0 !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: 100% !important;
   }
   .crextio-welcome-title {
-    font-size: 1.5rem !important;
+    font-size: 1.4rem !important;
+    word-break: break-word;
   }
   .crextio-welcome-row {
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
+    width: 100%;
+    box-sizing: border-box;
   }
   .crextio-welcome-r {
     width: 100%;
     display: grid !important;
     grid-template-columns: repeat(3, 1fr) !important;
     gap: 0.5rem !important;
+    box-sizing: border-box !important;
   }
   .crextio-counter-item {
     flex-direction: column !important;
     align-items: center !important;
     text-align: center !important;
     gap: 0.25rem !important;
+    padding: 0.5rem 0.25rem !important;
+    box-sizing: border-box !important;
   }
   .counter-text {
     align-items: center !important;
   }
+  .counter-val {
+    font-size: 1.25rem !important;
+  }
+  .counter-lbl {
+    font-size: 0.68rem !important;
+  }
   .crextio-grid {
     gap: 1rem !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .crextio-card, .crextio-checklist-card {
+    padding: 1rem !important;
+    border-radius: 18px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: 100% !important;
   }
 
   /* Profile card: flow naturally in single scrollable page on mobile */
@@ -1504,11 +1531,13 @@ export default function EmployeeDashboard() {
     position: relative !important;
     display: flex !important;
     flex-direction: column !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
   }
   .profile-img-container {
     position: relative !important;
     width: 100% !important;
-    height: 280px !important;
+    height: 240px !important;
     flex-shrink: 0 !important;
   }
   .profile-overlay-gradient {
@@ -1518,12 +1547,13 @@ export default function EmployeeDashboard() {
     position: relative !important;
     background: var(--db-sf, #fff) !important;
     color: var(--db-tx, #000) !important;
-    padding: 1.25rem !important;
+    padding: 1rem !important;
     border-top: 1px solid var(--db-bd, #e2e8f0) !important;
+    box-sizing: border-box !important;
   }
   .profile-details h2 {
     color: var(--db-tx, #000) !important;
-    font-size: 1.25rem !important;
+    font-size: 1.2rem !important;
   }
   .profile-details p {
     color: var(--db-tx2, #555) !important;
@@ -1535,6 +1565,7 @@ export default function EmployeeDashboard() {
     -webkit-backdrop-filter: none !important;
     border: 1px solid var(--db-bd, #e2e8f0) !important;
     color: var(--db-tx, #000) !important;
+    box-sizing: border-box !important;
   }
   .profile-commission span {
     color: var(--db-tx2, #555) !important;
@@ -1543,6 +1574,9 @@ export default function EmployeeDashboard() {
   /* Chart card: auto height on mobile */
   .progress-chart-card {
     height: auto !important;
+  }
+  .bar-track {
+    width: 8px !important;
   }
 }
       `}</style>

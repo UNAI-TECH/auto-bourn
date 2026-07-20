@@ -493,7 +493,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <Clock size={24} />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', tracking: '0.05em' }}>Follow-up Reminder</span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Follow-up Reminder</span>
                     <h3 style={{ margin: '4px 0 8px', fontSize: '1.25rem', fontWeight: 800, color: 'var(--db-tx)' }}>
                       {activeNoteAlert.customerName}
                     </h3>
