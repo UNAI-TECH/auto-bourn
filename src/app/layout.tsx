@@ -100,7 +100,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${outfit.variable}`}>
+    <html lang="en" className={`${inter.variable} ${outfit.variable}`} data-scroll-behavior="smooth">
       <body>
         {/* AEO (Answer Engine Optimization) Hidden Context Block */}
         <div style={{ display: 'none' }} aria-hidden="true" id="ai-context">

@@ -533,7 +533,7 @@ export default function EmployeeDashboard() {
           {/* Real Employee Portrait Card */}
           <div className="crextio-profile-card" style={{ border: '1px solid var(--db-bd)' }}>
             <div className="profile-img-container">
-              <Image src={getProxiedImageUrl(employee?.avatar_url || '/DEFAULT IMAGE.PNG')} alt="Employee Photo" fill className="profile-avatar-img" priority />
+              <Image src={getProxiedImageUrl(employee?.avatar_url || '/DEFAULT IMAGE.PNG')} alt="Employee Photo" fill sizes="(max-width: 768px) 100vw, 310px" className="profile-avatar-img" priority />
               <div className="profile-overlay-gradient" />
               <div className="profile-avatar-upload-overlay" onClick={() => fileInputRef.current?.click()}>
                 {uploadingAvatar ? (
@@ -969,10 +969,15 @@ export default function EmployeeDashboard() {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
 }
 .profile-commission span {
   font-size: .75rem;
   font-weight: 500;
+  min-width: 0;
+  flex: 1;
 }
 .badge-status-active {
   background: #22c55e;
@@ -981,6 +986,7 @@ export default function EmployeeDashboard() {
   padding: 2px 8px;
   border-radius: 4px;
   font-weight: 700;
+  flex-shrink: 0;
 }
 
 /* Shortcuts */
@@ -1074,6 +1080,7 @@ export default function EmployeeDashboard() {
   border-radius: 999px;
   font-size: .7rem;
   font-weight: 700;
+  flex-shrink: 0;
 }
 .bar-chart-container {
   display: flex;
@@ -1133,6 +1140,8 @@ export default function EmployeeDashboard() {
   font-weight: 700;
   color: var(--db-tx);
   margin: 0;
+  min-width: 0;
+  flex: 1;
 }
 .see-all-link {
   font-size: .8125rem;
@@ -1142,6 +1151,7 @@ export default function EmployeeDashboard() {
   display: flex;
   align-items: center;
   gap: 2px;
+  flex-shrink: 0;
 }
 .recent-list {
   display: flex;
@@ -1163,6 +1173,10 @@ export default function EmployeeDashboard() {
   border: 1px solid var(--db-bd);
   border-radius: 16px;
   transition: all .2s;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
 }
 .recent-car-item:hover {
   border-color: var(--db-gold);
@@ -1221,6 +1235,7 @@ export default function EmployeeDashboard() {
   flex-direction: column;
   align-items: flex-end;
   gap: 4px;
+  flex-shrink: 0;
 }
 .status-badge {
   padding: 3px 8px;
@@ -1228,6 +1243,8 @@ export default function EmployeeDashboard() {
   font-size: .65rem;
   font-weight: 700;
   text-transform: uppercase;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 .status-badge.available { background: rgba(34,197,94,.1); color: #22c55e; }
 .status-badge.sold { background: rgba(239,68,68,.1); color: #ef4444; }
@@ -1476,53 +1493,100 @@ export default function EmployeeDashboard() {
     box-sizing: border-box !important;
     width: 100% !important;
     max-width: 100% !important;
+    overflow-x: hidden !important;
   }
   .crextio-welcome-title {
-    font-size: 1.4rem !important;
+    font-size: 1.35rem !important;
     word-break: break-word;
+  }
+  .crextio-welcome-sub {
+    font-size: 0.85rem !important;
   }
   .crextio-welcome-row {
     flex-direction: column;
     align-items: flex-start;
-    gap: 1rem;
+    gap: 0.85rem;
     width: 100%;
+    max-width: 100%;
     box-sizing: border-box;
   }
   .crextio-welcome-r {
     width: 100%;
+    max-width: 100%;
     display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 0.5rem !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 0.4rem !important;
     box-sizing: border-box !important;
   }
   .crextio-counter-item {
     flex-direction: column !important;
     align-items: center !important;
     text-align: center !important;
-    gap: 0.25rem !important;
-    padding: 0.5rem 0.25rem !important;
+    gap: 0.2rem !important;
+    padding: 0.5rem 0.2rem !important;
     box-sizing: border-box !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
   }
   .counter-text {
     align-items: center !important;
+    width: 100% !important;
+    min-width: 0 !important;
   }
   .counter-val {
-    font-size: 1.25rem !important;
+    font-size: 1.2rem !important;
   }
   .counter-lbl {
-    font-size: 0.68rem !important;
+    font-size: 0.65rem !important;
+    line-height: 1.1 !important;
+    word-break: break-word !important;
+    white-space: normal !important;
+    text-align: center !important;
   }
   .crextio-grid {
     gap: 1rem !important;
     width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .crextio-col-left, .crextio-col-middle, .crextio-col-right {
+    width: 100% !important;
+    max-width: 100% !important;
     box-sizing: border-box !important;
   }
   .crextio-card, .crextio-checklist-card {
-    padding: 1rem !important;
+    padding: 0.85rem !important;
     border-radius: 18px !important;
     box-sizing: border-box !important;
     width: 100% !important;
     max-width: 100% !important;
+    overflow: hidden !important;
+  }
+  .recent-car-item {
+    padding: 0.55rem 0.65rem !important;
+    gap: 8px !important;
+    border-radius: 14px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+  }
+  .recent-car-thumb {
+    width: 46px !important;
+    height: 46px !important;
+    border-radius: 8px !important;
+    flex-shrink: 0 !important;
+  }
+  .recent-car-info strong {
+    font-size: 0.8rem !important;
+  }
+  .recent-car-info span {
+    font-size: 0.7rem !important;
+  }
+  .recent-price {
+    font-size: 0.75rem !important;
+  }
+  .status-badge {
+    padding: 2px 6px !important;
+    font-size: 0.6rem !important;
   }
 
   /* Profile card: flow naturally in single scrollable page on mobile */
@@ -1533,12 +1597,17 @@ export default function EmployeeDashboard() {
     flex-direction: column !important;
     box-sizing: border-box !important;
     width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
   }
   .profile-img-container {
     position: relative !important;
     width: 100% !important;
-    height: 240px !important;
+    height: 230px !important;
     flex-shrink: 0 !important;
+    border-top-left-radius: 22px !important;
+    border-top-right-radius: 22px !important;
+    overflow: hidden !important;
   }
   .profile-overlay-gradient {
     display: none !important;
@@ -1550,10 +1619,11 @@ export default function EmployeeDashboard() {
     padding: 1rem !important;
     border-top: 1px solid var(--db-bd, #e2e8f0) !important;
     box-sizing: border-box !important;
+    width: 100% !important;
   }
   .profile-details h2 {
     color: var(--db-tx, #000) !important;
-    font-size: 1.2rem !important;
+    font-size: 1.15rem !important;
   }
   .profile-details p {
     color: var(--db-tx2, #555) !important;
@@ -1566,6 +1636,7 @@ export default function EmployeeDashboard() {
     border: 1px solid var(--db-bd, #e2e8f0) !important;
     color: var(--db-tx, #000) !important;
     box-sizing: border-box !important;
+    width: 100% !important;
   }
   .profile-commission span {
     color: var(--db-tx2, #555) !important;

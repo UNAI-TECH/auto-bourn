@@ -230,7 +230,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
       .select('id')
       .eq('employee_id', empId)
       .eq('report_date', today)
-      .single();
+      .maybeSingle();
     setHasSubmittedToday(!!data);
     return !!data;
   };
@@ -458,7 +458,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
       .select('id')
       .eq('employee_id', employee.id)
       .eq('report_date', today)
-      .single();
+      .maybeSingle();
 
     let error = null;
 
@@ -600,7 +600,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
               </button>
               <div className="saas-avatar-wrap">
                 <div style={{ position: 'relative', width: 36, height: 36 }}>
-                  <Image src={getProxiedImageUrl(employee?.avatar_url || '/DEFAULT IMAGE.PNG')} alt={employee?.name || 'Avatar'} fill style={{ objectFit: 'cover', borderRadius: '50%' }} />
+                  <Image src={getProxiedImageUrl(employee?.avatar_url || '/DEFAULT IMAGE.PNG')} alt={employee?.name || 'Avatar'} fill sizes="36px" style={{ objectFit: 'cover', borderRadius: '50%' }} />
                 </div>
               </div>
             </div>
@@ -673,7 +673,7 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
               </button>
 
                 <div style={{ position: 'relative', width: 36, height: 36, borderRadius: '50%', overflow: 'hidden', border: '1px solid var(--db-bd)' }}>
-                  <Image src={getProxiedImageUrl(employee?.avatar_url || '/DEFAULT IMAGE.PNG')} alt={employee?.name || 'Avatar'} fill style={{ objectFit: 'cover', borderRadius: '50%' }} />
+                  <Image src={getProxiedImageUrl(employee?.avatar_url || '/DEFAULT IMAGE.PNG')} alt={employee?.name || 'Avatar'} fill sizes="36px" style={{ objectFit: 'cover', borderRadius: '50%' }} />
                 </div>
             </div>
           </header>
@@ -2125,7 +2125,11 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
     display: none;
   }
   .saas-main {
-    padding-top: 80px; /* Increased from 60px to prevent header overlap on mobile */
+    padding-top: 75px;
+    width: 100%;
+    max-width: 100vw;
+    box-sizing: border-box;
+    overflow-x: hidden;
   }
   .saas-mob-topbar {
     display: flex;
@@ -2139,6 +2143,9 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
     top: 0;
     left: 0;
     right: 0;
+    width: 100%;
+    max-width: 100vw;
+    box-sizing: border-box;
     z-index: 100;
     backdrop-filter: blur(15px);
   }
@@ -2147,17 +2154,27 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
     border: 0;
     color: var(--db-tx);
     cursor: pointer;
-    padding: 8px;
+    padding: 6px;
     border-radius: 8px;
+    flex-shrink: 0;
   }
   .saas-mob-title {
     font-weight: 700;
-    font-size: 1rem;
+    font-size: 0.9rem;
     color: var(--db-tx);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+    flex: 1;
+    margin: 0 0.5rem;
   }
   .saas-content {
-    padding: 1rem 0.75rem;
+    padding: 0.85rem 0.75rem 2rem;
     box-sizing: border-box;
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
   }
   .db-page-header {
     position: relative;
