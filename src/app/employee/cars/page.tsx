@@ -612,6 +612,7 @@ export default function MyCarsPage() {
                 <div className="emp-field"><label>Original Price (₹)</label><input type="number" value={editCar.original_price ?? ''} onChange={e => setEditField('original_price', +e.target.value)} min={0} /></div>
                 <div className="emp-field"><label>Color</label><input value={editCar.color || ''} onChange={e => setEditField('color', e.target.value)} /></div>
                 <div className="emp-field"><label>Interior Color</label><input value={editCar.interior_color || ''} onChange={e => setEditField('interior_color', e.target.value)} /></div>
+                <div className="emp-field"><label>Seats (Seating Capacity)</label><input type="number" value={editCar.seating_capacity ?? 5} onChange={e => setEditField('seating_capacity', +e.target.value)} min={1} max={30} /></div>
                 <div className="emp-field"><label>Engine</label><input value={editCar.engine || ''} onChange={e => setEditField('engine', e.target.value)} /></div>
                 <div className="emp-field"><label>Horsepower</label><input type="number" value={editCar.horsepower ?? ''} onChange={e => setEditField('horsepower', +e.target.value)} /></div>
                 <div className="emp-field"><label>Registration</label><input value={editCar.registration_number || ''} onChange={e => setEditField('registration_number', e.target.value)} /></div>

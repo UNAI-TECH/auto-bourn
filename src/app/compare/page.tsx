@@ -37,7 +37,7 @@ function CompareContent() {
     { label: 'Fuel Type', key: 'fuelType' },
     { label: 'Transmission', key: 'transmission' },
     { label: 'Drivetrain', key: 'drivetrain' },
-    { label: 'Mileage', key: 'mileage', format: 'mileage' },
+    { label: 'KM Driven', key: 'mileage', format: 'mileage' },
     { label: 'Seats', key: 'seatingCapacity' },
     { label: 'Color', key: 'color' },
     { label: 'Interior', key: 'interiorColor' },

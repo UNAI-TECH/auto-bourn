@@ -148,6 +148,7 @@ export default function BulkUploadPage() {
           registration_number: d.registration_number || null,
           location: d.location || null, body_type: d.body_type || null,
           color: d.color || null, interior_color: d.interior_color || null,
+          seating_capacity: Number(d.seating_capacity) || 5,
           engine: d.engine || null, horsepower: Number(d.horsepower) || null,
           thumbnail: '', status: 'pending',
         });

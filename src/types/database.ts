@@ -90,6 +90,7 @@ export interface Car {
   body_type?: string;
   color?: string;
   interior_color?: string;
+  seating_capacity?: number;
   engine?: string;
   horsepower?: number;
   status: CarStatus;

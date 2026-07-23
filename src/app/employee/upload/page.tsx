@@ -193,7 +193,7 @@ export default function UploadCarPage() {
     brand: '', model: '', variant: '', year: '' as string | number, fuel_type: '',
     transmission: '', km_driven: 0, ownership: '', price: 0, original_price: 0,
     description: '', features: '', insurance_validity: '', registration_number: '',
-    location: '', body_type: '', color: '', interior_color: '', engine: '', horsepower: 0,
+    location: '', body_type: '', color: '', interior_color: '', seating_capacity: 5 as number | string, engine: '', horsepower: 0,
   });
   const [customBrand, setCustomBrand] = useState('');
   const [customYear, setCustomYear] = useState('');
@@ -290,7 +290,7 @@ export default function UploadCarPage() {
         description: form.description, features: form.features.split(',').map(f => f.trim()).filter(Boolean),
         insurance_validity: form.insurance_validity || null, registration_number: form.registration_number || null,
         location: form.location || null, body_type: bodyTypeToSubmit || null, color: form.color || null,
-        interior_color: form.interior_color || null, engine: form.engine || null,
+        interior_color: form.interior_color || null, seating_capacity: Number(form.seating_capacity) || 5, engine: form.engine || null,
         horsepower: form.horsepower || null, thumbnail: thumbnailUrl, status: 'pending',
       }).select().single();
 
@@ -326,7 +326,7 @@ export default function UploadCarPage() {
       showToast(`${brandToSubmit} ${form.model} submitted for admin approval!`);
 
       // Reset form
-      setForm({ brand: '', model: '', variant: '', year: '', fuel_type: '', transmission: '', km_driven: 0, ownership: '', price: 0, original_price: 0, description: '', features: '', insurance_validity: '', registration_number: '', location: '', body_type: '', color: '', interior_color: '', engine: '', horsepower: 0 });
+      setForm({ brand: '', model: '', variant: '', year: '', fuel_type: '', transmission: '', km_driven: 0, ownership: '', price: 0, original_price: 0, description: '', features: '', insurance_validity: '', registration_number: '', location: '', body_type: '', color: '', interior_color: '', seating_capacity: 5, engine: '', horsepower: 0 });
       setCustomBrand('');
       setCustomYear('');
       setCustomBodyType('');
@@ -469,6 +469,7 @@ export default function UploadCarPage() {
             <div className="emp-field"><label>Original Price (₹)</label><input type="number" value={form.original_price || ''} onChange={e => setField('original_price', +e.target.value)} min={0} /></div>
             <div className="emp-field"><label>Color</label><input value={form.color} onChange={e => setField('color', e.target.value)} /></div>
             <div className="emp-field"><label>Interior Color</label><input value={form.interior_color} onChange={e => setField('interior_color', e.target.value)} /></div>
+            <div className="emp-field"><label>Seats (Seating Capacity)</label><input type="number" value={form.seating_capacity || ''} onChange={e => setField('seating_capacity', +e.target.value)} min={1} max={30} placeholder="e.g., 5" /></div>
             <div className="emp-field"><label>Engine</label><input value={form.engine} onChange={e => setField('engine', e.target.value)} /></div>
             <div className="emp-field"><label>Horsepower</label><input type="number" value={form.horsepower || ''} onChange={e => setField('horsepower', +e.target.value)} /></div>
             <div className="emp-field"><label>Registration</label><input value={form.registration_number} onChange={e => setField('registration_number', e.target.value)} /></div>

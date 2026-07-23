@@ -645,8 +645,5 @@ export function formatPrice(price: number): string {
 }
 
 export function formatMileage(km: number): string {
-  if (km >= 1000) {
-    return `${(km / 1000).toFixed(0)}k km`;
-  }
-  return `${km} km`;
+  return `${km.toLocaleString('en-IN')} km`;
 }

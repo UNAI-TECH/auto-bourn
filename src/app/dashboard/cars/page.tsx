@@ -596,6 +596,7 @@ function CarsPageContent() {
                     { k: 'transmission', l: 'Transmission', r: true, p: 'e.g. Automatic' },
                     { k: 'ownership', l: 'Ownership', p: 'e.g. 1st Owner' }, 
                     { k: 'color', l: 'Color', p: 'e.g. Black' },
+                    { k: 'seating_capacity', l: 'Seats (Seating Capacity)', t: 'number', p: 'e.g. 5' },
                     { k: 'location', l: 'Location', p: 'e.g. Chennai' },
                   ].map(({ k, l, t, r, p }) => (
                     <div className="inspo-field" key={k}>

@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS cars (
   body_type VARCHAR(50),
   color VARCHAR(100),
   interior_color VARCHAR(100),
+  seating_capacity INTEGER DEFAULT 5,
   engine VARCHAR(200),
   horsepower INTEGER,
   status VARCHAR(20) NOT NULL DEFAULT 'available' CHECK (status IN ('available', 'sold', 'reserved')),
