@@ -4,7 +4,11 @@ import { createServerSupabaseClient, createServiceRoleClient } from '@/lib/supab
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { customer_name, phone, email, whatsapp, city, state, source, interested_car, preferred_brand, budget, lead_status, notes } = body;
+    const { 
+      customer_name, phone, email, whatsapp, city, state, occupation, 
+      source, interested_car, preferred_brand, budget, purchase_timeline, 
+      lead_status, assigned_to, created_by, notes 
+    } = body;
 
     if (!customer_name || !phone) {
       return NextResponse.json({ error: 'Name and Phone Number are required.' }, { status: 400 });
@@ -12,21 +16,29 @@ export async function POST(request: NextRequest) {
 
     const serviceClient = await createServiceRoleClient();
 
+    const insertPayload: any = {
+      customer_name,
+      phone,
+      email: email || null,
+      whatsapp: whatsapp || null,
+      city: city || null,
+      state: state || null,
+      occupation: occupation || null,
+      source: source || 'website',
+      interested_car: interested_car || null,
+      preferred_brand: preferred_brand || null,
+      budget: budget ? parseInt(String(budget).replace(/[^0-9]/g, '')) : null,
+      purchase_timeline: purchase_timeline || null,
+      lead_status: lead_status || 'new',
+      assigned_to: assigned_to !== undefined ? assigned_to : null,
+    };
+    if (created_by) {
+      insertPayload.created_by = created_by;
+    }
+
     const { data: lead, error: leadError } = await serviceClient
       .from('leads')
-      .insert({
-        customer_name,
-        phone,
-        email: email || null,
-        whatsapp: whatsapp || null,
-        city: city || null,
-        state: state || null,
-        source: source || 'website',
-        interested_car: interested_car || null,
-        preferred_brand: preferred_brand || null,
-        budget: budget ? parseInt(String(budget).replace(/[^0-9]/g, '')) : null,
-        lead_status: lead_status || 'new',
-      })
+      .insert(insertPayload)
       .select()
       .single();
 

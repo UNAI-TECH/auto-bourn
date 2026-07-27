@@ -764,35 +764,22 @@ export default function EmpLeadDetailPage({ params }: { params: Promise<{ id: st
       showToast('You cannot modify an unassigned lead.');
       return;
     }
-    await supabase.from('leads').update({ lead_status:s, updated_at:new Date().toISOString() }).eq('id',id);
-    if (employee) await supabase.from('crm_activity_logs').insert({ lead_id:id, employee_id:employee.id, action:'status_change', details:`→ ${s}` });
-    
-    if (s === 'follow_up_pending') {
-      const { data: existing } = await supabase
-        .from('follow_ups')
-        .select('id')
-        .eq('lead_id', id)
-        .eq('status', 'pending')
-        .limit(1);
-
-      if (!existing || existing.length === 0) {
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        tomorrow.setHours(10, 0, 0, 0);
-
-        await supabase.from('follow_ups').insert({
-          lead_id: id,
-          employee_id: lead?.assigned_to || employee.id,
-          follow_up_type: 'call',
-          scheduled_at: tomorrow.toISOString(),
-          notes: 'Automated follow-up scheduling (status changed to Follow-up Pending)',
-          priority: 'normal',
-          status: 'pending'
-        });
-      }
+    const res = await fetch(`/api/leads/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        updateData: { lead_status: s },
+        activityLog: { action: 'status_change', details: `→ ${s}` }
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      setEditStatus(false); 
+      loadAll(); 
+      showToast('Status updated successfully');
+    } else {
+      showToast(data.error || 'Failed to update status');
     }
-
-    setEditStatus(false); loadAll(); showToast('Status updated');
   };
 
   if (errorMsg) return <div style={{padding:'3rem',color:'#999',textAlign:'center',fontFamily:"'Outfit',sans-serif"}}>{errorMsg} <br/><br/><Link href="/employee/crm" style={{color:'#E10613',fontWeight:700}}>Back to CRM</Link></div>;

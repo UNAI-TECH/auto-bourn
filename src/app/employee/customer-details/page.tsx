@@ -384,41 +384,46 @@ Expected Price: ₹${form.sell_expected_price}
         lead_status: 'new',
         assigned_to: null,
         created_by: employee.id,
+        notes: finalNotes.trim() || undefined
       };
 
-      const { data: newLead, error } = await supabase
-        .from('leads')
-        .insert(payload)
-        .select('id, customer_name, phone, whatsapp, interested_car')
-        .single();
+      const res = await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
 
-      if (error) throw error;
-
-      // Also create a customer note if notes are filled
-      if (finalNotes.trim() && newLead) {
-        await supabase.from('customer_notes').insert({
-          lead_id: newLead.id,
-          employee_id: employee.id,
-          note: finalNotes.trim(),
-        });
+      const resData = await res.json();
+      if (!res.ok || !resData.success) {
+        throw new Error(resData.error || 'Failed to create lead');
       }
 
+      const newLead = resData.lead;
+
       // Log activity
-      await supabase.from('crm_activity_logs').insert({
-        lead_id: newLead.id,
-        employee_id: employee.id,
-        action: 'lead_created',
-        details: `Walk-in customer details submitted by ${employee.name} for ${finalCarName || 'General inquiry'}.`,
-      });
+      try {
+        await supabase.from('crm_activity_logs').insert({
+          lead_id: newLead.id,
+          employee_id: employee.id,
+          action: 'lead_created',
+          details: `Walk-in customer details submitted by ${employee.name} for ${finalCarName || 'General inquiry'}.`,
+        });
+      } catch (err: any) {
+        console.warn('Activity log insert warning:', err);
+      }
 
       // Notify Admin
-      await supabase.from('notifications').insert({
-        recipient_role: 'admin',
-        type: 'new_lead',
-        title: leadType === 'sell' ? '🚗 New Seller Lead – Assignment Needed' : '📞 New Buyer Lead – Assignment Needed',
-        message: `Consultant "${employee.name}" added a new lead: ${form.customer_name} (${finalCarName || 'General inquiry'}). Please assign this lead to a consultant.`,
-        metadata: { lead_id: newLead.id, employee_name: employee.name, lead_type: leadType, needs_assignment: true }
-      });
+      try {
+        await supabase.from('notifications').insert({
+          recipient_role: 'admin',
+          type: 'new_lead',
+          title: leadType === 'sell' ? '🚗 New Seller Lead – Assignment Needed' : '📞 New Buyer Lead – Assignment Needed',
+          message: `Consultant "${employee.name}" added a new lead: ${form.customer_name} (${finalCarName || 'General inquiry'}). Please assign this lead to a consultant.`,
+          metadata: { lead_id: newLead.id, employee_name: employee.name, lead_type: leadType, needs_assignment: true }
+        });
+      } catch (err: any) {
+        console.warn('Notification insert warning:', err);
+      }
 
       setSuccessLead({
         id: newLead.id,
@@ -764,19 +769,41 @@ Expected Price: ₹${form.sell_expected_price}
         ) : (
           <motion.div 
             key="success"
-            initial={{ opacity: 0, scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0 }}
             className="success-card"
           >
-            <div className="success-icon-wrap">
-              <CheckCircle2 size={48} className="icon-gold" />
+            <div className="success-badge-wrapper">
+              <div className="success-badge-inner">
+                <CheckCircle2 size={44} className="success-badge-icon" />
+              </div>
             </div>
-            <h2>Lead Created Successfully!</h2>
-            <p className="success-lead-name">{successLead.name}</p>
+            
+            <h2 className="success-title">Lead Registered Successfully</h2>
+            <div className="success-name-tag">
+              <User size={15} />
+              <span>{successLead.name}</span>
+            </div>
+
             <p className="success-desc">
-              Customer has been registered in the CRM system. The admin will review and assign this lead to the appropriate consultant.
+              Customer details have been recorded in the CRM. The administrator has been notified to review and assign this lead to a consultant.
             </p>
+
+            <div className="success-summary-box">
+              <div className="summary-item">
+                <span className="summary-label">Contact Phone</span>
+                <span className="summary-value">{successLead.phone}</span>
+              </div>
+              <div className="summary-item">
+                <span className="summary-label">Vehicle Interest</span>
+                <span className="summary-value">{successLead.car}</span>
+              </div>
+              <div className="summary-item">
+                <span className="summary-label">Assignment Status</span>
+                <span className="summary-badge">Pending Review</span>
+              </div>
+            </div>
 
             <div className="action-buttons-wrap">
               <a 
@@ -785,7 +812,7 @@ Expected Price: ₹${form.sell_expected_price}
                 rel="noopener noreferrer"
                 className="wa-send-btn"
               >
-                <Send size={15} />
+                <Send size={16} />
                 Send Welcome WhatsApp Message
               </a>
 
@@ -794,10 +821,12 @@ Expected Price: ₹${form.sell_expected_price}
                   onClick={() => setSuccessLead(null)} 
                   className="reset-form-btn"
                 >
-                  Create Another Lead
+                  <Plus size={15} />
+                  Add Another Lead
                 </button>
                 <Link href="/employee/crm" className="crm-nav-link">
-                  Go to CRM Console <ChevronRight size={14} />
+                  <span>Go to CRM Console</span>
+                  <ChevronRight size={15} />
                 </Link>
               </div>
             </div>
@@ -824,7 +853,7 @@ Expected Price: ₹${form.sell_expected_price}
         }
         .upl-section-title {
           font-family: 'Outfit', sans-serif;
-          font-size: 1.25rem;
+          font-size: 1.15rem;
           font-weight: 700;
           margin: 0 0 1.5rem;
           color: #E10613;
@@ -842,7 +871,7 @@ Expected Price: ₹${form.sell_expected_price}
         }
         .emp-field label {
           display: block;
-          font-size: 0.875rem;
+          font-size: 0.8125rem;
           font-weight: 700;
           color: var(--db-tx);
           letter-spacing: -0.01em;
@@ -911,41 +940,102 @@ Expected Price: ₹${form.sell_expected_price}
           padding: 0.75rem 1rem;
           font-size: 0.8125rem;
         }
- 
-        /* Success State */
+
+        /* Executive Success Card */
         .success-card {
           background: var(--db-sf);
           border: 1px solid var(--db-bd);
-          border-radius: 16px;
-          padding: 2.5rem 2rem;
+          border-radius: 20px;
+          padding: 3rem 2.25rem;
           text-align: center;
-          box-shadow: 0 4px 30px rgba(0,0,0,0.03);
-          max-width: 600px;
-          margin: 0 auto;
+          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06);
+          max-width: 580px;
+          margin: 1.5rem auto;
+          position: relative;
+          overflow: hidden;
         }
-        .success-icon-wrap {
-          margin-bottom: 1.25rem;
+        .success-badge-wrapper {
           display: flex;
           justify-content: center;
+          margin-bottom: 1.25rem;
         }
-        .success-card h2 {
+        .success-badge-inner {
+          width: 76px;
+          height: 76px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, rgba(34, 197, 94, 0.12) 0%, rgba(34, 197, 94, 0.03) 100%);
+          border: 1.5px solid rgba(34, 197, 94, 0.3);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 8px 24px rgba(34, 197, 94, 0.15);
+        }
+        :global(.success-badge-icon) {
+          color: #22c55e;
+        }
+        .success-title {
           font-family: 'Outfit', sans-serif;
-          font-size: 1.375rem;
+          font-size: 1.5rem;
           font-weight: 800;
           color: var(--db-tx);
           margin: 0 0 0.5rem;
+          letter-spacing: -0.02em;
         }
-        .success-lead-name {
-          font-size: 1.125rem;
+        .success-name-tag {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.375rem;
+          background: rgba(225, 6, 19, 0.06);
+          border: 1px solid rgba(225, 6, 19, 0.15);
+          color: #E10613;
+          padding: 0.375rem 0.875rem;
+          border-radius: 20px;
+          font-size: 0.875rem;
           font-weight: 700;
-          color: var(--db-gold, #c5a880);
           margin-bottom: 1rem;
         }
         .success-desc {
           font-size: 0.875rem;
           color: var(--db-tx2);
           line-height: 1.6;
+          margin-bottom: 1.75rem;
+          max-width: 480px;
+          margin-left: auto;
+          margin-right: auto;
+        }
+        .success-summary-box {
+          background: var(--db-sf2);
+          border: 1px solid var(--db-bd);
+          border-radius: 14px;
+          padding: 1rem 1.25rem;
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
           margin-bottom: 2rem;
+          text-align: left;
+        }
+        .summary-item {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          font-size: 0.8125rem;
+        }
+        .summary-label {
+          color: var(--db-tx3);
+          font-weight: 600;
+        }
+        .summary-value {
+          color: var(--db-tx);
+          font-weight: 700;
+        }
+        .summary-badge {
+          background: rgba(234, 179, 8, 0.12);
+          color: #ca8a04;
+          border: 1px solid rgba(234, 179, 8, 0.25);
+          padding: 0.2rem 0.625rem;
+          border-radius: 6px;
+          font-size: 0.75rem;
+          font-weight: 700;
         }
         .action-buttons-wrap {
           display: flex;
@@ -954,55 +1044,73 @@ Expected Price: ₹${form.sell_expected_price}
           gap: 1.25rem;
         }
         .wa-send-btn {
+          width: 100%;
           display: flex;
           align-items: center;
-          gap: 0.5rem;
-          background: #25d366;
-          color: #fff;
+          justify-content: center;
+          gap: 0.625rem;
+          background: linear-gradient(135deg, #25d366 0%, #1da851 100%);
+          color: #ffffff;
           font-family: 'Outfit', sans-serif;
           font-size: 0.9375rem;
           font-weight: 700;
-          padding: 0.875rem 2rem;
-          border-radius: 12px;
+          padding: 0.95rem 1.5rem;
+          border-radius: 14px;
           text-decoration: none;
-          transition: all 0.2s;
-          box-shadow: 0 4px 15px rgba(37,211,102,0.3);
+          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+          box-shadow: 0 8px 24px rgba(37, 211, 102, 0.25);
         }
         .wa-send-btn:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 6px 20px rgba(37,211,102,0.4);
+          transform: translateY(-2px);
+          box-shadow: 0 12px 30px rgba(37, 211, 102, 0.35);
         }
         .alt-actions {
           display: flex;
           align-items: center;
-          gap: 1.5rem;
-          margin-top: 0.5rem;
+          justify-content: center;
+          gap: 1rem;
+          width: 100%;
         }
         .reset-form-btn {
-          background: none;
-          border: none;
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.375rem;
+          background: var(--db-sf2);
+          border: 1px solid var(--db-bd);
           color: var(--db-tx);
-          font-size: 0.875rem;
-          font-weight: 600;
+          font-size: 0.8125rem;
+          font-weight: 700;
+          padding: 0.75rem 1rem;
+          border-radius: 12px;
           cursor: pointer;
-          padding: 4px;
+          transition: all 0.2s;
         }
         .reset-form-btn:hover {
+          background: var(--db-bd);
           color: var(--db-gold, #c5a880);
         }
         .crm-nav-link {
+          flex: 1;
           display: flex;
           align-items: center;
-          gap: 2px;
+          justify-content: center;
+          gap: 0.375rem;
+          background: var(--db-gd);
+          border: 1px solid rgba(197, 168, 128, 0.3);
           color: var(--db-gold, #c5a880);
-          font-size: 0.875rem;
-          font-weight: 600;
+          font-size: 0.8125rem;
+          font-weight: 700;
+          padding: 0.75rem 1rem;
+          border-radius: 12px;
           text-decoration: none;
+          transition: all 0.2s;
         }
         .crm-nav-link:hover {
-          text-decoration: underline;
+          background: rgba(197, 168, 128, 0.15);
         }
- 
+
         @media (max-width: 1024px) {
           .upl-grid {
             grid-template-columns: 1fr 1fr;
@@ -1016,6 +1124,9 @@ Expected Price: ₹${form.sell_expected_price}
           .alt-actions {
             flex-direction: column;
             gap: 0.75rem;
+          }
+          .reset-form-btn, .crm-nav-link {
+            width: 100%;
           }
         }
       `}</style>

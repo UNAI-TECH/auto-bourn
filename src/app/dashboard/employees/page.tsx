@@ -40,6 +40,7 @@ export default function EmployeesPage() {
   const [showAddPassword, setShowAddPassword] = useState(false);
   const [expandedMobileCard, setExpandedMobileCard] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<string | null>(null);
+  const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
 
@@ -120,9 +121,10 @@ export default function EmployeesPage() {
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent | TouchEvent) => {
       const target = e.target as HTMLElement;
-      if (!target.closest('.emp-menu-wrap')) {
+      if (!target.closest('.emp-menu-wrap') && !target.closest('.emp-custom-sort-wrap')) {
         setMenuOpen(null);
         setMobileMenuOpen(null);
+        setSortDropdownOpen(false);
       }
     };
 
@@ -395,14 +397,49 @@ export default function EmployeesPage() {
               <button key={f} className={`emp-tab ${filter === f ? 'active' : ''}`} onClick={() => setFilter(f)}>{f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}</button>
             ))}
           </div>
-          <select 
-            value={sortBy} 
-            onChange={e => setSortBy(e.target.value as 'newest' | 'oldest')}
-            className="emp-sort-select"
-          >
-            <option value="newest">Newest First</option>
-            <option value="oldest">Oldest First</option>
-          </select>
+          <div className="emp-custom-sort-wrap">
+            <button 
+              type="button"
+              className="emp-sort-trigger-btn"
+              onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
+            >
+              <span>{sortBy === 'newest' ? 'Newest First' : 'Oldest First'}</span>
+              <ChevronDown size={14} className={`sort-arrow ${sortDropdownOpen ? 'open' : ''}`} />
+            </button>
+
+            <AnimatePresence>
+              {sortDropdownOpen && (
+                <motion.div 
+                  className="emp-sort-dropdown-menu"
+                  initial={{ opacity: 0, y: 6, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 6, scale: 0.96 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  <div 
+                    className={`emp-sort-option ${sortBy === 'newest' ? 'active' : ''}`}
+                    onClick={() => {
+                      setSortBy('newest');
+                      setSortDropdownOpen(false);
+                    }}
+                  >
+                    <span>Newest First</span>
+                    {sortBy === 'newest' && <Check size={14} className="sort-check-icon" />}
+                  </div>
+                  <div 
+                    className={`emp-sort-option ${sortBy === 'oldest' ? 'active' : ''}`}
+                    onClick={() => {
+                      setSortBy('oldest');
+                      setSortDropdownOpen(false);
+                    }}
+                  >
+                    <span>Oldest First</span>
+                    {sortBy === 'oldest' && <Check size={14} className="sort-check-icon" />}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </div>
 
@@ -1606,23 +1643,77 @@ export default function EmployeesPage() {
   gap: 1rem;
   flex-wrap: wrap;
 }
-.emp-sort-select {
+.emp-custom-sort-wrap {
+  position: relative;
+}
+.emp-sort-trigger-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   background: var(--db-sf);
   border: 1px solid var(--db-bd);
   color: var(--db-tx2);
-  border-radius: 8px;
-  padding: 0.375rem 1.75rem 0.375rem 0.75rem;
+  border-radius: 10px;
+  padding: 0.45rem 0.75rem;
   font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
   outline: none;
-  appearance: none;
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right 0.5rem center;
-  background-size: 1rem;
-  transition: border-color 0.2s;
   font-family: inherit;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.emp-sort-trigger-btn:hover {
+  background: var(--db-sf2);
+  border-color: var(--db-tx3);
+  color: var(--db-tx);
+}
+.sort-arrow {
+  transition: transform 0.2s;
+  color: var(--db-tx3);
+}
+.sort-arrow.open {
+  transform: rotate(180deg);
+}
+
+.emp-sort-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: var(--db-sf);
+  border: 1px solid var(--db-bd);
+  border-radius: 12px;
+  padding: 4px;
+  min-width: 140px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.emp-sort-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.78125rem;
+  font-weight: 600;
+  color: var(--db-tx2);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.emp-sort-option:hover {
+  background: var(--db-sf2);
+  color: var(--db-tx);
+}
+.emp-sort-option.active {
+  background: rgba(225, 6, 19, 0.08);
+  color: #E10613;
+  font-weight: 700;
+}
+:global(.sort-check-icon) {
+  color: #E10613;
 }
 @media(max-width:768px){
   .emp-filters {
@@ -1663,9 +1754,8 @@ export default function EmployeesPage() {
     border-radius: 7px !important;
     white-space: nowrap !important;
   }
-  .emp-sort-select {
-    width: auto !important;
-    padding: 0.4rem 1.5rem 0.4rem 0.625rem !important;
+  .emp-sort-trigger-btn {
+    padding: 0.4rem 0.625rem !important;
     font-size: 0.75rem !important;
     border-radius: 8px !important;
     flex-shrink: 0 !important;
@@ -1685,7 +1775,7 @@ export default function EmployeesPage() {
 .emp-mobile-header,
 .emp-mobile-row-main {
   display: grid;
-  grid-template-columns: 1.3fr 1fr 1fr 40px;
+  grid-template-columns: 1.3fr 1fr 1fr 52px;
   align-items: center;
   gap: 6px;
 }
