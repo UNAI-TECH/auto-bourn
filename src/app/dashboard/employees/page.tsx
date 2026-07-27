@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UserPlus, Search, MoreVertical, X, Shield, Ban, RotateCcw, Trash2, Key, Check, AlertCircle, Copy, CheckCheck, Mail, PhoneCall, CalendarClock, Upload, ShoppingCart, TrendingUp, Camera, ChevronDown, Edit, Car, Eye, EyeOff } from 'lucide-react';
+import { UserPlus, Search, MoreVertical, X, Shield, Ban, RotateCcw, Trash2, Key, Check, AlertCircle, Copy, CheckCheck, Mail, PhoneCall, CalendarClock, Upload, ShoppingCart, TrendingUp, Camera, ChevronDown, ChevronUp, Edit, Car, Eye, EyeOff } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { formatDate, timeAgo, generateEmployeeId, getProxiedImageUrl } from '@/lib/utils';
@@ -38,6 +38,8 @@ export default function EmployeesPage() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [showAddPassword, setShowAddPassword] = useState(false);
+  const [expandedMobileCard, setExpandedMobileCard] = useState<string | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
 
@@ -58,6 +60,11 @@ export default function EmployeesPage() {
   const [employeeLeads, setEmployeeLeads] = useState<any[]>([]);
   const detailFileInputRef = useRef<HTMLInputElement>(null);
   const [updatingAvatar, setUpdatingAvatar] = useState(false);
+
+  const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const handleDetailFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -109,10 +116,23 @@ export default function EmployeesPage() {
 
   useEffect(() => { fetchEmployees(); }, []);
 
-  const showToast = (msg: string, type: 'success' | 'error' = 'success') => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 3000);
-  };
+  // Dismiss dropdown menus on tap/click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.emp-menu-wrap')) {
+        setMenuOpen(null);
+        setMobileMenuOpen(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, []);
 
   const fetchEmployees = async () => {
     const { data } = await supabase.from('employees').select('*').eq('role', 'employee').order('created_at', { ascending: false });
@@ -367,47 +387,27 @@ export default function EmployeesPage() {
       </div>
 
       {/* Filters */}
-      <div className="emp-filters" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+      <div className="emp-filters">
         <div className="db-search-inline"><Search size={16} /><input placeholder="Search employees..." value={search} onChange={e => setSearch(e.target.value)} /></div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+        <div className="emp-filters-row2">
           <div className="emp-tabs">
             {['all', 'active', 'inactive', 'suspended'].map(f => (
               <button key={f} className={`emp-tab ${filter === f ? 'active' : ''}`} onClick={() => setFilter(f)}>{f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}</button>
             ))}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <select 
-              value={sortBy} 
-              onChange={e => setSortBy(e.target.value as 'newest' | 'oldest')}
-              style={{
-                background: 'var(--db-sf)',
-                border: '1px solid var(--db-bd)',
-                color: 'var(--db-tx2)',
-                borderRadius: '8px',
-                padding: '0.375rem 1.75rem 0.375rem 0.75rem',
-                fontSize: '0.8125rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                outline: 'none',
-                appearance: 'none',
-                backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'right 0.5rem center',
-                backgroundSize: '1rem',
-                transition: 'border-color 0.2s',
-                fontFamily: 'inherit'
-              }}
-              className="emp-sort-select"
-            >
-              <option value="newest">Newest First</option>
-              <option value="oldest">Oldest First</option>
-            </select>
-          </div>
+          <select 
+            value={sortBy} 
+            onChange={e => setSortBy(e.target.value as 'newest' | 'oldest')}
+            className="emp-sort-select"
+          >
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+          </select>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="emp-table-wrap">
+      {/* Desktop Table — hidden on mobile */}
+      <div className="emp-table-wrap emp-desktop-only">
         <table className="emp-table">
           <thead><tr><th>Employee</th><th>ID</th><th>Phone</th><th>Assigned</th><th>Completed</th><th>Uploads</th><th>Sold</th><th>Recent</th><th>Status</th><th></th></tr></thead>
           <tbody>
@@ -515,6 +515,156 @@ export default function EmployeesPage() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Mobile Cards — shown only on mobile */}
+      <div className="emp-mobile-only">
+        {/* Mobile column headers */}
+        <div className="emp-mobile-header">
+          <span className="emp-mobile-col-head">Employee</span>
+          <span className="emp-mobile-col-head center">Assigned</span>
+          <span className="emp-mobile-col-head center">Completed</span>
+          <span></span>
+        </div>
+
+        {loading ? (
+          <div className="emp-mobile-loading">Loading employee list...</div>
+        ) : filtered.length === 0 ? (
+          <div className="emp-mobile-loading">No employees found</div>
+        ) : filtered.map(emp => {
+          const isExpanded = expandedMobileCard === emp.id;
+          const isMenuActive = mobileMenuOpen === emp.id;
+          return (
+            <div key={emp.id} className={`emp-mobile-card ${isExpanded ? 'expanded' : ''} ${isMenuActive ? 'menu-active' : ''}`}>
+              {/* Primary Row: Employee, Assigned, Completed, Arrow+Menu */}
+              <div className="emp-mobile-row-main">
+                <div className="emp-mobile-user" onClick={() => handleEmployeeClick(emp)}>
+                  <div className="emp-avatar-img-wrap" style={{ width: 34, height: 34 }}>
+                    <Image src={getProxiedImageUrl(emp.avatar_url || '/DEFAULT IMAGE.PNG')} alt={emp.name} width={34} height={34} style={{ objectFit: 'cover' }} />
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <span className="emp-name" style={{ fontSize: '0.8125rem', lineHeight: '1.2' }}>{emp.name}</span>
+                    <span className={`emp-status ${emp.status}`} style={{ marginLeft: 0, marginTop: '2px', display: 'inline-block', fontSize: '0.5625rem' }}>{emp.status}</span>
+                  </div>
+                </div>
+
+                <div className="emp-mobile-metric-cell">
+                  <span className="emp-mobile-metric" style={{ background: 'rgba(225, 6, 19, 0.06)', color: '#E10613' }}>
+                    {emp.total_leads || 0}
+                  </span>
+                </div>
+
+                <div className="emp-mobile-metric-cell">
+                  <span className="emp-mobile-metric" style={{ background: 'rgba(34, 197, 94, 0.06)', color: '#22c55e' }}>
+                    {emp.total_completed_leads || 0}
+                  </span>
+                </div>
+
+                <div className="emp-mobile-actions">
+                  <button
+                    className="emp-mobile-expand-btn"
+                    onClick={() => setExpandedMobileCard(isExpanded ? null : emp.id)}
+                    aria-label="Toggle details"
+                  >
+                    {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  </button>
+                  <div className="emp-menu-wrap" style={{ position: 'relative' }}>
+                    <button
+                      className="emp-menu-btn"
+                      onClick={() => setMobileMenuOpen(isMenuActive ? null : emp.id)}
+                      aria-label="Actions menu"
+                    >
+                      <MoreVertical size={16} />
+                    </button>
+                    {isMenuActive && (
+                      <div className="emp-dropdown emp-dropdown-mobile">
+                        <button onClick={() => {
+                          setEditForm({
+                            id: emp.id,
+                            name: emp.name,
+                            email: emp.email,
+                            phone: emp.phone || '',
+                            employee_id: emp.employee_id,
+                            role: emp.role,
+                            status: emp.status
+                          });
+                          setShowEdit(true);
+                          setMobileMenuOpen(null);
+                        }}><Edit size={14} />Edit Details</button>
+                        {emp.status !== 'active' && <button onClick={() => { updateStatus(emp.id, 'active'); setMobileMenuOpen(null); }}><Check size={14} />Activate</button>}
+                        {emp.status !== 'suspended' && <button onClick={() => { updateStatus(emp.id, 'suspended'); setMobileMenuOpen(null); }}><Ban size={14} />Suspend</button>}
+                        {emp.status !== 'inactive' && <button onClick={() => { updateStatus(emp.id, 'inactive'); setMobileMenuOpen(null); }}><Shield size={14} />Deactivate</button>}
+                        {emp.role === 'admin' ? (
+                          <button onClick={() => { updateRole(emp.id, 'employee'); setMobileMenuOpen(null); }}><Shield size={14} />Make Employee</button>
+                        ) : (
+                          <button onClick={() => { updateRole(emp.id, 'admin'); setMobileMenuOpen(null); }}><Shield size={14} />Make Admin</button>
+                        )}
+                        <button onClick={() => { setResetTarget(emp); setMobileMenuOpen(null); }}><Key size={14} />Reset Password</button>
+                        <button className="emp-del" onClick={() => { removeEmployee(emp.id); setMobileMenuOpen(null); }}><Trash2 size={14} />Remove</button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Expandable Detail Section */}
+              <AnimatePresence>
+                {isExpanded && (
+                  <motion.div
+                    className="emp-mobile-details"
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.25, ease: 'easeInOut' }}
+                  >
+                    <div className="emp-mobile-detail-grid">
+                      <div className="emp-mobile-detail-item">
+                        <span className="emp-mobile-detail-label">Employee ID</span>
+                        <span className="emp-id-badge" style={{ fontSize: '0.6875rem' }}>{emp.employee_id}</span>
+                      </div>
+                      <div className="emp-mobile-detail-item">
+                        <span className="emp-mobile-detail-label">Phone</span>
+                        <span style={{ fontSize: '0.8125rem', fontWeight: 600 }}>{emp.phone || '—'}</span>
+                      </div>
+                      <div className="emp-mobile-detail-item" onClick={() => handleEmployeeClick(emp, 'cars', 'all')} style={{ cursor: 'pointer' }}>
+                        <span className="emp-mobile-detail-label">Uploads</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontWeight: 700, fontSize: '0.875rem' }}>{emp.total_uploads}</span>
+                          <div style={{ width: '50px', height: '4px', background: 'rgba(0,0,0,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
+                            <div style={{ width: `${((emp.total_uploads || 0) / maxUploads) * 100}%`, height: '100%', background: '#E10613', borderRadius: '2px' }} />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="emp-mobile-detail-item" onClick={() => handleEmployeeClick(emp, 'cars', 'sold')} style={{ cursor: 'pointer' }}>
+                        <span className="emp-mobile-detail-label">Sold</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontWeight: 700, fontSize: '0.875rem', color: '#22c55e' }}>{emp.total_sold}</span>
+                          <div style={{ width: '50px', height: '4px', background: 'rgba(0,0,0,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
+                            <div style={{ width: `${((emp.total_sold || 0) / maxSold) * 100}%`, height: '100%', background: '#22c55e', borderRadius: '2px' }} />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="emp-mobile-detail-item">
+                        <span className="emp-mobile-detail-label">Recent Upload</span>
+                        <span style={{ fontSize: '0.8125rem' }}>{emp.last_upload ? timeAgo(emp.last_upload) : '—'}</span>
+                      </div>
+                      <div className="emp-mobile-detail-item">
+                        <span className="emp-mobile-detail-label">Email</span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--db-tx2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{emp.email}</span>
+                      </div>
+                    </div>
+                    <button
+                      className="emp-mobile-view-profile-btn"
+                      onClick={() => handleEmployeeClick(emp)}
+                    >
+                      View Full Profile
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          );
+        })}
       </div>
 
       {/* Add Modal */}
@@ -1450,7 +1600,256 @@ export default function EmployeesPage() {
 .cred-copy:hover{background:var(--db-gg)}
 .cred-close{width:100%;padding:.75rem;background:var(--db-sf2);border:1px solid var(--db-bd);border-radius:10px;color:var(--db-tx2);font-size:.875rem;cursor:pointer;font-family:inherit;transition:all .2s}
 .cred-close:hover{background:var(--db-bd)}
-@media(max-width:768px){.emp-filters{flex-direction:column}.emp-tabs{flex-wrap:wrap}}
+.emp-filters-row2 {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.emp-sort-select {
+  background: var(--db-sf);
+  border: 1px solid var(--db-bd);
+  color: var(--db-tx2);
+  border-radius: 8px;
+  padding: 0.375rem 1.75rem 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 1rem;
+  transition: border-color 0.2s;
+  font-family: inherit;
+}
+@media(max-width:768px){
+  .emp-filters {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.75rem !important;
+    margin-bottom: 1.25rem !important;
+  }
+  .db-search-inline {
+    width: 100% !important;
+    min-width: 100% !important;
+  }
+  .emp-filters-row2 {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
+  }
+  .emp-tabs {
+    display: flex !important;
+    flex: 1 !important;
+    gap: 2px !important;
+    padding: 3px !important;
+    background: var(--db-sf) !important;
+    border: 1px solid var(--db-bd) !important;
+    border-radius: 10px !important;
+  }
+  .emp-tab {
+    flex: 1 !important;
+    text-align: center !important;
+    justify-content: center !important;
+    padding: 0.4rem 0.25rem !important;
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+    border-radius: 7px !important;
+    white-space: nowrap !important;
+  }
+  .emp-sort-select {
+    width: auto !important;
+    padding: 0.4rem 1.5rem 0.4rem 0.625rem !important;
+    font-size: 0.75rem !important;
+    border-radius: 8px !important;
+    flex-shrink: 0 !important;
+  }
+}
+
+/* Desktop/Mobile visibility */
+.emp-mobile-only { display: none; }
+.emp-desktop-only { display: block; }
+
+@media (max-width: 768px) {
+  .emp-desktop-only { display: none !important; }
+  .emp-mobile-only { display: block !important; }
+}
+
+/* Mobile Card Styles */
+.emp-mobile-header,
+.emp-mobile-row-main {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1fr 40px;
+  align-items: center;
+  gap: 6px;
+}
+.emp-mobile-header {
+  padding: 0.625rem 0.875rem;
+  background: var(--db-sf2);
+  border: 1px solid var(--db-bd);
+  border-radius: 12px 12px 0 0;
+  margin-bottom: 0;
+}
+.emp-mobile-row-main {
+  padding: 0.75rem 0.875rem;
+}
+.emp-mobile-col-head {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--db-tx3);
+}
+.emp-mobile-col-head.center {
+  text-align: center;
+}
+.emp-mobile-loading {
+  text-align: center;
+  color: var(--db-tx3);
+  padding: 3rem 1rem;
+  background: var(--db-sf);
+  border: 1px solid var(--db-bd);
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+  font-size: 0.875rem;
+}
+.emp-mobile-card {
+  position: relative;
+  background: var(--db-sf);
+  border: 1px solid var(--db-bd);
+  border-top: none;
+  transition: all 0.2s;
+  overflow: visible;
+  z-index: 1;
+}
+.emp-mobile-card:last-child {
+  border-radius: 0 0 12px 12px;
+}
+.emp-mobile-card.expanded {
+  background: var(--db-sf);
+  border-color: rgba(225, 6, 19, 0.15);
+  box-shadow: 0 4px 16px rgba(225, 6, 19, 0.04);
+}
+.emp-mobile-card.menu-active {
+  z-index: 100 !important;
+  overflow: visible !important;
+}
+.emp-mobile-user {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-width: 0;
+  cursor: pointer;
+}
+.emp-mobile-user:hover .emp-name {
+  color: var(--db-gold);
+}
+.emp-mobile-metric-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.emp-mobile-metric {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 24px;
+  border-radius: 6px;
+  font-weight: 800;
+  font-size: 0.75rem;
+  font-family: 'Outfit', sans-serif;
+  padding: 0 6px;
+}
+.emp-mobile-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+}
+.emp-mobile-expand-btn {
+  background: none;
+  border: none;
+  color: var(--db-tx3);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.emp-mobile-expand-btn:hover {
+  background: var(--db-gd);
+  color: var(--db-gold);
+}
+.emp-dropdown-mobile {
+  right: 0 !important;
+  left: auto !important;
+  top: calc(100% + 4px) !important;
+  min-width: 180px !important;
+  z-index: 999 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Expandable Detail Section */
+.emp-mobile-details {
+  overflow: hidden;
+  border-top: 1px solid var(--db-bd);
+  background: linear-gradient(180deg, rgba(225,6,19,0.015) 0%, var(--db-sf) 100%);
+}
+.emp-mobile-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  padding: 0.75rem;
+}
+.emp-mobile-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0.5rem 0.625rem;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+.emp-mobile-detail-item:hover {
+  background: rgba(0,0,0,0.02);
+}
+.emp-mobile-detail-label {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--db-tx3);
+  margin-bottom: 1px;
+}
+.emp-mobile-view-profile-btn {
+  display: block;
+  width: calc(100% - 1.5rem);
+  margin: 0 0.75rem 0.75rem;
+  padding: 0.5rem;
+  background: linear-gradient(135deg, rgba(225,6,19,0.06), rgba(225,6,19,0.02));
+  border: 1px solid rgba(225,6,19,0.12);
+  border-radius: 8px;
+  color: #E10613;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  text-align: center;
+}
+.emp-mobile-view-profile-btn:hover {
+  background: linear-gradient(135deg, rgba(225,6,19,0.1), rgba(225,6,19,0.04));
+  border-color: rgba(225,6,19,0.2);
+  transform: translateY(-1px);
+}
 
 /* Modal Styles */
 :global(.modal-backdrop) {

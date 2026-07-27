@@ -382,7 +382,7 @@ Expected Price: ₹${form.sell_expected_price}
         budget: finalBudget,
         purchase_timeline: leadType === 'buy' ? (form.purchase_timeline || null) : null,
         lead_status: 'new',
-        assigned_to: employee.id,
+        assigned_to: null,
         created_by: employee.id,
       };
 
@@ -409,6 +409,15 @@ Expected Price: ₹${form.sell_expected_price}
         employee_id: employee.id,
         action: 'lead_created',
         details: `Walk-in customer details submitted by ${employee.name} for ${finalCarName || 'General inquiry'}.`,
+      });
+
+      // Notify Admin
+      await supabase.from('notifications').insert({
+        recipient_role: 'admin',
+        type: 'new_lead',
+        title: leadType === 'sell' ? '🚗 New Seller Lead – Assignment Needed' : '📞 New Buyer Lead – Assignment Needed',
+        message: `Consultant "${employee.name}" added a new lead: ${form.customer_name} (${finalCarName || 'General inquiry'}). Please assign this lead to a consultant.`,
+        metadata: { lead_id: newLead.id, employee_name: employee.name, lead_type: leadType, needs_assignment: true }
       });
 
       setSuccessLead({
@@ -766,7 +775,7 @@ Expected Price: ₹${form.sell_expected_price}
             <h2>Lead Created Successfully!</h2>
             <p className="success-lead-name">{successLead.name}</p>
             <p className="success-desc">
-              Customer has been registered in the CRM system. The lead is assigned to you and is now visible in both your employee console and the admin dashboard.
+              Customer has been registered in the CRM system. The admin will review and assign this lead to the appropriate consultant.
             </p>
 
             <div className="action-buttons-wrap">

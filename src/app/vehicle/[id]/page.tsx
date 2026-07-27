@@ -230,6 +230,7 @@ export default function VehicleDetailPage() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
                 {[
                   { l: 'KM Driven', v: formatMileage(vehicle.mileage), show: vehicle.mileage !== null && vehicle.mileage !== undefined },
+                  { l: 'Seats', v: `${vehicle.seatingCapacity || 5} Seater`, show: !!vehicle.seatingCapacity },
                   { l: 'Fuel', v: vehicle.fuelType, show: !!vehicle.fuelType && vehicle.fuelType !== '—' && vehicle.fuelType !== '-' },
                   { l: 'Transmission', v: vehicle.transmission, show: !!vehicle.transmission && vehicle.transmission !== '—' && vehicle.transmission !== '-' },
                   { l: 'Drivetrain', v: vehicle.drivetrain, show: !!vehicle.drivetrain && vehicle.drivetrain !== '—' && vehicle.drivetrain !== '-' },

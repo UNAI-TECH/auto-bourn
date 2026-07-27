@@ -87,15 +87,26 @@ export default function LeadsPage() {
     const { data: leadData, error } = await supabase.from('leads').insert(payload).select().single();
     if (error) { showToast('Error: '+error.message); }
     else { 
-      if (form.assigned_to && leadData) {
+      if (leadData) {
+        // Notify admin
         await supabase.from('notifications').insert({
-          recipient_role: 'employee',
-          recipient_employee_id: form.assigned_to,
-          type: 'lead_assigned',
-          title: '📞 New Lead Assigned',
-          message: `You have been assigned a new lead: ${form.customer_name} (${form.interested_car || 'Luxury car interest'}).`,
+          recipient_role: 'admin',
+          type: 'new_lead',
+          title: '📞 New Lead Registered',
+          message: `A new lead has been registered: ${form.customer_name} (${form.interested_car || 'Luxury Car'}).`,
           metadata: { lead_id: leadData.id }
         });
+
+        if (form.assigned_to) {
+          await supabase.from('notifications').insert({
+            recipient_role: 'employee',
+            recipient_employee_id: form.assigned_to,
+            type: 'lead_assigned',
+            title: '📞 New Lead Assigned',
+            message: `You have been assigned a new lead: ${form.customer_name} (${form.interested_car || 'Luxury car interest'}).`,
+            metadata: { lead_id: leadData.id }
+          });
+        }
       }
 
       if (form.lead_status === 'follow_up_pending' && leadData) {

@@ -13,7 +13,7 @@ import {
   LayoutDashboard, Users, Car, ClipboardList, Activity,
   LogOut, Menu, X, ChevronRight, Moon, Sun, Bell, Search,
   Users2, CalendarClock, BarChart3, PhoneCall, Bookmark, Mail, FileText, ClipboardCheck,
-  Phone, MessageCircle, Clock, CheckCircle
+  Phone, MessageCircle, Clock, CheckCircle, User
 } from 'lucide-react';
 
 interface DashboardContextType {
@@ -94,6 +94,98 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [shownNoteAlerts, setShownNoteAlerts] = useState<Record<string, boolean>>({});
   const [activeNoteAlert, setActiveNoteAlert] = useState<any | null>(null);
 
+  // Real-time Lead Notification Popup State
+  const [activeLeadAlert, setActiveLeadAlert] = useState<{
+    id?: string;
+    title: string;
+    message: string;
+    customerName?: string;
+    phone?: string;
+    car?: string;
+    leadId?: string;
+    time?: string;
+    source?: string;
+    type?: string;
+  } | null>(null);
+
+  const playNotificationChime = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(587.33, ctx.currentTime);
+      gain1.gain.setValueAtTime(0.18, ctx.currentTime);
+      gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(ctx.currentTime);
+      osc1.stop(ctx.currentTime + 0.35);
+
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(880, ctx.currentTime + 0.12);
+      gain2.gain.setValueAtTime(0.22, ctx.currentTime + 0.12);
+      gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.55);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(ctx.currentTime + 0.12);
+      osc2.stop(ctx.currentTime + 0.55);
+    } catch (e) {
+      console.error('Audio chime error:', e);
+    }
+  };
+
+  const checkNewUnreadLeadsOnLogin = async (adminEmpId: string) => {
+    if (sessionStorage.getItem(`lead_popup_login_shown_${adminEmpId}`)) return;
+
+    try {
+      const { data: latestUnreadNotifs } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('recipient_role', 'admin')
+        .eq('read', false)
+        .in('type', ['new_lead', 'new_contact_message', 'new_booking', 'new_test_drive'])
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (latestUnreadNotifs && latestUnreadNotifs.length > 0) {
+        const notif = latestUnreadNotifs[0];
+        let leadDetails: any = null;
+
+        if (notif.metadata?.lead_id) {
+          const { data: leadData } = await supabase
+            .from('leads')
+            .select('*')
+            .eq('id', notif.metadata.lead_id)
+            .maybeSingle();
+          leadDetails = leadData;
+        }
+
+        setActiveLeadAlert({
+          id: notif.id,
+          title: notif.title || '⚡ New Lead Alert',
+          message: notif.message || 'A new lead was registered.',
+          customerName: leadDetails?.customer_name,
+          phone: leadDetails?.phone,
+          car: leadDetails?.interested_car,
+          leadId: notif.metadata?.lead_id || leadDetails?.id,
+          time: new Date(notif.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }),
+          source: leadDetails?.source || 'website',
+          type: notif.type
+        });
+        playNotificationChime();
+        sessionStorage.setItem(`lead_popup_login_shown_${adminEmpId}`, 'true');
+      }
+    } catch (e) {
+      console.error('Error checking unread leads on login:', e);
+    }
+  };
+
   const fetchContactMessages = async () => {
     setLoadingContacts(true);
     const { data, error } = await supabase
@@ -164,6 +256,44 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       .order('created_at', { ascending: false })
       .limit(15);
     setNotifications(data || []);
+
+    if (data && data.length > 0) {
+      const latestUnreadLead = data.find((n: any) => 
+        !n.read && 
+        ['new_lead', 'new_contact_message', 'new_booking', 'new_test_drive'].includes(n.type)
+      );
+
+      if (latestUnreadLead) {
+        const lastAlertedId = sessionStorage.getItem('last_alerted_lead_notif_id');
+        if (lastAlertedId !== latestUnreadLead.id) {
+          sessionStorage.setItem('last_alerted_lead_notif_id', latestUnreadLead.id);
+
+          let leadDetails: any = null;
+          if (latestUnreadLead.metadata?.lead_id) {
+            const { data: leadData } = await supabase
+              .from('leads')
+              .select('*')
+              .eq('id', latestUnreadLead.metadata.lead_id)
+              .maybeSingle();
+            leadDetails = leadData;
+          }
+
+          setActiveLeadAlert({
+            id: latestUnreadLead.id,
+            title: latestUnreadLead.title || '⚡ New Lead Alert',
+            message: latestUnreadLead.message || 'A new lead was registered.',
+            customerName: leadDetails?.customer_name,
+            phone: leadDetails?.phone,
+            car: leadDetails?.interested_car,
+            leadId: latestUnreadLead.metadata?.lead_id || leadDetails?.id,
+            time: new Date(latestUnreadLead.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }),
+            source: leadDetails?.source || 'website',
+            type: latestUnreadLead.type
+          });
+          playNotificationChime();
+        }
+      }
+    }
   };
 
   const fetchNoteFollowUps = async (empId: string) => {
@@ -290,6 +420,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       fetchNotifications();
       await checkTodayFollowUps(data.id);
       await fetchNoteFollowUps(data.id);
+      await checkNewUnreadLeadsOnLogin(data.id);
     };
     getUser();
     const interval = setInterval(() => {
@@ -298,9 +429,64 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       if (employee?.id) {
         fetchNoteFollowUps(employee.id);
       }
-    }, 60000);
+    }, 10000);
     return () => clearInterval(interval);
   }, [employee?.id]);
+
+  // Realtime Supabase Subscription for Admin Notifications
+  useEffect(() => {
+    if (!employee || employee.role !== 'admin') return;
+
+    const channel = supabase
+      .channel('admin-realtime-leads-notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications'
+        },
+        async (payload) => {
+          const notif = payload.new;
+          if (notif.recipient_role === 'admin' || !notif.recipient_role) {
+            fetchUnreadCount();
+            fetchNotifications();
+
+            if (['new_lead', 'new_contact_message', 'new_booking', 'new_test_drive', 'missed_call'].includes(notif.type)) {
+              playNotificationChime();
+
+              let leadDetails: any = null;
+              if (notif.metadata?.lead_id) {
+                const { data } = await supabase
+                  .from('leads')
+                  .select('*')
+                  .eq('id', notif.metadata.lead_id)
+                  .maybeSingle();
+                leadDetails = data;
+              }
+
+              setActiveLeadAlert({
+                id: notif.id,
+                title: notif.title || '⚡ New Real-time Lead Notification',
+                message: notif.message,
+                customerName: leadDetails?.customer_name,
+                phone: leadDetails?.phone,
+                car: leadDetails?.interested_car,
+                leadId: notif.metadata?.lead_id || leadDetails?.id,
+                time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }),
+                source: leadDetails?.source || 'website',
+                type: notif.type
+              });
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [employee]);
 
   useEffect(() => {
     if (!employee || followUpNotes.length === 0) return;
@@ -1153,6 +1339,230 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
             </motion.div>
           </>
+        )}
+      </AnimatePresence>
+
+      {/* REAL-TIME LEAD POPUP MODAL */}
+      <AnimatePresence>
+        {activeLeadAlert && (
+          <div 
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0, 0, 0, 0.65)',
+              backdropFilter: 'blur(6px)',
+              zIndex: 2000,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '1.25rem',
+              fontFamily: "'Outfit', sans-serif"
+            }}
+            onClick={() => setActiveLeadAlert(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.85, y: 25 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.85, y: 25 }}
+              transition={{ type: 'spring', damping: 22, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: 'var(--db-sf, #ffffff)',
+                border: '1.5px solid var(--db-gold, #c5a880)',
+                borderRadius: '24px',
+                maxWidth: '460px',
+                width: '100%',
+                overflow: 'hidden',
+                boxShadow: '0 25px 60px rgba(0, 0, 0, 0.4)',
+                position: 'relative'
+              }}
+            >
+              {/* Banner */}
+              <div style={{
+                background: 'linear-gradient(135deg, #111827, #1f2937)',
+                color: '#ffffff',
+                padding: '1.25rem 1.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                borderBottom: '2px solid #E10613'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: '12px',
+                    background: 'rgba(225, 6, 19, 0.2)',
+                    border: '1px solid #E10613',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#E10613'
+                  }}>
+                    <Bell size={20} />
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#E10613', fontWeight: 800 }}>
+                      Real-time Alert • {activeLeadAlert.time || 'Just Now'}
+                    </span>
+                    <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#ffffff', lineHeight: 1.2 }}>
+                      {activeLeadAlert.title}
+                    </h3>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setActiveLeadAlert(null)}
+                  style={{
+                    background: 'rgba(255,255,255,0.1)',
+                    border: 'none',
+                    color: '#ffffff',
+                    width: 30,
+                    height: 30,
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Body Content */}
+              <div style={{ padding: '1.5rem' }}>
+                <p style={{ fontSize: '0.875rem', color: 'var(--db-tx2, #4b5563)', marginTop: 0, marginBottom: '1.25rem', lineHeight: 1.5, fontWeight: 500 }}>
+                  {activeLeadAlert.message}
+                </p>
+
+                {/* Customer Details Card */}
+                {(activeLeadAlert.customerName || activeLeadAlert.phone || activeLeadAlert.car) && (
+                  <div style={{
+                    background: 'var(--db-sf2, #f9fafb)',
+                    border: '1px solid var(--db-bd, rgba(0,0,0,0.08))',
+                    borderRadius: '16px',
+                    padding: '1rem 1.25rem',
+                    marginBottom: '1.5rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.625rem'
+                  }}>
+                    {activeLeadAlert.customerName && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+                        <User size={16} style={{ color: '#E10613', flexShrink: 0 }} />
+                        <span style={{ fontSize: '0.925rem', fontWeight: 700, color: 'var(--db-tx, #111827)' }}>
+                          {activeLeadAlert.customerName}
+                        </span>
+                      </div>
+                    )}
+
+                    {activeLeadAlert.phone && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+                        <Phone size={16} style={{ color: '#3b82f6', flexShrink: 0 }} />
+                        <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--db-tx2, #374151)' }}>
+                          {activeLeadAlert.phone}
+                        </span>
+                      </div>
+                    )}
+
+                    {activeLeadAlert.car && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+                        <Car size={16} style={{ color: '#10b981', flexShrink: 0 }} />
+                        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--db-tx2, #374151)' }}>
+                          {activeLeadAlert.car}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                  {activeLeadAlert.leadId && (
+                    <button
+                      onClick={async () => {
+                        if (activeLeadAlert.id) {
+                          await supabase.from('notifications').update({ read: true }).eq('id', activeLeadAlert.id);
+                        }
+                        const leadId = activeLeadAlert.leadId;
+                        setActiveLeadAlert(null);
+                        router.push(`/dashboard/crm/leads/${leadId}`);
+                      }}
+                      style={{
+                        flex: 1,
+                        minWidth: '160px',
+                        background: 'linear-gradient(135deg, #E10613, #c70511)',
+                        color: '#ffffff',
+                        border: 'none',
+                        padding: '0.75rem 1rem',
+                        borderRadius: '12px',
+                        fontSize: '0.85rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem',
+                        boxShadow: '0 4px 14px rgba(225, 6, 19, 0.25)'
+                      }}
+                    >
+                      <FileText size={16} /> Open Lead Details
+                    </button>
+                  )}
+
+                  {activeLeadAlert.phone && (
+                    <a
+                      href={`https://wa.me/${activeLeadAlert.phone.replace(/\D/g, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        background: '#25D366',
+                        color: '#ffffff',
+                        border: 'none',
+                        padding: '0.75rem 1rem',
+                        borderRadius: '12px',
+                        fontSize: '0.85rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem',
+                        textDecoration: 'none'
+                      }}
+                    >
+                      <MessageCircle size={16} /> WhatsApp
+                    </a>
+                  )}
+
+                  <button
+                    onClick={async () => {
+                      if (activeLeadAlert.id) {
+                        await supabase.from('notifications').update({ read: true }).eq('id', activeLeadAlert.id);
+                        fetchUnreadCount();
+                        fetchNotifications();
+                      }
+                      setActiveLeadAlert(null);
+                    }}
+                    style={{
+                      background: 'var(--db-sf2, #f3f4f6)',
+                      color: 'var(--db-tx2, #4b5563)',
+                      border: '1px solid var(--db-bd, rgba(0,0,0,0.1))',
+                      padding: '0.75rem 1rem',
+                      borderRadius: '12px',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </DashboardContext.Provider>
