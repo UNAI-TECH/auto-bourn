@@ -2,14 +2,15 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Users2, CalendarClock, TrendingUp, Target,
   Car, ArrowRight, AlertCircle, ChevronRight,
-  FileText, Phone, MessageSquare, MoreVertical, SlidersHorizontal, Download, Eye, Edit2
+  FileText, Phone, MessageSquare, MessageCircle, MoreVertical, SlidersHorizontal, Download, Eye, Edit2, X, Clock, Calendar
 } from 'lucide-react';
-import { type Lead, type FollowUp } from '@/types/crm';
+import { type Lead, type FollowUp, LEAD_STAGES, formatBudget, FOLLOW_UP_TYPE_LABELS } from '@/types/crm';
 import { timeAgo } from '@/lib/utils';
 
 interface CRMStats {
@@ -52,6 +53,17 @@ export default function CRMOverviewPage() {
   const [showFilterDropdown, setShowFilterDropdown] = useState<boolean>(false);
   const [loadingLeads, setLoadingLeads] = useState<boolean>(false);
 
+  // Expanded stat card state
+  type ExpandedStatKey = 'totalLeads' | 'activeLeads' | 'todayFollowUps' | 'missedFollowUps' | 'soldThisMonth' | 'conversionRate';
+  const [expandedStat, setExpandedStat] = useState<ExpandedStatKey | null>(null);
+  const [allLeads, setAllLeads] = useState<Lead[]>([]);
+  const [activeLeadsList, setActiveLeadsList] = useState<Lead[]>([]);
+  const [todayFollowUpsList, setTodayFollowUpsList] = useState<FollowUp[]>([]);
+  const [missedFollowUpsList, setMissedFollowUpsList] = useState<FollowUp[]>([]);
+  const [soldLeadsList, setSoldLeadsList] = useState<Lead[]>([]);
+  const [loadingExpanded, setLoadingExpanded] = useState(false);
+
+  const router = useRouter();
   const supabase = createClient();
 
   const fetchFilteredLeads = useCallback(async (status: string) => {
@@ -173,6 +185,114 @@ export default function CRMOverviewPage() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // Fetch all leads for expanded Total Leads view
+  const fetchAllLeads = useCallback(async () => {
+    setLoadingExpanded(true);
+    try {
+      const { data } = await supabase
+        .from('leads')
+        .select('*, assigned_employee:employees!assigned_to(name, employee_id)')
+        .order('created_at', { ascending: false });
+      if (data) setAllLeads(data as Lead[]);
+    } catch (err) {
+      console.error('Error fetching all leads:', err);
+    } finally {
+      setLoadingExpanded(false);
+    }
+  }, [supabase]);
+
+  // Fetch missed follow-ups for expanded Missed Follow-ups view
+  const fetchMissedFollowUps = useCallback(async () => {
+    setLoadingExpanded(true);
+    try {
+      const now = new Date();
+      const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
+      const { data } = await supabase
+        .from('follow_ups')
+        .select('*, lead:leads!lead_id(customer_name, phone, interested_car), employee:employees!employee_id(name)')
+        .or(`status.eq.missed,and(status.eq.pending,scheduled_at.lt.${todayStart.toISOString()})`)
+        .order('scheduled_at', { ascending: false });
+      if (data) setMissedFollowUpsList(data as FollowUp[]);
+    } catch (err) {
+      console.error('Error fetching missed follow-ups:', err);
+    } finally {
+      setLoadingExpanded(false);
+    }
+  }, [supabase]);
+
+  // Fetch active leads for expanded Active Leads view
+  const fetchActiveLeads = useCallback(async () => {
+    setLoadingExpanded(true);
+    try {
+      const { data } = await supabase
+        .from('leads')
+        .select('*, assigned_employee:employees!assigned_to(name, employee_id)')
+        .not('lead_status', 'in', '(sold,lost)')
+        .order('created_at', { ascending: false });
+      if (data) setActiveLeadsList(data as Lead[]);
+    } catch (err) {
+      console.error('Error fetching active leads:', err);
+    } finally {
+      setLoadingExpanded(false);
+    }
+  }, [supabase]);
+
+  // Fetch today's follow-ups for expanded view
+  const fetchTodayFollowUps = useCallback(async () => {
+    setLoadingExpanded(true);
+    try {
+      const now = new Date();
+      const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
+      const todayEnd = new Date(now); todayEnd.setHours(23, 59, 59, 999);
+      const { data } = await supabase
+        .from('follow_ups')
+        .select('*, lead:leads!lead_id(customer_name, phone, interested_car), employee:employees!employee_id(name)')
+        .eq('status', 'pending')
+        .gte('scheduled_at', todayStart.toISOString())
+        .lte('scheduled_at', todayEnd.toISOString())
+        .order('scheduled_at');
+      if (data) setTodayFollowUpsList(data as FollowUp[]);
+    } catch (err) {
+      console.error('Error fetching today follow-ups:', err);
+    } finally {
+      setLoadingExpanded(false);
+    }
+  }, [supabase]);
+
+  // Fetch sold leads this month
+  const fetchSoldLeads = useCallback(async () => {
+    setLoadingExpanded(true);
+    try {
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const { data } = await supabase
+        .from('leads')
+        .select('*, assigned_employee:employees!assigned_to(name, employee_id)')
+        .eq('lead_status', 'sold')
+        .gte('updated_at', monthStart)
+        .order('updated_at', { ascending: false });
+      if (data) setSoldLeadsList(data as Lead[]);
+    } catch (err) {
+      console.error('Error fetching sold leads:', err);
+    } finally {
+      setLoadingExpanded(false);
+    }
+  }, [supabase]);
+
+  // Handle stat card click
+  const handleStatClick = (statKey: ExpandedStatKey) => {
+    if (expandedStat === statKey) {
+      setExpandedStat(null);
+      return;
+    }
+    setExpandedStat(statKey);
+    if (statKey === 'totalLeads') fetchAllLeads();
+    else if (statKey === 'activeLeads') fetchActiveLeads();
+    else if (statKey === 'todayFollowUps') fetchTodayFollowUps();
+    else if (statKey === 'missedFollowUps') fetchMissedFollowUps();
+    else if (statKey === 'soldThisMonth' || statKey === 'conversionRate') fetchSoldLeads();
+  };
+
   const handleExport = () => {
     if (recentLeads.length === 0) return;
     const headers = ['Customer Name', 'Phone', 'Email', 'Interested Car', 'Lead Status', 'Budget', 'Created At'];
@@ -263,34 +383,469 @@ export default function CRMOverviewPage() {
 
         {/* 6 Stats Grid (2 rows x 3 columns) */}
         <div className="crm-stats-grid">
-          {statsMeta.map((item, i) => (
-            <motion.div
-              key={item.label}
-              className="crm-stat-card"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.03, ease: 'easeOut' }}
-            >
-              <div className="crm-stat-left-section">
-                <div className="crm-stat-header-row">
-                  <div className="crm-stat-icon-circle" style={{ background: `${item.color}12`, color: item.color }}>
-                    <item.icon size={20} />
+          {statsMeta.map((item, i) => {
+            const isClickable = true;
+            const statKeyMap: Record<string, ExpandedStatKey> = {
+              'Total Leads': 'totalLeads',
+              'Active Leads': 'activeLeads',
+              "Today's Follow-ups": 'todayFollowUps',
+              'Missed Follow-ups': 'missedFollowUps',
+              'Sold This Month': 'soldThisMonth',
+              'Conversion Rate': 'conversionRate',
+            };
+            const statKey = statKeyMap[item.label] || null;
+            const isExpanded = statKey && expandedStat === statKey;
+            return (
+              <motion.div
+                key={item.label}
+                className={`crm-stat-card ${isClickable ? 'crm-stat-clickable' : ''} ${isExpanded ? 'crm-stat-expanded' : ''}`}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.03, ease: 'easeOut' }}
+                onClick={isClickable && statKey ? () => handleStatClick(statKey) : undefined}
+                style={isClickable ? { cursor: 'pointer' } : undefined}
+              >
+                <div className="crm-stat-left-section">
+                  <div className="crm-stat-header-row">
+                    <div className="crm-stat-icon-circle" style={{ background: `${item.color}12`, color: item.color }}>
+                      <item.icon size={20} />
+                    </div>
+                    <span className="crm-stat-label">{item.label}</span>
+                    {isClickable && (
+                      <span className="crm-stat-click-hint">{isExpanded ? '✕ Close' : '↗ View'}</span>
+                    )}
                   </div>
-                  <span className="crm-stat-label">{item.label}</span>
+                  <div className="crm-stat-meta">
+                    <span className={`crm-trend ${item.trend}`}>
+                      {item.trend === 'up' ? '▲' : '▼'} {item.change.split(' ')[0]} {item.change.split(' ')[1]}
+                    </span>
+                    <span className="crm-vs-text">vs {item.change.includes('yesterday') ? 'yesterday' : 'last month'}</span>
+                  </div>
                 </div>
-                <div className="crm-stat-meta">
-                  <span className={`crm-trend ${item.trend}`}>
-                    {item.trend === 'up' ? '▲' : '▼'} {item.change.split(' ')[0]} {item.change.split(' ')[1]}
-                  </span>
-                  <span className="crm-vs-text">vs {item.change.includes('yesterday') ? 'yesterday' : 'last month'}</span>
+                <div className="crm-stat-right-section">
+                  <h2 className="crm-stat-value">{loading ? '—' : item.value}</h2>
                 </div>
-              </div>
-              <div className="crm-stat-right-section">
-                <h2 className="crm-stat-value">{loading ? '—' : item.value}</h2>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </div>
+
+        {/* Expanded Section: Total Leads Cards */}
+        <AnimatePresence>
+          {expandedStat === 'totalLeads' && (
+            <motion.div
+              className="crm-expanded-section"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+            >
+              <div className="crm-expanded-header">
+                <div>
+                  <h2 className="crm-expanded-title">All Leads ({allLeads.length})</h2>
+                  <p className="crm-expanded-sub">Complete list of all customer leads</p>
+                </div>
+                <button className="crm-expanded-close" onClick={() => setExpandedStat(null)}>
+                  <X size={18} />
+                </button>
+              </div>
+              {loadingExpanded ? (
+                <div className="crm-expanded-loading">
+                  {Array(6).fill(0).map((_, i) => <div key={i} className="crm-expanded-skel" />)}
+                </div>
+              ) : allLeads.length === 0 ? (
+                <div className="crm-expanded-empty">No leads found</div>
+              ) : (
+                <div className="crm-expanded-cards-grid">
+                  {allLeads.map((lead, i) => {
+                    const stage = LEAD_STAGES.find(s => s.key === lead.lead_status);
+                    const emp = lead.assigned_employee as { name: string } | null;
+                    return (
+                      <motion.div
+                        key={lead.id}
+                        className="crm-expanded-card"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: Math.min(i * 0.02, 0.3) }}
+                        onClick={() => router.push(`/dashboard/crm/leads/${lead.id}`)}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <div className="crm-expanded-card-top">
+                          <div className="crm-expanded-card-avatar" style={{ background: stage?.bg, color: stage?.color }}>
+                            {lead.customer_name.charAt(0)}
+                          </div>
+                          <div className="crm-expanded-card-info">
+                            <h4 className="crm-expanded-card-name">{lead.customer_name}</h4>
+                            <span className="crm-expanded-card-phone">{lead.phone} {lead.city && `· ${lead.city}`}</span>
+                          </div>
+                          <span className="crm-status-pill" style={{ background: stage?.bg, color: stage?.color, fontSize: '0.65rem' }}>
+                            {stage?.label}
+                          </span>
+                        </div>
+                        {lead.interested_car && (
+                          <div className="crm-expanded-card-detail">🚗 {lead.interested_car}</div>
+                        )}
+                        {lead.budget && (
+                          <div className="crm-expanded-card-detail">💰 {formatBudget(lead.budget)}</div>
+                        )}
+                        <div className="crm-expanded-card-footer">
+                          <span className="crm-expanded-card-assigned">{emp?.name || 'Unassigned'}</span>
+                          <div className="crm-expanded-card-actions">
+                            <a href={`tel:${lead.phone}`} className="crm-expanded-action-btn" title="Call" onClick={e => e.stopPropagation()}>
+                              <Phone size={12} />
+                            </a>
+                            <a href={`https://wa.me/${(lead.whatsapp || lead.phone).replace(/\D/g, '')}`} target="_blank" className="crm-expanded-action-btn" title="WhatsApp" onClick={e => e.stopPropagation()}>
+                              <MessageCircle size={12} />
+                            </a>
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Expanded Section: Active Leads Cards */}
+        <AnimatePresence>
+          {expandedStat === 'activeLeads' && (
+            <motion.div
+              className="crm-expanded-section"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+            >
+              <div className="crm-expanded-header">
+                <div>
+                  <h2 className="crm-expanded-title">Active Leads ({activeLeadsList.length})</h2>
+                  <p className="crm-expanded-sub">Leads currently in pipeline (excluding Sold & Lost)</p>
+                </div>
+                <button className="crm-expanded-close" onClick={() => setExpandedStat(null)}>
+                  <X size={18} />
+                </button>
+              </div>
+              {loadingExpanded ? (
+                <div className="crm-expanded-loading">
+                  {Array(6).fill(0).map((_, i) => <div key={i} className="crm-expanded-skel" />)}
+                </div>
+              ) : activeLeadsList.length === 0 ? (
+                <div className="crm-expanded-empty">No active leads found</div>
+              ) : (
+                <div className="crm-expanded-cards-grid">
+                  {activeLeadsList.map((lead, i) => {
+                    const stage = LEAD_STAGES.find(s => s.key === lead.lead_status);
+                    const emp = lead.assigned_employee as { name: string } | null;
+                    return (
+                      <motion.div
+                        key={lead.id}
+                        className="crm-expanded-card"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: Math.min(i * 0.02, 0.3) }}
+                        onClick={() => router.push(`/dashboard/crm/leads/${lead.id}`)}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <div className="crm-expanded-card-top">
+                          <div className="crm-expanded-card-avatar" style={{ background: stage?.bg, color: stage?.color }}>
+                            {lead.customer_name.charAt(0)}
+                          </div>
+                          <div className="crm-expanded-card-info">
+                            <h4 className="crm-expanded-card-name">{lead.customer_name}</h4>
+                            <span className="crm-expanded-card-phone">{lead.phone} {lead.city && `· ${lead.city}`}</span>
+                          </div>
+                          <span className="crm-status-pill" style={{ background: stage?.bg, color: stage?.color, fontSize: '0.65rem' }}>
+                            {stage?.label}
+                          </span>
+                        </div>
+                        {lead.interested_car && (
+                          <div className="crm-expanded-card-detail">🚗 {lead.interested_car}</div>
+                        )}
+                        {lead.budget && (
+                          <div className="crm-expanded-card-detail">💰 {formatBudget(lead.budget)}</div>
+                        )}
+                        <div className="crm-expanded-card-footer">
+                          <span className="crm-expanded-card-assigned">{emp?.name || 'Unassigned'}</span>
+                          <div className="crm-expanded-card-actions">
+                            <a href={`tel:${lead.phone}`} className="crm-expanded-action-btn" title="Call" onClick={e => e.stopPropagation()}>
+                              <Phone size={12} />
+                            </a>
+                            <a href={`https://wa.me/${(lead.whatsapp || lead.phone).replace(/\D/g, '')}`} target="_blank" className="crm-expanded-action-btn" title="WhatsApp" onClick={e => e.stopPropagation()}>
+                              <MessageCircle size={12} />
+                            </a>
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Expanded Section: Missed Follow-ups Cards */}
+        <AnimatePresence>
+          {expandedStat === 'missedFollowUps' && (
+            <motion.div
+              className="crm-expanded-section"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+            >
+              <div className="crm-expanded-header">
+                <div>
+                  <h2 className="crm-expanded-title">Missed Follow-ups ({missedFollowUpsList.length})</h2>
+                  <p className="crm-expanded-sub">Follow-ups that were missed or overdue</p>
+                </div>
+                <button className="crm-expanded-close" onClick={() => setExpandedStat(null)}>
+                  <X size={18} />
+                </button>
+              </div>
+              {loadingExpanded ? (
+                <div className="crm-expanded-loading">
+                  {Array(6).fill(0).map((_, i) => <div key={i} className="crm-expanded-skel" />)}
+                </div>
+              ) : missedFollowUpsList.length === 0 ? (
+                <div className="crm-expanded-empty">No missed follow-ups 🎉</div>
+              ) : (
+                <div className="crm-expanded-cards-grid">
+                  {missedFollowUpsList.map((fu, i) => {
+                    const lead = fu.lead as { customer_name: string; phone: string; interested_car?: string } | null;
+                    const emp = fu.employee as { name: string } | null;
+                    const dt = new Date(fu.scheduled_at);
+                    return (
+                      <motion.div
+                        key={fu.id}
+                        className="crm-expanded-card crm-expanded-card-missed"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: Math.min(i * 0.02, 0.3) }}
+                        onClick={() => router.push(`/dashboard/crm/leads/${fu.lead_id}`)}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <div className="crm-expanded-card-top">
+                          <div className="crm-expanded-card-avatar" style={{ background: 'rgba(225,6,19,0.1)', color: '#E10613' }}>
+                            {lead?.customer_name?.charAt(0) || '?'}
+                          </div>
+                          <div className="crm-expanded-card-info">
+                            <h4 className="crm-expanded-card-name">{lead?.customer_name || 'Unknown'}</h4>
+                            <span className="crm-expanded-card-phone">{lead?.phone || '—'}</span>
+                          </div>
+                          <span className="crm-missed-badge">
+                            <AlertCircle size={10} /> Missed
+                          </span>
+                        </div>
+                        <div className="crm-expanded-card-detail">
+                          <Calendar size={12} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
+                          {dt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} at {dt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                        </div>
+                        <div className="crm-expanded-card-detail">
+                          <span className={`crm-fu-type-tag ${fu.follow_up_type}`}>{(FOLLOW_UP_TYPE_LABELS as any)[fu.follow_up_type] || fu.follow_up_type}</span>
+                          {fu.priority && <span className={`crm-fu-priority-tag ${fu.priority}`}>{fu.priority}</span>}
+                        </div>
+                        {fu.notes && (
+                          <div className="crm-expanded-card-note">{fu.notes}</div>
+                        )}
+                        <div className="crm-expanded-card-footer">
+                          <span className="crm-expanded-card-assigned">{emp?.name || 'Unassigned'}</span>
+                          <div className="crm-expanded-card-actions">
+                            {lead?.phone && (
+                              <>
+                                <a href={`tel:${lead.phone}`} className="crm-expanded-action-btn" title="Call" onClick={e => e.stopPropagation()}>
+                                  <Phone size={12} />
+                                </a>
+                                <a href={`https://wa.me/${lead.phone.replace(/\D/g, '')}`} target="_blank" className="crm-expanded-action-btn" title="WhatsApp" onClick={e => e.stopPropagation()}>
+                                  <MessageCircle size={12} />
+                                </a>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Expanded Section: Today's Follow-ups Cards */}
+        <AnimatePresence>
+          {expandedStat === 'todayFollowUps' && (
+            <motion.div
+              className="crm-expanded-section"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+            >
+              <div className="crm-expanded-header">
+                <div>
+                  <h2 className="crm-expanded-title">Today's Follow-ups ({todayFollowUpsList.length})</h2>
+                  <p className="crm-expanded-sub">Scheduled follow-ups for today</p>
+                </div>
+                <button className="crm-expanded-close" onClick={() => setExpandedStat(null)}>
+                  <X size={18} />
+                </button>
+              </div>
+              {loadingExpanded ? (
+                <div className="crm-expanded-loading">
+                  {Array(6).fill(0).map((_, i) => <div key={i} className="crm-expanded-skel" />)}
+                </div>
+              ) : todayFollowUpsList.length === 0 ? (
+                <div className="crm-expanded-empty">No follow-ups scheduled for today</div>
+              ) : (
+                <div className="crm-expanded-cards-grid">
+                  {todayFollowUpsList.map((fu, i) => {
+                    const lead = fu.lead as { customer_name: string; phone: string; interested_car?: string } | null;
+                    const emp = fu.employee as { name: string } | null;
+                    const dt = new Date(fu.scheduled_at);
+                    return (
+                      <motion.div
+                        key={fu.id}
+                        className="crm-expanded-card crm-expanded-card-followup"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: Math.min(i * 0.02, 0.3) }}
+                        onClick={() => router.push(`/dashboard/crm/leads/${fu.lead_id}`)}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <div className="crm-expanded-card-top">
+                          <div className="crm-expanded-card-avatar" style={{ background: 'rgba(245,158,11,0.1)', color: '#f59e0b' }}>
+                            {lead?.customer_name?.charAt(0) || '?'}
+                          </div>
+                          <div className="crm-expanded-card-info">
+                            <h4 className="crm-expanded-card-name">{lead?.customer_name || 'Unknown'}</h4>
+                            <span className="crm-expanded-card-phone">{lead?.phone || '—'}</span>
+                          </div>
+                          <span className="crm-followup-time-badge">
+                            <Clock size={10} /> {dt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                          </span>
+                        </div>
+                        {(lead as any)?.interested_car && (
+                          <div className="crm-expanded-card-detail">🚗 {(lead as any).interested_car}</div>
+                        )}
+                        <div className="crm-expanded-card-detail">
+                          <span className={`crm-fu-type-tag ${fu.follow_up_type}`}>{(FOLLOW_UP_TYPE_LABELS as any)[fu.follow_up_type] || fu.follow_up_type}</span>
+                          {fu.priority && <span className={`crm-fu-priority-tag ${fu.priority}`}>{fu.priority}</span>}
+                        </div>
+                        {fu.notes && (
+                          <div className="crm-expanded-card-note">{fu.notes}</div>
+                        )}
+                        <div className="crm-expanded-card-footer">
+                          <span className="crm-expanded-card-assigned">{emp?.name || 'Unassigned'}</span>
+                          <div className="crm-expanded-card-actions">
+                            {lead?.phone && (
+                              <>
+                                <a href={`tel:${lead.phone}`} className="crm-expanded-action-btn" title="Call" onClick={e => e.stopPropagation()}>
+                                  <Phone size={12} />
+                                </a>
+                                <a href={`https://wa.me/${lead.phone.replace(/\D/g, '')}`} target="_blank" className="crm-expanded-action-btn" title="WhatsApp" onClick={e => e.stopPropagation()}>
+                                  <MessageCircle size={12} />
+                                </a>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Expanded Section: Sold This Month Cards */}
+        <AnimatePresence>
+          {(expandedStat === 'soldThisMonth' || expandedStat === 'conversionRate') && (
+            <motion.div
+              className="crm-expanded-section"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+            >
+              <div className="crm-expanded-header">
+                <div>
+                  <h2 className="crm-expanded-title">
+                    {expandedStat === 'conversionRate' ? `Conversion Rate — ${stats.conversionRate}%` : `Sold This Month (${soldLeadsList.length})`}
+                  </h2>
+                  <p className="crm-expanded-sub">
+                    {expandedStat === 'conversionRate'
+                      ? `${soldLeadsList.length} sold out of ${stats.totalLeads} total leads this month`
+                      : 'Leads that converted to sale this month'}
+                  </p>
+                </div>
+                <button className="crm-expanded-close" onClick={() => setExpandedStat(null)}>
+                  <X size={18} />
+                </button>
+              </div>
+              {loadingExpanded ? (
+                <div className="crm-expanded-loading">
+                  {Array(6).fill(0).map((_, i) => <div key={i} className="crm-expanded-skel" />)}
+                </div>
+              ) : soldLeadsList.length === 0 ? (
+                <div className="crm-expanded-empty">No sales recorded this month yet</div>
+              ) : (
+                <div className="crm-expanded-cards-grid">
+                  {soldLeadsList.map((lead, i) => {
+                    const emp = lead.assigned_employee as { name: string } | null;
+                    return (
+                      <motion.div
+                        key={lead.id}
+                        className="crm-expanded-card crm-expanded-card-sold"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: Math.min(i * 0.02, 0.3) }}
+                        onClick={() => router.push(`/dashboard/crm/leads/${lead.id}`)}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <div className="crm-expanded-card-top">
+                          <div className="crm-expanded-card-avatar" style={{ background: 'rgba(225,6,19,0.1)', color: '#E10613' }}>
+                            {lead.customer_name.charAt(0)}
+                          </div>
+                          <div className="crm-expanded-card-info">
+                            <h4 className="crm-expanded-card-name">{lead.customer_name}</h4>
+                            <span className="crm-expanded-card-phone">{lead.phone} {lead.city && `· ${lead.city}`}</span>
+                          </div>
+                          <span className="crm-sold-badge">
+                            <Car size={10} /> Sold
+                          </span>
+                        </div>
+                        {lead.interested_car && (
+                          <div className="crm-expanded-card-detail">🚗 {lead.interested_car}</div>
+                        )}
+                        {lead.budget && (
+                          <div className="crm-expanded-card-detail">💰 {formatBudget(lead.budget)}</div>
+                        )}
+                        <div className="crm-expanded-card-detail" style={{ fontSize: '0.7rem', color: 'var(--db-tx3)' }}>
+                          Sold on {new Date(lead.updated_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </div>
+                        <div className="crm-expanded-card-footer">
+                          <span className="crm-expanded-card-assigned">{emp?.name || 'Unassigned'}</span>
+                          <div className="crm-expanded-card-actions">
+                            <a href={`tel:${lead.phone}`} className="crm-expanded-action-btn" title="Call" onClick={e => e.stopPropagation()}>
+                              <Phone size={12} />
+                            </a>
+                            <a href={`https://wa.me/${(lead.whatsapp || lead.phone).replace(/\D/g, '')}`} target="_blank" className="crm-expanded-action-btn" title="WhatsApp" onClick={e => e.stopPropagation()}>
+                              <MessageCircle size={12} />
+                            </a>
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Pipeline Funnel Panel */}
         <motion.div 
@@ -1327,6 +1882,319 @@ export default function CRMOverviewPage() {
         .font-semibold { font-weight: 600; }
         .ml-auto { margin-left: auto; }
 
+        /* Clickable Stat Cards */
+        .crm-stat-clickable {
+          position: relative;
+        }
+        .crm-stat-clickable:hover {
+          border-color: var(--db-gold) !important;
+          box-shadow: 0 10px 28px rgba(225, 6, 19, 0.08) !important;
+          transform: translateY(-2px);
+        }
+        .crm-stat-clickable:active {
+          transform: translateY(0px) scale(0.99);
+        }
+        .crm-stat-expanded {
+          border-color: var(--db-gold) !important;
+          border-width: 2px !important;
+          background: var(--db-gd) !important;
+          box-shadow: 0 10px 28px rgba(225, 6, 19, 0.12) !important;
+        }
+        .crm-stat-click-hint {
+          font-size: 0.625rem;
+          font-weight: 700;
+          color: var(--db-gold);
+          background: var(--db-gd);
+          padding: 2px 8px;
+          border-radius: 6px;
+          white-space: nowrap;
+          opacity: 0;
+          transition: opacity 0.2s;
+        }
+        .crm-stat-clickable:hover .crm-stat-click-hint,
+        .crm-stat-expanded .crm-stat-click-hint {
+          opacity: 1;
+        }
+
+        /* Expanded Section Panel */
+        .crm-expanded-section {
+          background: var(--db-sf) !important;
+          border: 1px solid var(--db-bd) !important;
+          border-radius: 20px !important;
+          padding: 1.5rem !important;
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02) !important;
+          overflow: hidden;
+        }
+        .crm-expanded-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 1.25rem;
+          padding-bottom: 1rem;
+          border-bottom: 1px solid var(--db-bd);
+        }
+        .crm-expanded-title {
+          font-size: 1.125rem;
+          font-weight: 800;
+          color: var(--db-tx);
+          margin: 0;
+        }
+        .crm-expanded-sub {
+          font-size: 0.8125rem;
+          color: var(--db-tx3);
+          margin: 0.25rem 0 0 0;
+        }
+        .crm-expanded-close {
+          width: 36px;
+          height: 36px;
+          border-radius: 10px;
+          border: 1px solid var(--db-bd);
+          background: var(--db-sf);
+          color: var(--db-tx2);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s;
+          flex-shrink: 0;
+        }
+        .crm-expanded-close:hover {
+          border-color: var(--db-gold);
+          color: var(--db-gold);
+          background: var(--db-gd);
+        }
+
+        /* Cards Grid */
+        .crm-expanded-cards-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          gap: 1rem;
+          max-height: 520px;
+          overflow-y: auto;
+          padding: 0.25rem;
+        }
+        .crm-expanded-cards-grid::-webkit-scrollbar {
+          width: 6px;
+        }
+        .crm-expanded-cards-grid::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .crm-expanded-cards-grid::-webkit-scrollbar-thumb {
+          background: var(--db-bd);
+          border-radius: 99px;
+        }
+
+        /* Individual Card */
+        .crm-expanded-card {
+          background: var(--db-sf);
+          border: 1px solid var(--db-bd);
+          border-radius: 14px;
+          padding: 1rem 1.125rem;
+          transition: all 0.2s ease;
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+        .crm-expanded-card:hover {
+          border-color: var(--db-gold);
+          box-shadow: 0 8px 20px rgba(225, 6, 19, 0.06);
+          transform: translateY(-2px);
+        }
+        .crm-expanded-card-missed {
+          border-left: 3px solid #E10613;
+        }
+        .crm-expanded-card-top {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .crm-expanded-card-avatar {
+          width: 34px;
+          height: 34px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.8125rem;
+          font-weight: 700;
+          flex-shrink: 0;
+        }
+        .crm-expanded-card-info {
+          flex: 1;
+          min-width: 0;
+        }
+        .crm-expanded-card-name {
+          font-size: 0.875rem;
+          font-weight: 700;
+          color: var(--db-tx);
+          margin: 0;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .crm-expanded-card-phone {
+          font-size: 0.725rem;
+          color: var(--db-tx3);
+          display: block;
+          margin-top: 1px;
+        }
+        .crm-expanded-card-detail {
+          font-size: 0.75rem;
+          color: var(--db-tx2);
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+        .crm-expanded-card-note {
+          font-size: 0.7rem;
+          color: var(--db-tx3);
+          background: var(--db-sf2);
+          border-radius: 8px;
+          padding: 6px 10px;
+          line-height: 1.4;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .crm-expanded-card-footer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-top: 0.25rem;
+          padding-top: 0.5rem;
+          border-top: 1px solid var(--db-bd);
+        }
+        .crm-expanded-card-assigned {
+          font-size: 0.6875rem;
+          color: var(--db-tx3);
+          font-weight: 500;
+        }
+        .crm-expanded-card-actions {
+          display: flex;
+          gap: 4px;
+          align-items: center;
+        }
+        .crm-expanded-action-btn {
+          width: 26px;
+          height: 26px;
+          border-radius: 6px;
+          border: 1px solid var(--db-bd);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--db-tx3);
+          text-decoration: none;
+          transition: all 0.2s;
+          background: var(--db-sf);
+        }
+        .crm-expanded-action-btn:hover {
+          border-color: var(--db-gold);
+          color: var(--db-gold);
+          background: var(--db-gd);
+        }
+
+        /* Missed Follow-up Badge */
+        .crm-missed-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 0.625rem;
+          font-weight: 700;
+          color: #E10613;
+          background: rgba(225, 6, 19, 0.1);
+          padding: 3px 8px;
+          border-radius: 6px;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+
+        /* Follow-up Time Badge */
+        .crm-followup-time-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 0.625rem;
+          font-weight: 700;
+          color: #f59e0b;
+          background: rgba(245, 158, 11, 0.1);
+          padding: 3px 8px;
+          border-radius: 6px;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+
+        /* Sold Badge */
+        .crm-sold-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 0.625rem;
+          font-weight: 700;
+          color: #22c55e;
+          background: rgba(34, 197, 94, 0.1);
+          padding: 3px 8px;
+          border-radius: 6px;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+
+        /* Card accent borders */
+        .crm-expanded-card-followup {
+          border-left: 3px solid #f59e0b;
+        }
+        .crm-expanded-card-sold {
+          border-left: 3px solid #22c55e;
+        }
+
+        /* Follow-up type & priority tags */
+        .crm-fu-type-tag {
+          font-size: 0.65rem;
+          font-weight: 700;
+          padding: 2px 8px;
+          border-radius: 6px;
+          text-transform: capitalize;
+        }
+        .crm-fu-type-tag.call { background: rgba(59,130,246,0.1); color: #3b82f6; }
+        .crm-fu-type-tag.whatsapp { background: rgba(34,197,94,0.1); color: #22c55e; }
+        .crm-fu-type-tag.email { background: rgba(245,158,11,0.1); color: #f59e0b; }
+        .crm-fu-type-tag.meeting { background: rgba(139,92,246,0.1); color: #8b5cf6; }
+        .crm-fu-type-tag.sms { background: rgba(99,102,241,0.1); color: #6366f1; }
+        .crm-fu-type-tag.test_drive { background: rgba(236,72,153,0.1); color: #ec4899; }
+
+        .crm-fu-priority-tag {
+          font-size: 0.6rem;
+          font-weight: 700;
+          padding: 2px 6px;
+          border-radius: 4px;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+        }
+        .crm-fu-priority-tag.high { background: #FEF2F2; color: #EF4444; }
+        .crm-fu-priority-tag.normal { background: #EFF6FF; color: #3B82F6; }
+        .crm-fu-priority-tag.low { background: #F1F5F9; color: #64748B; }
+
+        /* Loading Skeleton */
+        .crm-expanded-loading {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          gap: 1rem;
+        }
+        .crm-expanded-skel {
+          height: 140px;
+          border-radius: 14px;
+          background: var(--db-sf2);
+          border: 1px solid var(--db-bd);
+          animation: pulse 1.5s infinite;
+        }
+        .crm-expanded-empty {
+          text-align: center;
+          padding: 3rem 1rem;
+          color: var(--db-tx3);
+          font-size: 0.9rem;
+          font-weight: 500;
+        }
+
         @media(max-width: 768px) {
           .crm-dash-wrapper {
             padding: 0 !important;
@@ -1342,10 +2210,17 @@ export default function CRMOverviewPage() {
           .crm-panel-widget {
             height: auto;
           }
+          .crm-expanded-cards-grid {
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+          }
         }
         @media(max-width: 640px) {
           .crm-stats-grid {
             grid-template-columns: 1fr;
+          }
+          .crm-expanded-cards-grid {
+            grid-template-columns: 1fr;
+            max-height: 400px;
           }
           .crm-funnel-visual {
             flex-direction: column;
