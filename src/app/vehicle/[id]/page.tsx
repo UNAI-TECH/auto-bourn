@@ -30,7 +30,7 @@ export default function VehicleDetailPage() {
   const openTestDriveModal = () => {
     if (vehicle) {
       sessionStorage.setItem('bookingCarId', vehicle.id);
-      window.history.pushState({ modal: 'testdrive' }, '', '/testdrive');
+      window.history.pushState({ modal: 'testdrive' }, '', `/vehicle/${vehicle.id}/testdrive`);
       setShowModal(true);
     }
   };
@@ -38,7 +38,7 @@ export default function VehicleDetailPage() {
   const closeTestDriveModal = () => {
     setShowModal(false);
     sessionStorage.removeItem('bookingCarId');
-    if (window.location.pathname === '/testdrive') {
+    if (window.location.pathname.endsWith('/testdrive')) {
       window.history.pushState(null, '', `/vehicle/${vehicle?.id}`);
     }
   };
@@ -168,7 +168,7 @@ export default function VehicleDetailPage() {
       const queryParams = new URLSearchParams(window.location.search);
       if (queryParams.get('testdrive') === 'true') {
         sessionStorage.setItem('bookingCarId', vehicle.id);
-        window.history.replaceState({ modal: 'testdrive' }, '', '/testdrive');
+        window.history.replaceState({ modal: 'testdrive' }, '', `/vehicle/${vehicle.id}/testdrive`);
         setShowModal(true);
       }
     }

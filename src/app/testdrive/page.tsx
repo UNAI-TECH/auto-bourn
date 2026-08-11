@@ -30,7 +30,7 @@ export default function TestDrivePage() {
           const params = new URLSearchParams(window.location.search);
           const carId = params.get('carId');
           if (carId) {
-            router.replace(`/vehicle/${carId}?testdrive=true`);
+            router.replace(`/vehicle/${carId}/testdrive`);
             return;
           }
         }
