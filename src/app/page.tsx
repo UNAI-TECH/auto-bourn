@@ -140,7 +140,7 @@ export default function HomePage() {
                 Explore Collection
               </Link>
               <motion.div initial={{ opacity: 0, x: -60 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 1, delay: 0.1, ease: [0.16, 1, 0.3, 1] }} style={{ display: 'inline-flex' }}>
-                <Link href="/contact" className="btn btn-secondary btn-lg" style={{ textDecoration: 'none' }}>Book Test Drive</Link>
+                <Link href="/testdrive" className="btn btn-secondary btn-lg" style={{ textDecoration: 'none' }}>Book Test Drive</Link>
               </motion.div>
             </div>
           </div>

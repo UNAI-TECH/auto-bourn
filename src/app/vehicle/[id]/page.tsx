@@ -27,6 +27,33 @@ export default function VehicleDetailPage() {
   const [bookingError, setBookingError] = useState('');
   const [bookingSuccess, setBookingSuccess] = useState(false);
 
+  const openTestDriveModal = () => {
+    if (vehicle) {
+      sessionStorage.setItem('bookingCarId', vehicle.id);
+      window.history.pushState({ modal: 'testdrive' }, '', '/testdrive');
+      setShowModal(true);
+    }
+  };
+
+  const closeTestDriveModal = () => {
+    setShowModal(false);
+    sessionStorage.removeItem('bookingCarId');
+    if (window.location.pathname === '/testdrive') {
+      window.history.pushState(null, '', `/vehicle/${vehicle?.id}`);
+    }
+  };
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (showModal) {
+        setShowModal(false);
+        sessionStorage.removeItem('bookingCarId');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [showModal]);
+
   const [showReserveModal, setShowReserveModal] = useState(false);
   const [reserveName, setReserveName] = useState('');
   const [reservePhone, setReservePhone] = useState('');
@@ -103,7 +130,7 @@ export default function VehicleDetailPage() {
       setBookingPhone('');
       setBookingEmail('');
       setTimeout(() => {
-        setShowModal(false);
+        closeTestDriveModal();
         setBookingSuccess(false);
       }, 3000);
     } catch (err: any) {
@@ -135,6 +162,17 @@ export default function VehicleDetailPage() {
     }
     load();
   }, [params?.id]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && vehicle && !loading) {
+      const queryParams = new URLSearchParams(window.location.search);
+      if (queryParams.get('testdrive') === 'true') {
+        sessionStorage.setItem('bookingCarId', vehicle.id);
+        window.history.replaceState({ modal: 'testdrive' }, '', '/testdrive');
+        setShowModal(true);
+      }
+    }
+  }, [vehicle, loading]);
 
   if (loading) {
     return (
@@ -257,7 +295,7 @@ export default function VehicleDetailPage() {
                   </button>
                 ) : (
                   <>
-                    <button onClick={() => setShowModal(true)} className="btn btn-primary btn-lg" style={{ flex: 1, minWidth: '160px' }}>
+                    <button onClick={openTestDriveModal} className="btn btn-primary btn-lg" style={{ flex: 1, minWidth: '160px' }}>
                       Book Test Drive
                     </button>
                     <button onClick={() => setShowReserveModal(true)} className="btn btn-secondary btn-lg" style={{ flex: 1, minWidth: '160px' }}>Reserve Vehicle</button>
@@ -418,7 +456,7 @@ export default function VehicleDetailPage() {
               justifyContent: 'center',
               padding: '1.5rem',
             }}
-            onClick={() => !bookingLoading && setShowModal(false)}
+            onClick={() => !bookingLoading && closeTestDriveModal()}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
@@ -439,7 +477,7 @@ export default function VehicleDetailPage() {
             >
               <button
                 disabled={bookingLoading}
-                onClick={() => setShowModal(false)}
+                onClick={closeTestDriveModal}
                 style={{
                   position: 'absolute',
                   top: '1.25rem',
