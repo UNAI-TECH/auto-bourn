@@ -24,7 +24,7 @@ const nextConfig: NextConfig = {
   transpilePackages: ["framer-motion", "gsap", "lucide-react", "date-fns", "@supabase/ssr", "@supabase/supabase-js"],
   devIndicators: false,
   images: {
-    unoptimized: false,
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
