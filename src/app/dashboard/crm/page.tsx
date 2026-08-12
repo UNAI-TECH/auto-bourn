@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { type Lead, type FollowUp, LEAD_STAGES, formatBudget, FOLLOW_UP_TYPE_LABELS } from '@/types/crm';
 import { timeAgo } from '@/lib/utils';
+import { downloadMissedFollowUpsPdf } from '@/lib/pdf-utils';
 
 interface CRMStats {
   totalLeads: number;
@@ -601,9 +602,17 @@ export default function CRMOverviewPage() {
                   <h2 className="crm-expanded-title">Missed Follow-ups ({missedFollowUpsList.length})</h2>
                   <p className="crm-expanded-sub">Follow-ups that were missed or overdue</p>
                 </div>
-                <button className="crm-expanded-close" onClick={() => setExpandedStat(null)}>
-                  <X size={18} />
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  {missedFollowUpsList.length > 0 && (
+                    <button className="crm-pdf-btn" onClick={() => downloadMissedFollowUpsPdf(missedFollowUpsList)}>
+                      <FileText size={14} style={{ marginRight: '6px' }} />
+                      Export PDF
+                    </button>
+                  )}
+                  <button className="crm-expanded-close" onClick={() => setExpandedStat(null)}>
+                    <X size={18} />
+                  </button>
+                </div>
               </div>
               {loadingExpanded ? (
                 <div className="crm-expanded-loading">
@@ -2248,6 +2257,25 @@ export default function CRMOverviewPage() {
           .crm-funnel-actions {
             grid-template-columns: 1fr;
           }
+        }
+        .crm-pdf-btn {
+          display: inline-flex;
+          align-items: center;
+          background: #e10613;
+          color: #ffffff;
+          border: none;
+          padding: 8px 16px;
+          border-radius: 6px;
+          font-weight: 700;
+          font-size: 0.85rem;
+          cursor: pointer;
+          transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+        .crm-pdf-btn:hover {
+          background: #b8050f;
+        }
+        .crm-pdf-btn:active {
+          transform: scale(0.98);
         }
       `}</style>
     </div>

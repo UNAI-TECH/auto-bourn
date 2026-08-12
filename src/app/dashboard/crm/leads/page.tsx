@@ -4,8 +4,9 @@ import { createClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Plus, Search, Filter, LayoutGrid, List, X, Phone, MessageCircle, ChevronDown } from 'lucide-react';
+import { Plus, Search, Filter, LayoutGrid, List, X, Phone, MessageCircle, ChevronDown, ArrowUpDown, FileText } from 'lucide-react';
 import { LEAD_STAGES, SOURCE_LABELS, formatBudget, type Lead, type LeadStatus, type LeadSource } from '@/types/crm';
+import { downloadLeadsPdf } from '@/lib/pdf-utils';
 
 const SOURCES: LeadSource[] = ['website','instagram','facebook','whatsapp','walk_in','referral','olx','cardekho','manual'];
 const TIMELINES = ['Within 1 week','1–2 weeks','1 month','1–3 months','3–6 months','6+ months'];
@@ -20,6 +21,7 @@ export default function LeadsPage() {
   const [employees, setEmployees] = useState<{id:string;name:string;employee_id:string;role:string}[]>([]);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [isStatusOpen, setIsStatusOpen] = useState(false);
   const statusRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
@@ -36,13 +38,13 @@ export default function LeadsPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    let q = supabase.from('leads').select('*, assigned_employee:employees!assigned_to(name,employee_id)').order('created_at',{ascending:false});
+    let q = supabase.from('leads').select('*, assigned_employee:employees!assigned_to(name,employee_id)').order('created_at',{ascending:sortOrder==='asc'});
     if (filterStatus !== 'all') q = q.eq('lead_status', filterStatus);
     if (search) q = q.or(`customer_name.ilike.%${search}%,phone.ilike.%${search}%,interested_car.ilike.%${search}%`);
     const { data } = await q;
     setLeads((data||[]) as Lead[]);
     setLoading(false);
-  }, [search, filterStatus]);
+  }, [search, filterStatus, sortOrder]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -336,6 +338,26 @@ export default function LeadsPage() {
             )}
           </AnimatePresence>
         </div>
+
+        <button
+          type="button"
+          onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+          className="custom-status-trigger"
+          title="Toggle date sorting order"
+        >
+          <ArrowUpDown size={13} style={{ color: 'var(--db-tx3)' }} />
+          <span>Date: {sortOrder === 'asc' ? 'Oldest First' : 'Newest First'}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => downloadLeadsPdf(filtered, filterStatus, search)}
+          className="crm-pdf-btn"
+          title="Generate PDF Report of current filtered list"
+        >
+          <FileText size={13} />
+          <span>Generate PDF Report</span>
+        </button>
       </div>
 
       {/* Kanban View */}
@@ -444,7 +466,16 @@ export default function LeadsPage() {
                   <th>Budget</th>
                   <th>Assigned To</th>
                   <th>Status</th>
-                  <th>Created</th>
+                  <th 
+                    style={{ cursor: 'pointer', userSelect: 'none' }}
+                    onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                    title="Click to sort by date"
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      Created
+                      <ArrowUpDown size={12} style={{ color: 'var(--db-tx3)' }} />
+                    </div>
+                  </th>
                   <th style={{ paddingRight: '1.5rem', textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
@@ -757,6 +788,8 @@ export default function LeadsPage() {
 .crm-view-btn.active,.crm-view-btn:hover{border-color:var(--db-gold);color:var(--db-gold);background:var(--db-gd)}
 .crm-add-btn{display:flex;align-items:center;gap:.375rem;background:linear-gradient(135deg,#E10613,#c70511);color:#fff;border:none;padding:.5rem 1.125rem;border-radius:9px;font-size:.8125rem;font-weight:600;font-family:inherit;cursor:pointer;transition:all .2s}
 .crm-add-btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(225,6,19,.3)}
+.crm-pdf-btn{display:inline-flex;align-items:center;gap:.375rem;background:rgba(225,6,19,0.03);border:1.5px solid rgba(225,6,19,0.18);color:#E10613;padding:.5rem 1rem;border-radius:10px;font-size:.8125rem;font-weight:700;font-family:inherit;cursor:pointer;transition:all .2s;margin-left:auto}
+.crm-pdf-btn:hover{background:rgba(225,6,19,0.08);border-color:#E10613;box-shadow:0 4px 12px rgba(225,6,19,0.1)}
 
 /* Horizontal Scrolling Container */
 .crm-kanban-wrap {
